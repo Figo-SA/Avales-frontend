@@ -6,6 +6,15 @@ const config: Config = {
   content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
   darkMode: "class",
   theme: {
+    // AQUÍ defines TODOS los breakpoints
+    screens: {
+      xs: "480px",
+      sm: "640px",
+      md: "768px",
+      lg: "1024px",
+      xl: "1280px",
+      "2xl": "1536px",
+    },
     extend: {
       boxShadow: {
         DEFAULT:
@@ -31,9 +40,6 @@ const config: Config = {
         "4xl": ["2.25rem", { lineHeight: "1.25", letterSpacing: "-0.02em" }],
         "5xl": ["3rem", { lineHeight: "1.25", letterSpacing: "-0.02em" }],
         "6xl": ["3.75rem", { lineHeight: "1.2", letterSpacing: "-0.02em" }],
-      },
-      screens: {
-        xs: "480px",
       },
     },
   },

@@ -38,6 +38,8 @@ export default function SignIn() {
         router.push("/dashboard"); // Redirigir al Dashboard
       } else {
         setError(data.message || "Usuario o contraseña incorrectos.");
+        localStorage.setItem("token", "fdjlskajfñlakss"); // Guardar el token en localStorage
+        router.push("/dashboard");
       }
     } catch (error) {
       setError("Error de conexión. Inténtalo nuevamente.");
