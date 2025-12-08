@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AuthImage from "../_components/aut-image";
@@ -12,14 +12,19 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  console.log(process.env.NEXT_PUBLIC_API_URL);
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     try {
+      console.log("Enviando login con:", { email, password });
+
+      // ===========================
+      // EJEMPLO CON API REAL
+      // ===========================
+      /*
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
         {
@@ -28,20 +33,49 @@ export default function SignIn() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ email, password }),
+          credentials: "include", // por si el backend setea cookies
         }
       );
 
       const data = await response.json();
 
-      if (response.ok) {
-        localStorage.setItem("token", data.token); // Guardar el token en localStorage
-        router.push("/dashboard"); // Redirigir al Dashboard
-      } else {
+      if (!response.ok) {
         setError(data.message || "Usuario o contraseña incorrectos.");
-        localStorage.setItem("token", "fdjlskajfñlakss"); // Guardar el token en localStorage
-        router.push("/dashboard");
+        return;
       }
-    } catch (error) {
+
+      // Si el backend devuelve el token en el body:
+      const token = data.token;
+      if (token) {
+        localStorage.setItem("token", token);
+        document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
+      }
+
+      router.push("/dashboard");
+      return;
+      */
+
+      // ===========================
+      // MODO PRUEBA (sin API)
+      // ===========================
+      const fakeToken = "fdjlskajfñlakss";
+
+      // Guarda en localStorage (opcional, solo front)
+      localStorage.setItem("token", fakeToken);
+
+      // IMPORTANTE: cookie que el middleware puede leer
+      document.cookie = `token=${fakeToken}; path=/; max-age=86400; SameSite=Lax`;
+
+      console.log(
+        "Token guardado (localStorage):",
+        localStorage.getItem("token")
+      );
+      console.log("Cookie token seteada");
+
+      router.push("/dashboard");
+      console.log("router.push ejecutado");
+    } catch (err) {
+      console.error("Error en login:", err);
       setError("Error de conexión. Inténtalo nuevamente.");
     } finally {
       setLoading(false);
@@ -62,9 +96,9 @@ export default function SignIn() {
           <Image
             src={LogoFedeLoja}
             alt="Logo Federación Deportiva"
-            width={80} // No modificar en CSS
-            height={80} // No modificar en CSS
-            style={{ width: "auto", height: "auto" }} // Ajusta el tamaño sin distorsionar
+            width={80}
+            height={80}
+            style={{ width: "auto", height: "auto" }}
             className="object-contain"
           />
         </div>
@@ -107,7 +141,6 @@ export default function SignIn() {
               />
             </div>
 
-            {/* Mensaje de error formal */}
             {error && (
               <div className="bg-red-600 text-white text-sm p-3 rounded-md border-l-4 border-red-800 shadow-md flex items-center">
                 <svg
@@ -128,7 +161,6 @@ export default function SignIn() {
               </div>
             )}
 
-            {/* Botón de inicio de sesión */}
             <div className="flex justify-center mt-6">
               <button
                 type="submit"

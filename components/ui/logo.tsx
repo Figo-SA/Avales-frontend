@@ -5,7 +5,7 @@ export default function Logo() {
   return (
     <Link className="block" href="/">
       <Image
-        src="/logo.png" // or /images/logo.png if in public/images/
+        src="/images/LogoFedeLoja.png" // or /images/logo.png if in public/images/
         alt="Logo"
         width={32}
         height={32}
