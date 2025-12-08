@@ -8,7 +8,7 @@ export default function Logo() {
         src="/images/LogoFedeLoja.png" // or /images/logo.png if in public/images/
         alt="Logo"
         width={32}
-        height={32}
+        height={30}
         priority // For above-the-fold logos
         className="w-8 h-8" // Optional: Tailwind classes for responsive sizing
       />

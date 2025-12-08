@@ -1,32 +1,23 @@
-import { useEffect, useState } from "react";
+import { useState } from 'react'
 
 interface SidebarLinkGroupProps {
-  children: (handleClick: () => void, openGroup: boolean) => React.ReactNode;
-  open?: boolean;
+  children: (handleClick: () => void, openGroup: boolean) => React.ReactNode
+  open?: boolean
 }
 
 export default function SidebarLinkGroup({
   children,
-  open = false,
+  open = false
 }: SidebarLinkGroupProps) {
-  const [openGroup, setOpenGroup] = useState<boolean>(open);
-
-  // Si la prop `open` cambia (por cambio de ruta), sincronizamos el estado
-  useEffect(() => {
-    setOpenGroup(open);
-  }, [open]);
+  const [openGroup, setOpenGroup] = useState<boolean>(open)
 
   const handleClick = () => {
-    setOpenGroup((prev) => !prev);
-  };
+    setOpenGroup(!openGroup);
+  }
 
   return (
-    <li
-      className={`px-3 py-2 rounded-sm mb-0.5 last:mb-0 group is-link-group ${
-        openGroup ? "bg-slate-900" : ""
-      }`}
-    >
+    <li className={`pl-4 pr-3 py-2 rounded-lg mb-0.5 last:mb-0 bg-linear-to-r group is-link-group ${open && 'from-violet-500/[0.12] dark:from-violet-500/[0.24] to-violet-500/[0.04]'}`}>
       {children(handleClick, openGroup)}
     </li>
-  );
+  )
 }
