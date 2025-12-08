@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AuthImage from "../_components/aut-image";
 import LogoFedeLoja from "@/public/images/LogoFedeLoja.png";
+import { useAuth } from "@/app/auth-context";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,7 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const { refreshUser } = useAuth();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -19,61 +21,38 @@ export default function SignIn() {
     setError("");
 
     try {
-      console.log("Enviando login con:", { email, password });
-
-      // ===========================
-      // EJEMPLO CON API REAL
-      // ===========================
-      /*
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email, password }),
-          credentials: "include", // por si el backend setea cookies
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Usuario o contraseña incorrectos.");
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      if (!apiUrl) {
+        setError("Error de configuración. Falta NEXT_PUBLIC_API_URL.");
         return;
       }
 
-      // Si el backend devuelve el token en el body:
-      const token = data.token;
-      if (token) {
-        localStorage.setItem("token", token);
-        document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax`;
+      const response = await fetch(`${apiUrl}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: "include", // IMPORTANTE: para que guarde/mande cookies
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        const message =
+          (data && (data.message || data.error)) ||
+          "Usuario o contraseña incorrectos.";
+        setError(message);
+        return;
       }
 
+      // OJO: ya NO guardamos token en localStorage ni en cookie manualmente.
+      // El token está en la cookie HttpOnly que setea el backend.
+
+      await refreshUser();
+
+      // 2) Redirigimos al dashboard
       router.push("/dashboard");
-      return;
-      */
-
-      // ===========================
-      // MODO PRUEBA (sin API)
-      // ===========================
-      const fakeToken = "fdjlskajfñlakss";
-
-      // Guarda en localStorage (opcional, solo front)
-      localStorage.setItem("token", fakeToken);
-
-      // IMPORTANTE: cookie que el middleware puede leer
-      document.cookie = `token=${fakeToken}; path=/; max-age=86400; SameSite=Lax`;
-
-      console.log(
-        "Token guardado (localStorage):",
-        localStorage.getItem("token")
-      );
-      console.log("Cookie token seteada");
-
-      router.push("/dashboard");
-      console.log("router.push ejecutado");
     } catch (err) {
       console.error("Error en login:", err);
       setError("Error de conexión. Inténtalo nuevamente.");
@@ -84,14 +63,11 @@ export default function SignIn() {
 
   return (
     <main className="bg-white dark:bg-slate-900 flex h-screen">
-      {/* Sección de la imagen (lado izquierdo) */}
       <div className="hidden md:flex w-1/2 relative">
         <AuthImage className="absolute inset-0 w-full h-full object-cover" />
       </div>
 
-      {/* Sección del formulario (lado derecho) */}
       <div className="w-full md:w-1/2 flex flex-col justify-center items-center px-6 relative">
-        {/* Logo en la parte superior derecha */}
         <div className="absolute top-4 right-4">
           <Image
             src={LogoFedeLoja}
@@ -103,7 +79,6 @@ export default function SignIn() {
           />
         </div>
 
-        {/* Contenedor del formulario */}
         <div className="max-w-sm w-full">
           <h1 className="text-3xl font-bold text-center text-slate-800 dark:text-slate-100 mb-6">
             Federación Deportiva Provincial de Loja
