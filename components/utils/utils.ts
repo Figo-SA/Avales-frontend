@@ -1,65 +1,66 @@
-// src/lib/ui-utils.ts
+export const formatValue = (value: number): string => Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumSignificantDigits: 3,
+  notation: 'compact',
+}).format(value)
 
-// 1) Define tus breakpoints aquí, alineados con Tailwind
-// Puedes ajustarlos a los que tenías en la plantilla (incluyendo xs: 480px)
-const SCREENS: Record<string, number> = {
-  xs: 480,
-  sm: 640,
-  md: 768,
-  lg: 1024,
-  xl: 1280,
-  "2xl": 1536,
+export const formatThousands = (value: number): string => Intl.NumberFormat('en-US', {
+  maximumSignificantDigits: 3,
+  notation: 'compact',
+}).format(value)
+
+export const getCssVariable = (variable: string): string => {
+  if (typeof window === 'undefined') {
+    return '';
+  }  
+  return getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
 };
 
-export const getBreakpointValue = (value: string): number => {
-  return SCREENS[value] ?? 0;
+const adjustHexOpacity = (hexColor: string, opacity: number): string => {
+  // Remove the '#' if it exists
+  hexColor = hexColor.replace('#', '');
+
+  // Convert hex to RGB
+  const r = parseInt(hexColor.substring(0, 2), 16);
+  const g = parseInt(hexColor.substring(2, 4), 16);
+  const b = parseInt(hexColor.substring(4, 6), 16);
+
+  // Return RGBA string
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 };
 
-export const getBreakpoint = () => {
-  if (typeof window === "undefined") return undefined;
+const adjustHSLOpacity = (hslColor: string, opacity: number): string => {
+  // Convert HSL to HSLA
+  return hslColor.replace('hsl(', 'hsla(').replace(')', `, ${opacity})`);
+};
 
-  let currentBreakpoint: string | undefined = undefined;
-  let biggestBreakpointValue = 0;
-  const windowWidth = window.innerWidth;
+const adjustOKLCHOpacity = (oklchColor: string, opacity: number): string => {
+  // Add alpha value to OKLCH color
+  return oklchColor.replace(/oklch\((.*?)\)/, (match, p1) => `oklch(${p1} / ${opacity})`);
+};
 
-  for (const [breakpoint, px] of Object.entries(SCREENS)) {
-    if (px > biggestBreakpointValue && windowWidth >= px) {
-      biggestBreakpointValue = px;
-      currentBreakpoint = breakpoint;
-    }
+export const adjustColorOpacity = (color: string, opacity: number): string => {
+  if (color.startsWith('#')) {
+    return adjustHexOpacity(color, opacity);
+  } else if (color.startsWith('hsl')) {
+    return adjustHSLOpacity(color, opacity);
+  } else if (color.startsWith('oklch')) {
+    return adjustOKLCHOpacity(color, opacity);
+  } else {
+    return "";    
   }
-
-  return currentBreakpoint;
 };
 
-export const hexToRGB = (h: string): string => {
-  let r = 0;
-  let g = 0;
-  let b = 0;
-
-  if (h.length === 4) {
-    r = parseInt(`0x${h[1]}${h[1]}`);
-    g = parseInt(`0x${h[2]}${h[2]}`);
-    b = parseInt(`0x${h[3]}${h[3]}`);
-  } else if (h.length === 7) {
-    r = parseInt(`0x${h[1]}${h[2]}`);
-    g = parseInt(`0x${h[3]}${h[4]}`);
-    b = parseInt(`0x${h[5]}${h[6]}`);
-  }
-
-  return `${r},${g},${b}`;
+export const oklchToRGBA = (oklchColor: string): string => {
+  // Create a temporary div to use for color conversion
+  const tempDiv = document.createElement('div');
+  tempDiv.style.color = oklchColor;
+  document.body.appendChild(tempDiv);
+  
+  // Get the computed style and convert to RGB
+  const computedColor = window.getComputedStyle(tempDiv).color;
+  document.body.removeChild(tempDiv);
+  
+  return computedColor;
 };
-
-export const formatValue = (value: number): string =>
-  Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumSignificantDigits: 3,
-    notation: "compact",
-  }).format(value);
-
-export const formatThousands = (value: number): string =>
-  Intl.NumberFormat("en-US", {
-    maximumSignificantDigits: 3,
-    notation: "compact",
-  }).format(value);
