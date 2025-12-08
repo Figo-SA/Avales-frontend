@@ -1,84 +1,33 @@
-"use client";
+'use client'
 
-import {
-  createContext,
-  Dispatch,
-  SetStateAction,
-  useContext,
-  useState,
-  useMemo,
-  useCallback,
-} from "react";
+import { createContext, Dispatch, SetStateAction, useContext, useState } from 'react'
 
 interface ContextProps {
-  sidebarOpen: boolean;
-  setSidebarOpen: Dispatch<SetStateAction<boolean>>;
-  toggleSidebar: () => void;
-  openSidebar: () => void;
-  closeSidebar: () => void;
+  sidebarOpen: boolean
+  setSidebarOpen: Dispatch<SetStateAction<boolean>>
+  sidebarExpanded: boolean
+  setSidebarExpanded: Dispatch<SetStateAction<boolean>>
 }
 
-// Better default values with proper types
 const AppContext = createContext<ContextProps>({
   sidebarOpen: false,
-  setSidebarOpen: () => {
-    console.warn("AppProvider not initialized");
-  },
-  toggleSidebar: () => {
-    console.warn("AppProvider not initialized");
-  },
-  openSidebar: () => {
-    console.warn("AppProvider not initialized");
-  },
-  closeSidebar: () => {
-    console.warn("AppProvider not initialized");
-  },
-});
+  setSidebarOpen: (): boolean => false,
+  sidebarExpanded: false,
+  setSidebarExpanded: (): boolean => false
+})
 
 export default function AppProvider({
   children,
 }: {
-  children: React.ReactNode;
-}) {
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
-
-  // Memoized callbacks for better performance
-  const toggleSidebar = useCallback(() => {
-    setSidebarOpen((prev) => !prev);
-  }, []);
-
-  const openSidebar = useCallback(() => {
-    setSidebarOpen(true);
-  }, []);
-
-  const closeSidebar = useCallback(() => {
-    setSidebarOpen(false);
-  }, []);
-
-  // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo(
-    () => ({
-      sidebarOpen,
-      setSidebarOpen,
-      toggleSidebar,
-      openSidebar,
-      closeSidebar,
-    }),
-    [sidebarOpen, toggleSidebar, openSidebar, closeSidebar]
-  );
-
+  children: React.ReactNode
+}) {  
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false)
+  const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(false)
   return (
-    <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>
-  );
+    <AppContext.Provider value={{ sidebarOpen, setSidebarOpen, sidebarExpanded, setSidebarExpanded }}>
+      {children}
+    </AppContext.Provider>
+  )
 }
 
-// Custom hook with optional error handling
-export const useAppProvider = () => {
-  const context = useContext(AppContext);
-
-  if (context === undefined) {
-    throw new Error("useAppProvider must be used within an AppProvider");
-  }
-
-  return context;
-};
+export const useAppProvider = () => useContext(AppContext)
