@@ -98,9 +98,9 @@ export default function DropdownProfile({
           <MenuItem as="li">
             <Link
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500"
-              href="/settings/account"
+              href="/profile"
             >
-              Configuración
+              Perfil
             </Link>
           </MenuItem>
 
