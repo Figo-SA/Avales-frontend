@@ -10,6 +10,7 @@ import {
 } from "react";
 
 import { AuthContextType, User } from "./types/user";
+import { ApiResponse } from "./types/api-response";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -49,9 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const data = await res.json();
-      const user = data.data as User;
-      setUser(user);
+      const json = (await res.json()) as ApiResponse<User>;
+      const userData = json.data;
+      setUser(userData);
     } catch (err) {
       console.error("Error cargando perfil:", err);
       setUser(null);

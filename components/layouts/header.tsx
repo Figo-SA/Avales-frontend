@@ -5,6 +5,7 @@ import { useAppProvider } from "@/app/app-provider";
 
 import ThemeToggle from "@/components/theme-toggle";
 import DropdownProfile from "@/components/dropdown-profile";
+import { useAuth } from "@/app/auth-provider";
 
 export default function Header({
   variant = "default",

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AuthImage from "../_components/aut-image";
 import LogoFedeLoja from "@/public/images/LogoFedeLoja.png";
-import { useAuth } from "@/app/auth-context";
+import { useAuth } from "@/app/auth-provider";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
