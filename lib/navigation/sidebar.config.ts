@@ -1,5 +1,5 @@
 // lib/navigation/nav.config.ts
-import type { Role } from "@/app/types/user";
+import type { Role } from "@/types/user";
 import { SidebarIconKey } from "@/components/icons/sidebar-icons";
 
 export type SidebarItem =

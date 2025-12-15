@@ -1,5 +1,5 @@
 // lib/auth/access.ts
-import type { User, Role } from "@/app/types/user";
+import type { User, Role } from "@/types/user";
 import type { SidebarItem } from "@/lib/navigation/sidebar.config";
 
 const hasAnyRole = (userRoles: Role[], required?: Role[]) => {
