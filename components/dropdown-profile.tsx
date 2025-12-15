@@ -13,6 +13,7 @@ import UserAvatar from "@/public/images/user-avatar-32.png";
 
 import { useAuth } from "@/app/providers/auth-provider";
 import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api/auth";
 
 export default function DropdownProfile({
   align,
@@ -33,20 +34,12 @@ export default function DropdownProfile({
       : "Sin rol";
 
   const handleLogout = async () => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    if (!apiUrl) return;
-
     try {
-      await fetch(`${apiUrl}/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
+      await logout(); // backend borra cookie
     } finally {
-      // refresca el contexto (debería quedar user=null)
-      await refreshUser();
-      console.log("Usuario desconectado", user);
+      await refreshUser(); // debe dejar user=null
       router.replace("/signin");
-      router.refresh(); // opcional, útil si usas layouts/segmentos cacheados
+      router.refresh();
     }
   };
 

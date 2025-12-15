@@ -3,6 +3,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useState,
@@ -11,6 +12,8 @@ import {
 
 import { AuthContextType, User } from "../../types/user";
 import { ApiResponse } from "../../types/api-response";
+import { getProfile } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -19,52 +22,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) {
-        setError("Falta NEXT_PUBLIC_API_URL");
-        setUser(null);
-        return;
-      }
-
-      const res = await fetch(`${apiUrl}/auth/profile`, {
-        method: "GET",
-        credentials: "include",
-      });
-
-      // 401/403 => estado normal de "no autenticado"
-      if (res.status === 401 || res.status === 403) {
-        setUser(null);
-        // OJO: no lo tratamos como error, es estado invitado
-        return;
-      }
-
-      if (!res.ok) {
-        // Otros errores de servidor sí se consideran error real
-        setUser(null);
-        setError(`Error al cargar usuario (${res.status})`);
-        return;
-      }
-
-      const json = (await res.json()) as ApiResponse<User>;
-      const userData = json.data;
-      setUser(userData);
+      const json = await getProfile(); // ApiEnvelope<User>
+      setUser(json.data);
     } catch (err) {
-      console.error("Error cargando perfil:", err);
-      setUser(null);
-      setError("No se pudo cargar el usuario.");
+      if (
+        err instanceof ApiError &&
+        (err.status === 401 || err.status === 403)
+      ) {
+        // estado normal: no autenticado
+        setUser(null);
+        setError(null);
+      } else {
+        console.error("Error cargando perfil:", err);
+        setUser(null);
+        setError(
+          err instanceof Error ? err.message : "No se pudo cargar el usuario."
+        );
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void fetchUser();
-  }, []);
+  }, [fetchUser]);
 
   return (
     <AuthContext.Provider
