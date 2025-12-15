@@ -1,21 +1,17 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(request: NextRequest) {
-  const { nextUrl, method } = request;
-  const token = request.cookies.get("token")?.value;
+export function proxy(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  const isApiRoute = nextUrl.pathname.startsWith("/api");
-  const isHome = nextUrl.pathname === "/";
-  const isProtected = nextUrl.pathname.startsWith("/dashboard");
-  const isAuthPage = nextUrl.pathname.startsWith("/signin");
+  // Ignorar assets internos de Next
+  if (pathname.startsWith("/_next") || pathname === "/favicon.ico") {
+    return NextResponse.next();
+  }
 
-  // ---------------------------------------------------
-  // 1) CORS solo para /api/*
-  // ---------------------------------------------------
-  if (isApiRoute) {
-    // Preflight OPTIONS
-    if (method === "OPTIONS") {
+  // ====== 1) (Opcional) CORS solo si /api es de Next ======
+  if (pathname.startsWith("/api")) {
+    if (req.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
         headers: {
@@ -39,37 +35,32 @@ export function proxy(request: NextRequest) {
     return res;
   }
 
-  // ---------------------------------------------------
-  // 2) Lógica de autenticación (front)
-  // ---------------------------------------------------
+  // ====== 2) Auth (cookie HttpOnly "token") ======
+  const token = req.cookies.get("token")?.value;
 
-  // Si entra a "/" decidimos según el token
-  if (isHome) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/signin", request.url));
-    }
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  const isPublic =
+    pathname.startsWith("/signin") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/reset-password");
+
+  // No autenticado -> solo rutas públicas, todo lo demás a /signin (incluye /fjdsa)
+  if (!token && !isPublic) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/signin";
+    return NextResponse.redirect(url);
   }
 
-  // Rutas protegidas (ej. /dashboard, /dashboard/lo-que-sea)
-  if (isProtected && !token) {
-    return NextResponse.redirect(new URL("/signin", request.url));
+  // Autenticado -> evitar volver a /signin
+  if (token && pathname.startsWith("/signin")) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
-  // Si ya tiene token y va a /signin, lo mandamos al dashboard
-  if (token && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // Si nada de lo anterior aplica, dejamos pasar la request
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/api/:path*", // CORS
-    "/", // Home: decide /signin o /dashboard según cookie
-    "/dashboard/:path*", // Rutas protegidas
-    "/signin", // Redirigir si ya está logueado
-  ],
+  // Atrapa todo (incluye rutas inexistentes) excepto recursos internos
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
