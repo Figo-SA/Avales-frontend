@@ -62,7 +62,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
         label: "Analytics",
         href: "/dashboard/analytics",
         segment: "dashboard",
-        icon: "dashboard",
         roles: ["SUPER_ADMIN", "ADMIN"],
       },
     ],

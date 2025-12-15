@@ -12,13 +12,15 @@ import {
 import UserAvatar from "@/public/images/user-avatar-32.png";
 
 import { useAuth } from "@/app/auth-provider";
+import { useRouter } from "next/navigation";
 
 export default function DropdownProfile({
   align,
 }: {
   align?: "left" | "right";
 }) {
-  const { user, loading, error } = useAuth();
+  const router = useRouter();
+  const { user, loading, error, refreshUser } = useAuth();
 
   // Nombre completo o placeholder
   const nombreCompleto =
@@ -29,6 +31,24 @@ export default function DropdownProfile({
     !loading && user?.roles && user.roles.length > 0
       ? user.roles.join(", ")
       : "Sin rol";
+
+  const handleLogout = async () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) return;
+
+    try {
+      await fetch(`${apiUrl}/auth/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      // refresca el contexto (debería quedar user=null)
+      await refreshUser();
+      console.log("Usuario desconectado", user);
+      router.replace("/signin");
+      router.refresh(); // opcional, útil si usas layouts/segmentos cacheados
+    }
+  };
 
   return (
     <Menu as="div" className="relative inline-flex">
@@ -65,7 +85,6 @@ export default function DropdownProfile({
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
       >
-        {/* Encabezado del menu */}
         <div className="pt-0.5 pb-2 px-3 mb-1 border-b border-gray-200 dark:border-gray-700/60">
           <div className="font-medium text-gray-800 dark:text-gray-100">
             {nombreCompleto}
@@ -81,16 +100,18 @@ export default function DropdownProfile({
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500"
               href="/settings/account"
             >
-              Settings
+              Configuración
             </Link>
           </MenuItem>
+
           <MenuItem as="li">
-            <Link
-              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500"
-              href="#0"
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full text-left font-medium text-sm flex items-center py-1 px-3 text-violet-500"
             >
-              Sign Out
-            </Link>
+              Cerrar sesión
+            </button>
           </MenuItem>
         </MenuItems>
       </Transition>
