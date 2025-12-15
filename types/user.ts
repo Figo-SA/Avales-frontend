@@ -5,7 +5,11 @@ export type User = {
   nombre: string;
   apellido: string;
   cedula: string;
-  roles: Role[]; // o string[] | undefined en tu definición actual
+  categoriaId: number;
+  disciplinaId: number;
+  roles?: Role[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AuthContextType = {

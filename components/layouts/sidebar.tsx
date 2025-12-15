@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useAppProvider } from "@/app/app-provider";
+import { useAppProvider } from "@/app/providers/app-provider";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useWindowWidth } from "@/components/utils/use-window-width";
 import SidebarLinkGroup from "../ui/sidebar-link-group";
 import SidebarLink from "../ui/sidebar-link";
 import Logo from "../ui/logo";
-import { useAuth } from "@/app/auth-provider";
+import { useAuth } from "@/app/providers/auth-provider";
 import {
   SIDEBAR_ITEMS,
   ROLES_WITHOUT_SIDEBAR,

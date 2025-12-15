@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "@/app/auth-provider"; // ajusta la ruta real
+import { useAuth } from "@/app/providers/auth-provider"; // ajusta la ruta real
 
 export default function Dashboard() {
   const { user, loading, error } = useAuth();

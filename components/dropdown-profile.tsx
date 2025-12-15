@@ -11,7 +11,7 @@ import {
 } from "@headlessui/react";
 import UserAvatar from "@/public/images/user-avatar-32.png";
 
-import { useAuth } from "@/app/auth-provider";
+import { useAuth } from "@/app/providers/auth-provider";
 import { useRouter } from "next/navigation";
 
 export default function DropdownProfile({

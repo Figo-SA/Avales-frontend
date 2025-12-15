@@ -2,7 +2,7 @@
 
 import Sidebar from "@/components/layouts/sidebar";
 import Header from "@/components/layouts/header";
-import { useAuth } from "@/app/auth-provider";
+import { useAuth } from "@/app/providers/auth-provider";
 import { NAV, ROLES_WITHOUT_SIDEBAR } from "@/lib/navigation/sidebar.config";
 import { canSeeSidebar } from "@/lib/auth/access";
 

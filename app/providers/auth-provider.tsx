@@ -9,8 +9,8 @@ import {
   type ReactNode,
 } from "react";
 
-import { AuthContextType, User } from "../types/user";
-import { ApiResponse } from "../types/api-response";
+import { AuthContextType, User } from "../../types/user";
+import { ApiResponse } from "../../types/api-response";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
