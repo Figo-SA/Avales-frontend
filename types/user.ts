@@ -5,7 +5,11 @@ export type User = {
   nombre: string;
   apellido: string;
   cedula: string;
-  roles: string[]; // o string[] | undefined en tu definición actual
+  categoriaId: number;
+  disciplinaId: number;
+  roles?: Role[];
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AuthContextType = {
@@ -14,3 +18,13 @@ export type AuthContextType = {
   error: string | null;
   refreshUser: () => Promise<void>;
 };
+
+export type Role =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "SECRETARIA"
+  | "DTM"
+  | "DTM_EIDE"
+  | "PDA"
+  | "FINANCIERO"
+  | "ENTRENADOR"; // Ejemplo de roles posibles

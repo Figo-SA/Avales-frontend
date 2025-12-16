@@ -30,7 +30,17 @@
 .btn-lg,
 .btn-sm,
 .btn-xs {
-  @apply font-medium text-sm inline-flex items-center justify-center border border-transparent rounded-lg leading-5 shadow-sm transition;
+  @apply font-medium text-sm inline-flex items-center justify-center 
+         border border-transparent rounded-lg leading-5 shadow-sm transition
+         cursor-pointer;
+}
+
+/* Disabled */
+.btn:disabled,
+.btn-lg:disabled,
+.btn-sm:disabled,
+.btn-xs:disabled {
+  @apply cursor-not-allowed opacity-60;
 }
 
 .btn {
@@ -79,16 +89,24 @@ input[type="search"]::-webkit-search-results-decoration {
 
 .form-input,
 .form-textarea {
-  @apply placeholder-gray-400 dark:placeholder-gray-500;
+  @apply placeholder-gray-400 dark:placeholder-gray-500 cursor-text;
 }
 
 .form-select {
-  @apply pr-10;
+  @apply pr-10 cursor-pointer;
 }
 
 .form-checkbox,
 .form-radio {
-  @apply text-violet-500 checked:bg-violet-500 checked:border-transparent border border-gray-300 dark:border-gray-700/60 dark:checked:border-transparent focus-visible:not-checked:ring-2 focus-visible:not-checked:ring-violet-500/50;
+  @apply text-violet-500 checked:bg-violet-500 checked:border-transparent border border-gray-300 dark:border-gray-700/60 dark:checked:border-transparent focus-visible:not-checked:ring-2 focus-visible:not-checked:ring-violet-500/50 cursor-pointer;
+}
+
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled,
+.form-checkbox:disabled,
+.form-radio:disabled {
+  @apply cursor-not-allowed;
 }
 
 /* Switch element */
@@ -109,6 +127,13 @@ input[type="search"]::-webkit-search-results-decoration {
   left: 2px;
   right: 50%;
   transition: all 0.15s ease-out;
+}
+
+a.btn,
+a.btn-lg,
+a.btn-sm,
+a.btn-xs {
+  @apply cursor-pointer;
 }
 
 .form-switch input[type="checkbox"] + label {

@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, FormEvent } from "react";
+import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import AuthImage from "../_components/aut-image";
 import LogoFedeLoja from "@/public/images/LogoFedeLoja.png";
-import { useAuth } from "@/app/auth-context";
+import { useAuth } from "@/app/providers/auth-provider";
+import { login } from "@/lib/api/auth";
 
 export default function SignIn() {
   const [email, setEmail] = useState("");
@@ -21,41 +22,11 @@ export default function SignIn() {
     setError("");
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      if (!apiUrl) {
-        setError("Error de configuración. Falta NEXT_PUBLIC_API_URL.");
-        return;
-      }
-
-      const response = await fetch(`${apiUrl}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: "include", // IMPORTANTE: para que guarde/mande cookies
-      });
-
-      const data = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        const message =
-          (data && (data.message || data.error)) ||
-          "Usuario o contraseña incorrectos.";
-        setError(message);
-        return;
-      }
-
-      // OJO: ya NO guardamos token en localStorage ni en cookie manualmente.
-      // El token está en la cookie HttpOnly que setea el backend.
-
-      await refreshUser();
-
-      // 2) Redirigimos al dashboard
+      await login(email, password); // setea cookie HttpOnly
+      await refreshUser(); // carga profile y lo pone global
       router.push("/dashboard");
-    } catch (err) {
-      console.error("Error en login:", err);
-      setError("Error de conexión. Inténtalo nuevamente.");
+    } catch (err: any) {
+      setError(err?.message ?? "Usuario o contraseña incorrectos.");
     } finally {
       setLoading(false);
     }

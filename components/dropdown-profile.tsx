@@ -11,14 +11,17 @@ import {
 } from "@headlessui/react";
 import UserAvatar from "@/public/images/user-avatar-32.png";
 
-import { useAuth } from "@/app/auth-context";
+import { useAuth } from "@/app/providers/auth-provider";
+import { useRouter } from "next/navigation";
+import { logout } from "@/lib/api/auth";
 
 export default function DropdownProfile({
   align,
 }: {
   align?: "left" | "right";
 }) {
-  const { user, loading } = useAuth();
+  const router = useRouter();
+  const { user, loading, error, refreshUser } = useAuth();
 
   // Nombre completo o placeholder
   const nombreCompleto =
@@ -29,6 +32,16 @@ export default function DropdownProfile({
     !loading && user?.roles && user.roles.length > 0
       ? user.roles.join(", ")
       : "Sin rol";
+
+  const handleLogout = async () => {
+    try {
+      await logout(); // backend borra cookie
+    } finally {
+      await refreshUser(); // debe dejar user=null
+      router.replace("/signin");
+      router.refresh();
+    }
+  };
 
   return (
     <Menu as="div" className="relative inline-flex">
@@ -65,7 +78,6 @@ export default function DropdownProfile({
         leaveFrom="opacity-100"
         leaveTo="opacity-0"
       >
-        {/* Encabezado del menu */}
         <div className="pt-0.5 pb-2 px-3 mb-1 border-b border-gray-200 dark:border-gray-700/60">
           <div className="font-medium text-gray-800 dark:text-gray-100">
             {nombreCompleto}
@@ -79,18 +91,20 @@ export default function DropdownProfile({
           <MenuItem as="li">
             <Link
               className="font-medium text-sm flex items-center py-1 px-3 text-violet-500"
-              href="/settings/account"
+              href="/settings/profile"
             >
-              Settings
+              Perfil
             </Link>
           </MenuItem>
+
           <MenuItem as="li">
-            <Link
-              className="font-medium text-sm flex items-center py-1 px-3 text-violet-500"
-              href="#0"
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="w-full text-left font-medium text-sm flex items-center py-1 px-3 text-violet-500"
             >
-              Sign Out
-            </Link>
+              Cerrar sesión
+            </button>
           </MenuItem>
         </MenuItems>
       </Transition>

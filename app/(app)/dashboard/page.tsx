@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/providers/auth-provider"; // ajusta la ruta real
 
 export default function Dashboard() {
   const router = useRouter();
@@ -41,10 +40,11 @@ export default function Dashboard() {
     checkSession();
   }, [router]);
 
-  if (isLoading) {
+  // Esto es solo por UX (la seguridad debe estar en proxy/middleware)
+  if (error) {
     return (
       <div className="h-screen flex items-center justify-center">
-        <p className="text-lg font-semibold">Verificando acceso...</p>
+        <p className="text-lg font-semibold">{error}</p>
       </div>
     );
   }
@@ -52,7 +52,7 @@ export default function Dashboard() {
   return (
     <div className="h-screen flex items-center justify-center">
       <p className="text-lg font-semibold">
-        Bienvenido, {user?.name ?? "Usuario"} — Dashboard
+        Bienvenido, {user?.nombre ?? "Usuario"} — Dashboard
       </p>
     </div>
   );
