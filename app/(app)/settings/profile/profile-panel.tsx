@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import AccountImage from "@/public/images/user-avatar-80.png";
+import { useEffect, useState } from "react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/app/providers/auth-provider";
 import { profileSchema, type ProfileFormValues } from "@/lib/validation/user";
 import { updateUser } from "@/lib/api/user";
-import SelectField from "@/components/forms/SelectField";
 import { getCatalog } from "@/lib/api/catalog";
 import { CatalogItem } from "@/types/catalog";
 
@@ -100,8 +97,9 @@ export default function ProfilePanel() {
       reset(values);
       setInitialValues(values);
       setSaveMsg("Cambios guardados correctamente.");
-    } catch (e: any) {
-      setSaveMsg(e?.message ?? "No se pudo actualizar el perfil.");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "No se pudo actualizar el perfil.";
+      setSaveMsg(message);
     }
   };
 

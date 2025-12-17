@@ -1,9 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import Sidebar from "@/components/layouts/sidebar";
 import Header from "@/components/layouts/header";
-import NotFoundImage from "@/public/images/404-illustration.svg";
-import NotFoundImageDark from "@/public/images/404-illustration-dark.svg";
 
 export default function NotFound() {
   return (
@@ -23,7 +20,7 @@ export default function NotFound() {
                 <div className="text-center px-4">
                   <div className="inline-flex mb-8"></div>
                   <div className="mb-6">
-                    Hmm...this page doesn't exist. Try searching for something
+                    Hmm...this page doesn&apos;t exist. Try searching for something
                     else!
                   </div>
                   <Link

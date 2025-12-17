@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useAppProvider } from "@/app/providers/app-provider";
 
 import ThemeToggle from "@/components/theme-toggle";
 import DropdownProfile from "@/components/dropdown-profile";
-import { useAuth } from "@/app/providers/auth-provider";
 
 export default function Header({
   variant = "default",
@@ -13,7 +11,6 @@ export default function Header({
   variant?: "default" | "v2" | "v3";
 }) {
   const { sidebarOpen, setSidebarOpen } = useAppProvider();
-  const [searchModalOpen, setSearchModalOpen] = useState<boolean>(false);
 
   return (
     <header

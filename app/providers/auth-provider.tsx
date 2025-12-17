@@ -11,7 +11,6 @@ import {
 } from "react";
 
 import { AuthContextType, User } from "../../types/user";
-import { ApiResponse } from "../../types/api-response";
 import { getProfile } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 

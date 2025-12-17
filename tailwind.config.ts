@@ -1,6 +1,7 @@
 // tailwind.config.ts
 import type { Config } from "tailwindcss";
 import plugin from "tailwindcss/plugin";
+import forms from "@tailwindcss/forms";
 
 const config: Config = {
   content: ["./app/**/*.{js,ts,jsx,tsx}", "./components/**/*.{js,ts,jsx,tsx}"],
@@ -44,18 +45,9 @@ const config: Config = {
     },
   },
   plugins: [
-    require("@tailwindcss/forms"),
-    plugin(function ({ addVariant, e }: any) {
-      (
-        addVariant as any
-      )("sidebar-expanded", ({ modifySelectors, separator }: any) => {
-        modifySelectors(
-          ({ className }: any) =>
-            `.sidebar-expanded .${e(
-              `sidebar-expanded${separator}${className}`
-            )}`
-        );
-      });
+    forms,
+    plugin(function ({ addVariant }) {
+      addVariant("sidebar-expanded", ".sidebar-expanded &");
     }),
   ],
 };

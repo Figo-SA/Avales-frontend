@@ -21,7 +21,7 @@ export default function DropdownProfile({
   align?: "left" | "right";
 }) {
   const router = useRouter();
-  const { user, loading, error, refreshUser } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
 
   // Nombre completo o placeholder
   const nombreCompleto =

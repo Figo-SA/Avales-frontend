@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useAppProvider } from "@/app/providers/app-provider";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useWindowWidth } from "@/components/utils/use-window-width";
@@ -28,12 +28,6 @@ export default function Sidebar({
   const expandOnly =
     !sidebarExpanded && breakpoint && breakpoint >= 1024 && breakpoint < 1536;
   const { user, loading } = useAuth();
-  if (loading || !user) return null;
-
-  if (!canSeeSidebar(user, ROLES_WITHOUT_SIDEBAR)) return null;
-
-  const items = filterSidebarItems(SIDEBAR_ITEMS, user);
-  if (items.length === 0) return null;
 
   // close on click outside
   useEffect(() => {
@@ -44,7 +38,7 @@ export default function Sidebar({
     };
     document.addEventListener("click", clickHandler);
     return () => document.removeEventListener("click", clickHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
 
   // close if the esc key is pressed
   useEffect(() => {
@@ -54,7 +48,16 @@ export default function Sidebar({
     };
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
+
+  const items = useMemo(() => {
+    if (!user) return [];
+    return filterSidebarItems(SIDEBAR_ITEMS, user);
+  }, [user]);
+
+  if (loading || !user) return null;
+  if (!canSeeSidebar(user, ROLES_WITHOUT_SIDEBAR)) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className={`min-w-fit ${sidebarExpanded ? "sidebar-expanded" : ""}`}>
@@ -136,9 +139,11 @@ export default function Sidebar({
                             }`}
                             onClick={(e) => {
                               e.preventDefault();
-                              expandOnly
-                                ? setSidebarExpanded(true)
-                                : handleClick();
+                              if (expandOnly) {
+                                setSidebarExpanded(true);
+                              } else {
+                                handleClick();
+                              }
                             }}
                           >
                             <div className="flex items-center justify-between">

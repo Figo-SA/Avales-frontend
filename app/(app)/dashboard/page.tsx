@@ -1,11 +1,14 @@
 "use client";
 
-import { useAuth } from "@/app/providers/auth-provider"; // ajusta la ruta real
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { User } from "@/types/user";
 
 export default function Dashboard() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -31,14 +34,23 @@ export default function Dashboard() {
         const data = await res.json();
         setUser(data);
         setIsLoading(false);
-      } catch (error) {
-        console.error("Error verificando sesión:", error);
+      } catch (err) {
+        console.error("Error verificando sesión:", err);
+        setError("Error al verificar la sesión");
         router.replace("/signin");
       }
     };
 
     checkSession();
   }, [router]);
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <p className="text-lg font-semibold">Cargando...</p>
+      </div>
+    );
+  }
 
   // Esto es solo por UX (la seguridad debe estar en proxy/middleware)
   if (error) {

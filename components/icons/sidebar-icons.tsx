@@ -1,4 +1,4 @@
-import { LayoutDashboard, Users, Mail, Inbox, Gauge } from "lucide-react";
+import { Users, Mail, Inbox, Gauge } from "lucide-react";
 
 export const SidebarIcons = {
   dashboard: Gauge,

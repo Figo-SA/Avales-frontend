@@ -25,8 +25,9 @@ export default function SignIn() {
       await login(email, password); // setea cookie HttpOnly
       await refreshUser(); // carga profile y lo pone global
       router.push("/dashboard");
-    } catch (err: any) {
-      setError(err?.message ?? "Usuario o contraseña incorrectos.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Usuario o contraseña incorrectos.";
+      setError(message);
     } finally {
       setLoading(false);
     }

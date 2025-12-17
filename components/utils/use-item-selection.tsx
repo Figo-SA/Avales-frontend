@@ -3,7 +3,11 @@
 import { useState } from 'react'
 import { useSelectedItems } from '@/app/selected-items-context'
 
-export const useItemSelection = (items: any[]) => {
+interface ItemWithId {
+  id: number;
+}
+
+export const useItemSelection = (items: ItemWithId[]) => {
   const { selectedItems, setSelectedItems } = useSelectedItems()
   const [isAllSelected, setIsAllSelected] = useState<boolean>(false)
 
