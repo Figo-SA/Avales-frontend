@@ -1,15 +1,9 @@
 import "./css/style.css";
 
 import { Inter } from "next/font/google";
-<<<<<<< Updated upstream
 import Theme from "./providers/theme-provider";
 import AppProvider from "./providers/app-provider";
 import { AuthProvider } from "./providers/auth-provider";
-=======
-import Theme from "./theme-provider";
-import AppProvider from "./app-provider";
-import { AuthProvider } from "./auth-provider";
->>>>>>> Stashed changes
 
 const inter = Inter({
   subsets: ["latin"],

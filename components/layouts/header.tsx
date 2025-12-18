@@ -5,11 +5,7 @@ import { useAppProvider } from "@/app/providers/app-provider";
 
 import ThemeToggle from "@/components/theme-toggle";
 import DropdownProfile from "@/components/dropdown-profile";
-<<<<<<< Updated upstream
 import { useAuth } from "@/app/providers/auth-provider";
-=======
-import { useAuth } from "@/app/auth-provider";
->>>>>>> Stashed changes
 
 export default function Header({
   variant = "default",

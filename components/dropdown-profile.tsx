@@ -11,25 +11,17 @@ import {
 } from "@headlessui/react";
 import UserAvatar from "@/public/images/user-avatar-32.png";
 
-<<<<<<< Updated upstream
 import { useAuth } from "@/app/providers/auth-provider";
 import { useRouter } from "next/navigation";
 import { logout } from "@/lib/api/auth";
-=======
-import { useAuth } from "@/app/auth-provider";
->>>>>>> Stashed changes
 
 export default function DropdownProfile({
   align,
 }: {
   align?: "left" | "right";
 }) {
-<<<<<<< Updated upstream
   const router = useRouter();
   const { user, loading, error, refreshUser } = useAuth();
-=======
-  const { user, loading, error } = useAuth();
->>>>>>> Stashed changes
 
   // Nombre completo o placeholder
   const nombreCompleto =
