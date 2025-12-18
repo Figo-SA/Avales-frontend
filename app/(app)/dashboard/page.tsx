@@ -1,6 +1,10 @@
 "use client";
 
+<<<<<<< Updated upstream
 import { useAuth } from "@/app/providers/auth-provider"; // ajusta la ruta real
+=======
+import { useAuth } from "@/app/auth-provider"; // ajusta la ruta real
+>>>>>>> Stashed changes
 
 export default function Dashboard() {
   const { user, loading, error } = useAuth();
