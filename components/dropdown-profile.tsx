@@ -45,7 +45,7 @@ export default function DropdownProfile({
 
   return (
     <Menu as="div" className="relative inline-flex">
-      <MenuButton className="inline-flex justify-center items-center group">
+      <MenuButton className="cursor-pointer inline-flex justify-center items-center group">
         <Image
           className="w-8 h-8 rounded-full"
           src={UserAvatar}
@@ -101,7 +101,7 @@ export default function DropdownProfile({
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full text-left font-medium text-sm flex items-center py-1 px-3 text-violet-500"
+              className="w-full cursor-pointer text-left font-medium text-sm flex items-center py-1 px-3 text-violet-500"
             >
               Cerrar sesión
             </button>
