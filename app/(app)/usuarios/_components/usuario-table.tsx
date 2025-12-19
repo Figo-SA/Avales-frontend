@@ -9,9 +9,15 @@ type Props = {
   users: User[];
   loading?: boolean;
   error?: string | null;
+  onDelete?: (user: User) => void;
 };
 
-export default function UsuarioTable({ users, loading, error }: Props) {
+export default function UsuarioTable({
+  users,
+  loading,
+  error,
+  onDelete,
+}: Props) {
   const showEmpty = !loading && !error && users.length === 0;
 
   return (
@@ -139,9 +145,11 @@ export default function UsuarioTable({ users, loading, error }: Props) {
                     <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/usuarios/${user.id}`}
+                          href={`/settings/profile?id=${user.id}`}
                           className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500/60 dark:hover:text-indigo-300 transition-colors"
-                          aria-label={`Ver perfil de ${user.nombre ?? user.email}`}
+                          aria-label={`Ver perfil de ${
+                            user.nombre ?? user.email
+                          }`}
                           title="Ver perfil"
                         >
                           <Eye className="w-4 h-4" />
@@ -156,10 +164,8 @@ export default function UsuarioTable({ users, loading, error }: Props) {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => {
-                            // TODO: implementar eliminacion de usuario
-                          }}
-                          className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-rose-300 hover:text-rose-600 dark:hover:border-rose-500/60 dark:hover:text-rose-300 transition-colors"
+                          onClick={() => onDelete?.(user)}
+                          className="h-9 w-9 inline-flex cursor-pointer items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-rose-300 hover:text-rose-600 dark:hover:border-rose-500/60 dark:hover:text-rose-300 transition-colors"
                           aria-label={`Eliminar ${user.nombre ?? user.email}`}
                           title="Eliminar"
                         >

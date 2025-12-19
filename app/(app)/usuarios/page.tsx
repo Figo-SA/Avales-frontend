@@ -9,6 +9,8 @@ import { listUsers } from "@/lib/api/user";
 import { User } from "@/types/user";
 import UsuarioTable from "./_components/usuario-table";
 import AlertBanner from "@/components/ui/alert-banner";
+import ConfirmModal from "@/components/ui/confirm-modal";
+import { deleteUser } from "@/lib/api/user";
 
 export default function Usuarios() {
   const router = useRouter();
@@ -23,6 +25,9 @@ export default function Usuarios() {
     message: string;
     description?: string;
   } | null>(null);
+  const [confirmUser, setConfirmUser] = useState<User | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const pageSize = 8;
 
@@ -104,6 +109,38 @@ export default function Usuarios() {
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
+  const handleDelete = (user: User) => {
+    setConfirmUser(user);
+    setConfirmOpen(true);
+  };
+
+  useEffect(() => {
+    if (confirmOpen) return;
+    const t = setTimeout(() => setConfirmUser(null), 180);
+    return () => clearTimeout(t);
+  }, [confirmOpen]);
+
+  const confirmDelete = async () => {
+    if (!confirmUser) return;
+    try {
+      setDeleting(true);
+      await deleteUser(confirmUser.id);
+      setToast({
+        variant: "success",
+        message: "Usuario eliminado correctamente.",
+      });
+      await fetchUsers();
+    } catch (err: any) {
+      setToast({
+        variant: "error",
+        message: err?.message ?? "No se pudo eliminar el usuario.",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
   return (
     <>
       {/* Toast flotante arriba a la derecha (estilo Mosaic) */}
@@ -146,13 +183,35 @@ export default function Usuarios() {
           </div>
         </div>
 
-        <UsuarioTable users={paged} loading={loading} error={error} />
+        <UsuarioTable
+          users={paged}
+          loading={loading}
+          error={error}
+          onDelete={handleDelete}
+        />
 
         <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
           Pagina {safePage} de {totalPages} (mostrando {paged.length} de{" "}
           {filtered.length})
         </div>
       </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Eliminar usuario"
+        description={
+          confirmUser
+            ? `¿Seguro que quieres eliminar a ${confirmUser.nombre ?? confirmUser.email}?`
+            : ""
+        }
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (deleting) return;
+          setConfirmOpen(false);
+        }}
+      />
     </>
   );
 }

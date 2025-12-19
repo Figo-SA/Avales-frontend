@@ -6,7 +6,13 @@ export const metadata = {
 import SettingsSidebar from "../settings-sidebar";
 import ProfilePanel from "./profile-panel";
 
-export default function ProfileSettings() {
+type Props = {
+  searchParams?: { id?: string };
+};
+
+export default function ProfileSettings({ searchParams }: Props) {
+  const viewUserId = searchParams?.id ? Number(searchParams.id) : undefined;
+
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
       {/* Page header */}
@@ -21,7 +27,7 @@ export default function ProfileSettings() {
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl mb-8">
         <div className="flex flex-col md:flex-row md:-mr-px">
           <SettingsSidebar />
-          <ProfilePanel />
+          <ProfilePanel viewUserId={viewUserId} />
         </div>
       </div>
     </div>

@@ -30,3 +30,7 @@ export async function createUser(values: CreateUserFormValues) {
     body: JSON.stringify(values),
   });
 }
+
+export async function deleteUser(userId: number) {
+  return apiFetch(`/users/${userId}`, { method: "DELETE" });
+}

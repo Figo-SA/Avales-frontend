@@ -1,20 +1,22 @@
 "use client";
 
-import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
-import AccountImage from "@/public/images/user-avatar-80.png";
+import { useEffect, useState } from "react";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { useAuth } from "@/app/providers/auth-provider";
 import { profileSchema, type ProfileFormValues } from "@/lib/validation/user";
-import { updateUser } from "@/lib/api/user";
-import SelectField from "@/components/forms/SelectField";
+import { getUser, updateUser } from "@/lib/api/user";
 import { getCatalog } from "@/lib/api/catalog";
 import { CatalogItem } from "@/types/catalog";
+import type { User } from "@/types/user";
 
-export default function ProfilePanel() {
+type Props = {
+  viewUserId?: number;
+};
+
+export default function ProfilePanel({ viewUserId }: Props) {
   const { user, loading, error, refreshUser } = useAuth();
 
   const [saveMsg, setSaveMsg] = useState("");
@@ -24,6 +26,14 @@ export default function ProfilePanel() {
   const [initialValues, setInitialValues] = useState<ProfileFormValues | null>(
     null
   );
+  const [subjectUser, setSubjectUser] = useState<User | null>(null);
+  const [subjectLoading, setSubjectLoading] = useState(false);
+  const [subjectError, setSubjectError] = useState<string | null>(null);
+
+  const isReadOnly =
+    viewUserId !== undefined &&
+    user?.id !== undefined &&
+    user.id !== viewUserId;
 
   /* =========================
      Cargar catálogo
@@ -60,27 +70,65 @@ export default function ProfilePanel() {
   });
 
   /* =========================
+     Resolver usuario a mostrar
+     ========================= */
+  useEffect(() => {
+    const targetId = viewUserId ?? user?.id;
+    if (!targetId) return;
+
+    if (user && user.id === targetId) {
+      setSubjectUser(user);
+      setSubjectError(null);
+      setSubjectLoading(false);
+      return;
+    }
+
+    const load = async () => {
+      try {
+        setSubjectLoading(true);
+        setSubjectError(null);
+        const res = await getUser(targetId);
+        setSubjectUser(res.data ?? null);
+        if (!res.data) {
+          setSubjectError("Usuario no encontrado.");
+        }
+      } catch (err: any) {
+        setSubjectError(
+          err?.message ?? "No se pudo cargar el perfil solicitado."
+        );
+        setSubjectUser(null);
+      } finally {
+        setSubjectLoading(false);
+      }
+    };
+
+    void load();
+  }, [viewUserId, user]);
+
+  /* =========================
      Sincronizar user + catálogo
      ========================= */
   useEffect(() => {
-    if (!user) return;
+    if (!subjectUser) return;
     if (catalogLoading) return;
     if (!categorias.length || !disciplinas.length) return;
 
     const nextValues: ProfileFormValues = {
-      nombre: user.nombre ?? "",
-      apellido: user.apellido ?? "",
-      email: user.email ?? "",
-      cedula: user.cedula ?? "",
+      nombre: subjectUser.nombre ?? "",
+      apellido: subjectUser.apellido ?? "",
+      email: subjectUser.email ?? "",
+      cedula: subjectUser.cedula ?? "",
       categoriaId: categorias.some(
-        (c) => c.id === (user.categoria?.id ?? user.categoriaId)
+        (c) => c.id === (subjectUser.categoria?.id ?? subjectUser.categoriaId)
       )
-        ? user.categoria?.id ?? user.categoriaId
+        ? subjectUser.categoria?.id ?? subjectUser.categoriaId
         : categorias[0].id,
       disciplinaId: disciplinas.some(
-        (d) => d.id === (user.disciplina?.id ?? user.disciplinaId)
+        (d) =>
+          d.id ===
+          (subjectUser.disciplina?.id ?? subjectUser.disciplinaId)
       )
-        ? user.disciplina?.id ?? user.disciplinaId
+        ? subjectUser.disciplina?.id ?? subjectUser.disciplinaId
         : disciplinas[0].id,
     };
 
@@ -88,13 +136,14 @@ export default function ProfilePanel() {
 
     // fija los valores "por defecto" para Cancelar (solo la primera vez)
     setInitialValues((prev) => prev ?? nextValues);
-  }, [user, categorias, disciplinas, catalogLoading, reset]);
+  }, [subjectUser, categorias, disciplinas, catalogLoading, reset]);
 
   /* =========================
      Submit
      ========================= */
   const onSubmit = async (values: ProfileFormValues) => {
     if (!user) return;
+    if (isReadOnly) return;
 
     setSaveMsg("");
 
@@ -112,16 +161,29 @@ export default function ProfilePanel() {
   /* =========================
      Estados base
      ========================= */
-  if (loading) return <div className="grow p-6">Cargando…</div>;
-  if (error) return <div className="grow p-6 text-red-600">{error}</div>;
-  if (!user) return <div className="grow p-6">No hay sesión activa.</div>;
+  if (loading || subjectLoading) return <div className="grow p-6">Cargando.</div>;
+  if (error || subjectError)
+    return (
+      <div className="grow p-6 text-red-600">
+        {error ?? subjectError ?? "No se pudo cargar el perfil."}
+      </div>
+    );
+  if (!user && !subjectUser)
+    return <div className="grow p-6">No hay sesión activa.</div>;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grow">
       <div className="p-6 space-y-6">
-        <h2 className="text-2xl text-gray-800 dark:text-gray-100 font-bold mb-5">
-          Mi cuenta
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl text-gray-800 dark:text-gray-100 font-bold">
+            {isReadOnly ? "Perfil" : "Mi cuenta"}
+          </h2>
+          {isReadOnly && (
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+              Solo lectura
+            </span>
+          )}
+        </div>
 
         {/* Datos básicos */}
         <section>
@@ -141,6 +203,7 @@ export default function ProfilePanel() {
                 id="nombre"
                 className="form-input w-full"
                 type="text"
+                disabled={isReadOnly}
                 {...register("nombre")}
               />
               {errors.nombre && (
@@ -161,6 +224,7 @@ export default function ProfilePanel() {
                 id="apellido"
                 className="form-input w-full"
                 type="text"
+                disabled={isReadOnly}
                 {...register("apellido")}
               />
               {errors.apellido && (
@@ -182,6 +246,7 @@ export default function ProfilePanel() {
                 className="form-input w-full"
                 type="text"
                 inputMode="numeric"
+                disabled={isReadOnly}
                 {...register("cedula")}
               />
               {errors.cedula && (
@@ -208,6 +273,7 @@ export default function ProfilePanel() {
                 id="email"
                 className="form-input w-full sm:w-auto"
                 type="email"
+                disabled={isReadOnly}
                 {...register("email")}
               />
               {errors.email && (
@@ -238,7 +304,7 @@ export default function ProfilePanel() {
               <select
                 id="categoriaId"
                 className="form-select w-full"
-                disabled={catalogLoading}
+                disabled={catalogLoading || isReadOnly}
                 {...register("categoriaId", {
                   setValueAs: (v) => Number(v),
                 })}
@@ -270,7 +336,7 @@ export default function ProfilePanel() {
               <select
                 id="disciplinaId"
                 className="form-select w-full"
-                disabled={catalogLoading}
+                disabled={catalogLoading || isReadOnly}
                 {...register("disciplinaId", {
                   setValueAs: (v) => Number(v),
                 })}
@@ -293,34 +359,36 @@ export default function ProfilePanel() {
         </section>
       </div>
 
-      <footer>
-        <div className="flex flex-col px-6 py-5 border-t border-gray-200 dark:border-gray-700/60">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              {saveMsg}
-            </div>
+      {!isReadOnly && (
+        <footer>
+          <div className="flex flex-col px-6 py-5 border-t border-gray-200 dark:border-gray-700/60">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {saveMsg}
+              </div>
 
-            <div className="flex self-end">
-              <button
-                type="button"
-                onClick={() => initialValues && reset(initialValues)}
-                disabled={isSubmitting || !initialValues}
-                className="btn dark:bg-gray-800 border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 text-gray-800 dark:text-gray-300"
-              >
-                Cancelar
-              </button>
+              <div className="flex self-end">
+                <button
+                  type="button"
+                  onClick={() => initialValues && reset(initialValues)}
+                  disabled={isSubmitting || !initialValues}
+                  className="btn dark:bg-gray-800 border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 text-gray-800 dark:text-gray-300"
+                >
+                  Cancelar
+                </button>
 
-              <button
-                type="submit"
-                disabled={!isDirty || isSubmitting}
-                className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white ml-3"
-              >
-                {isSubmitting ? "Guardando..." : "Guardar cambios"}
-              </button>
+                <button
+                  type="submit"
+                  disabled={!isDirty || isSubmitting}
+                  className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white ml-3"
+                >
+                  {isSubmitting ? "Guardando..." : "Guardar cambios"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </footer>
+        </footer>
+      )}
     </form>
   );
 }
