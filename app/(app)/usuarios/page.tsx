@@ -11,6 +11,7 @@ import UsuarioTable from "./_components/usuario-table";
 import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import { deleteUser } from "@/lib/api/user";
+import Pagination from "@/components/ui/pagination";
 
 export default function Usuarios() {
   const router = useRouter();
@@ -158,7 +159,7 @@ export default function Usuarios() {
       <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto space-y-6">
         <div className="sm:flex sm:justify-between sm:items-center">
           <div className="mb-4 sm:mb-0">
-            <h1 className="text2-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
+            <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
               Usuarios
             </h1>
           </div>
@@ -190,9 +191,16 @@ export default function Usuarios() {
           onDelete={handleDelete}
         />
 
-        <div className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-          Pagina {safePage} de {totalPages} (mostrando {paged.length} de{" "}
-          {filtered.length})
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
+            Página {safePage} de {totalPages} (mostrando {paged.length} de{" "}
+            {filtered.length})
+          </div>
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       </div>
       <ConfirmModal
