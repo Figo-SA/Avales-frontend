@@ -1,12 +1,64 @@
 import { z } from "zod";
 
+const rolesSchema = z
+  .array(
+    z.enum([
+      "SUPER_ADMIN",
+      "ADMIN",
+      "SECRETARIA",
+      "DTM",
+      "DTM_EIDE",
+      "ENTRENADOR",
+      "USUARIO",
+      "DEPORTISTA",
+      "PDA",
+      "FINANCIERO",
+    ])
+  )
+  .min(1, "Asigna al menos un rol");
+
+const baseUserSchema = z.object({
+  nombre: z.string().min(2, "Nombre: minimo 2 caracteres").max(60),
+  apellido: z
+    .string()
+    .max(60, "Apellido: maximo 60 caracteres")
+    .optional()
+    .or(z.literal("")),
+  email: z.string().email("Email invalido").max(120),
+  cedula: z
+    .string()
+    .regex(/^\d{10}$/, "Cedula invalida: deben ser 10 digitos"),
+  categoriaId: z.number().int().positive("Selecciona una categoria"),
+  disciplinaId: z.number().int().positive("Selecciona una disciplina"),
+  roles: rolesSchema,
+});
+
 export const profileSchema = z.object({
-  nombre: z.string().min(2, "Nombre: mínimo 2 caracteres").max(60),
-  apellido: z.string().min(2, "Apellido: mínimo 2 caracteres").max(60),
-  email: z.string().email("Email inválido").max(120),
-  cedula: z.string().regex(/^\d{10}$/, "Cédula inválida: deben ser 10 dígitos"),
-  categoriaId: z.number().int().positive("CategoriaId inválido").optional(),
-  disciplinaId: z.number().int().positive("DisciplinaId inválido").optional(),
+  nombre: z.string().min(2, "Nombre: minimo 2 caracteres").max(60),
+  apellido: z.string().min(2, "Apellido: minimo 2 caracteres").max(60),
+  email: z.string().email("Email invalido").max(120),
+  cedula: z
+    .string()
+    .regex(/^\d{10}$/, "Cedula invalida: deben ser 10 digitos"),
+  categoriaId: z.number().int().positive("CategoriaId invalido").optional(),
+  disciplinaId: z.number().int().positive("DisciplinaId invalido").optional(),
 });
 
 export type ProfileFormValues = z.infer<typeof profileSchema>;
+
+export const createUserSchema = baseUserSchema.extend({
+  password: z.string().min(6, "Password: minimo 6 caracteres").max(120),
+});
+
+export const updateUserSchema = baseUserSchema.extend({
+  password: z
+    .string()
+    .min(6, "Password: minimo 6 caracteres")
+    .max(120)
+    .optional()
+    .or(z.literal("")),
+});
+
+export type CreateUserFormValues = z.infer<typeof createUserSchema>;
+export type UpdateUserFormValues = z.infer<typeof updateUserSchema>;
+export type UserFormValues = UpdateUserFormValues;

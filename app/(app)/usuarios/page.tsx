@@ -1,131 +1,225 @@
 // app/(admin)/usuarios/page.tsx
 "use client";
 
-import { Role, User } from "@/types/user";
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+
+import { listUsers } from "@/lib/api/user";
+import { User } from "@/types/user";
 import UsuarioTable from "./_components/usuario-table";
-
-const users: User[] = [
-  {
-    id: 1,
-    email: "superadmin@demo.com",
-    nombre: "Ana",
-    apellido: "Vera",
-    cedula: "1101234567",
-    categoriaId: 1,
-    disciplinaId: 3,
-    roles: ["SUPER_ADMIN", "ADMIN"],
-    createdAt: "2025-12-01",
-  },
-  {
-    id: 2,
-    email: "admin@demo.com",
-    nombre: "Carlos",
-    apellido: "Mora",
-    cedula: "1107654321",
-    categoriaId: 2,
-    disciplinaId: 1,
-    roles: ["ADMIN"],
-    createdAt: "2025-11-18",
-  },
-  {
-    id: 3,
-    email: "secretaria@demo.com",
-    nombre: "Lucía",
-    apellido: "Ortega",
-    cedula: "1100001112",
-    categoriaId: 4,
-    disciplinaId: 2,
-    roles: ["SECRETARIA"],
-    createdAt: "2025-10-05",
-  },
-];
-
-function RoleBadge({ role }: { role: Role }) {
-  const map: Record<Role, string> = {
-    SUPER_ADMIN: "bg-rose-500/15 text-rose-400 ring-rose-500/20",
-    ADMIN: "bg-sky-500/15 text-sky-400 ring-sky-500/20",
-    SECRETARIA: "bg-emerald-500/15 text-emerald-400 ring-emerald-500/20",
-    DTM: "bg-violet-500/15 text-violet-400 ring-violet-500/20",
-    DTM_EIDE: "bg-violet-500/15 text-violet-300 ring-violet-500/20",
-    PDA: "bg-amber-500/15 text-amber-400 ring-amber-500/20",
-    FINANCIERO: "bg-indigo-500/15 text-indigo-400 ring-indigo-500/20",
-    ENTRENADOR: "bg-slate-500/15 text-slate-300 ring-slate-500/20",
-  };
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium ring-1 ${map[role]}`}
-    >
-      {role}
-    </span>
-  );
-}
+import AlertBanner from "@/components/ui/alert-banner";
+import ConfirmModal from "@/components/ui/confirm-modal";
+import { deleteUser } from "@/lib/api/user";
+import Pagination from "@/components/ui/pagination";
 
 export default function Usuarios() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"TODOS" | Role>("TODOS");
   const [page, setPage] = useState(1);
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+    description?: string;
+  } | null>(null);
+  const [confirmUser, setConfirmUser] = useState<User | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const pageSize = 8;
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await listUsers();
+      console.log(res.data);
+      setUsers(res.data ?? []);
+    } catch (err: any) {
+      const msg = err?.message ?? "No se pudo cargar la lista de usuarios.";
+      setError(msg);
+      setToast({
+        variant: "error",
+        message: msg,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchUsers();
+  }, []);
+
+  // leer mensaje de exito desde querystring y limpiar la URL
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (!status) return;
+
+    if (status === "created") {
+      setToast({
+        variant: "success",
+        message: "Usuario creado correctamente.",
+        description: "El listado se actualiza automaticamente.",
+      });
+    } else if (status === "updated") {
+      setToast({
+        variant: "success",
+        message: "Usuario actualizado correctamente.",
+        description: "El listado se actualiza automaticamente.",
+      });
+    } else if (status === "error") {
+      setToast({
+        variant: "error",
+        message: "Ocurrio un problema al procesar tu solicitud.",
+      });
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+    router.replace(params.toString() ? `/usuarios?${params}` : "/usuarios", {
+      scroll: false,
+    });
+  }, [searchParams, router]);
+  useEffect(() => {
+    if (!toast) return;
+
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
     return users.filter((u) => {
       const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-      const okQ =
+      return (
         !qq ||
         fullName.includes(qq) ||
         u.email.toLowerCase().includes(qq) ||
         u.cedula.includes(qq) ||
-        String(u.id).includes(qq);
-
-      const okRole =
-        roleFilter === "TODOS" ? true : (u.roles ?? []).includes(roleFilter);
-
-      return okQ && okRole;
+        String(u.id).includes(qq)
+      );
     });
-  }, [q, roleFilter]);
+  }, [q, users]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
+  const handleDelete = (user: User) => {
+    setConfirmUser(user);
+    setConfirmOpen(true);
+  };
+
+  useEffect(() => {
+    if (confirmOpen) return;
+    const t = setTimeout(() => setConfirmUser(null), 180);
+    return () => clearTimeout(t);
+  }, [confirmOpen]);
+
+  const confirmDelete = async () => {
+    if (!confirmUser) return;
+    try {
+      setDeleting(true);
+      await deleteUser(confirmUser.id);
+      setToast({
+        variant: "success",
+        message: "Usuario eliminado correctamente.",
+      });
+      await fetchUsers();
+    } catch (err: any) {
+      setToast({
+        variant: "error",
+        message: err?.message ?? "No se pudo eliminar el usuario.",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
-      {/* Page header */}
-      <div className="sm:flex sm:justify-between sm:items-center mb-5">
-        {/* Left: Title */}
-        <div className="mb-4 sm:mb-0">
-          <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
-            Usuarios
-          </h1>
+    <>
+      {/* Toast flotante arriba a la derecha (estilo Mosaic) */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            description={toast.description}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
+
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto space-y-6">
+        <div className="sm:flex sm:justify-between sm:items-center">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
+              Usuarios
+            </h1>
+          </div>
+
+          <div className="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
+            <input
+              className="form-input w-full sm:w-64"
+              placeholder="Buscar por nombre, email, cedula..."
+              value={q}
+              onChange={(e) => {
+                setPage(1);
+                setQ(e.target.value);
+              }}
+            />
+
+            <Link
+              href="/usuarios/nuevo"
+              className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+            >
+              Crear usuario
+            </Link>
+          </div>
         </div>
 
-        {/* Right: Actions */}
-        <div className="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
-          {/* Search form */}
-          {/* <SearchForm placeholder="Search by invoice ID…" /> */}
-          {/* Create invoice button */}
-          <button className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white">
-            <svg
-              className="fill-current shrink-0 xs:hidden"
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-            >
-              <path d="M15 7H9V1c0-.6-.4-1-1-1S7 .4 7 1v6H1c-.6 0-1 .4-1 1s.4 1 1 1h6v6c0 .6.4 1 1 1s1-.4 1-1V9h6c.6 0 1-.4 1-1s-.4-1-1-1z" />
-            </svg>
-            <span className="max-xs:sr-only">Crear Usuario</span>
-          </button>
+        <UsuarioTable
+          users={paged}
+          loading={loading}
+          error={error}
+          onDelete={handleDelete}
+        />
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
+            Página {safePage} de {totalPages} (mostrando {paged.length} de{" "}
+            {filtered.length})
+          </div>
+          <Pagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
         </div>
       </div>
-
-      {/* Table */}
-      <UsuarioTable users={users} />
-
-      {/* Pagination */}
-      <div className="mt-8">{/* <PaginationClassic /> */}</div>
-    </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Eliminar usuario"
+        description={
+          confirmUser
+            ? `¿Seguro que quieres eliminar a ${confirmUser.nombre ?? confirmUser.email}?`
+            : ""
+        }
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (deleting) return;
+          setConfirmOpen(false);
+        }}
+      />
+    </>
   );
 }

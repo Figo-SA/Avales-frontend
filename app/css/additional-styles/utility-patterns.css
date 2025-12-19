@@ -44,19 +44,19 @@
 }
 
 .btn {
-  @apply px-3 py-2;
+  @apply px-3 py-2 cursor-pointer;
 }
 
 .btn-lg {
-  @apply px-4 py-3;
+  @apply px-4 py-3 cursor-pointer;
 }
 
 .btn-sm {
-  @apply px-2 py-1;
+  @apply px-2 py-1 cursor-pointer;
 }
 
 .btn-xs {
-  @apply px-2 py-0.5;
+  @apply px-2 py-0.5 cursor-pointer;
 }
 
 /* Forms */
@@ -65,6 +65,7 @@ input[type="search"]::-webkit-search-cancel-button,
 input[type="search"]::-webkit-search-results-button,
 input[type="search"]::-webkit-search-results-decoration {
   -webkit-appearance: none;
+  cursor: pointer;
 }
 
 .form-input,
@@ -111,7 +112,7 @@ input[type="search"]::-webkit-search-results-decoration {
 
 /* Switch element */
 .form-switch {
-  @apply relative select-none;
+  @apply relative select-none cursor-pointer;
   width: 44px;
 }
 
