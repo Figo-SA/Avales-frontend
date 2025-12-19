@@ -118,17 +118,11 @@ export default function ProfilePanel({ viewUserId }: Props) {
       apellido: subjectUser.apellido ?? "",
       email: subjectUser.email ?? "",
       cedula: subjectUser.cedula ?? "",
-      categoriaId: categorias.some(
-        (c) => c.id === (subjectUser.categoria?.id ?? subjectUser.categoriaId)
-      )
-        ? subjectUser.categoria?.id ?? subjectUser.categoriaId
+      categoriaId: categorias.some((c) => c.id === subjectUser.categoria?.id)
+        ? subjectUser.categoria?.id ?? categorias[0].id
         : categorias[0].id,
-      disciplinaId: disciplinas.some(
-        (d) =>
-          d.id ===
-          (subjectUser.disciplina?.id ?? subjectUser.disciplinaId)
-      )
-        ? subjectUser.disciplina?.id ?? subjectUser.disciplinaId
+      disciplinaId: disciplinas.some((d) => d.id === subjectUser.disciplina?.id)
+        ? subjectUser.disciplina?.id ?? disciplinas[0].id
         : disciplinas[0].id,
     };
 
