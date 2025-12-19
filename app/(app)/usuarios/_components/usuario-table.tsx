@@ -1,16 +1,18 @@
 "use client";
 
-import { useItemSelection } from "@/components/utils/use-item-selection";
-import { User } from "@/types/user";
-// import InvoicesTableItem from "./invoices-table-item";
+import Link from "next/link";
+import { Eye, Pencil, Trash2 } from "lucide-react";
 
-export default function UsuarioTable({ users }: { users: User[] }) {
-  // const {
-  //   selectedItems,
-  //   isAllSelected,
-  //   handleCheckboxChange,
-  //   handleSelectAllChange,
-  // } = useItemSelection(users);
+import { User } from "@/types/user";
+
+type Props = {
+  users: User[];
+  loading?: boolean;
+  error?: string | null;
+};
+
+export default function UsuarioTable({ users, loading, error }: Props) {
+  const showEmpty = !loading && !error && users.length === 0;
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl relative">
@@ -18,7 +20,7 @@ export default function UsuarioTable({ users }: { users: User[] }) {
         <h2 className="font-semibold text-gray-800 dark:text-gray-100">
           Usuarios{" "}
           <span className="text-gray-400 dark:text-gray-500 font-medium">
-            67
+            {users.length}
           </span>
         </h2>
       </header>
@@ -29,19 +31,6 @@ export default function UsuarioTable({ users }: { users: User[] }) {
             {/* Table header */}
             <thead className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-t border-b border-gray-100 dark:border-gray-700/60">
               <tr>
-                <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap w-px">
-                  <div className="flex items-center">
-                    <label className="inline-flex">
-                      <span className="sr-only">Select all</span>
-                      <input
-                        className="form-checkbox"
-                        type="checkbox"
-                        // onChange={handleSelectAllChange}
-                        // checked={isAllSelected}
-                      />
-                    </label>
-                  </div>
-                </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                   <div className="font-semibold text-left">Nombre</div>
                 </th>
@@ -52,16 +41,16 @@ export default function UsuarioTable({ users }: { users: User[] }) {
                   <div className="font-semibold text-left">Email</div>
                 </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                  <div className="font-semibold text-left">Customer</div>
+                  <div className="font-semibold text-left">Cedula</div>
                 </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                  <div className="font-semibold text-left">Issued on</div>
+                  <div className="font-semibold text-left">Categoria</div>
                 </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                  <div className="font-semibold text-left">Paid on</div>
+                  <div className="font-semibold text-left">Disciplina</div>
                 </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                  <div className="font-semibold text-left">Type</div>
+                  <div className="font-semibold text-left">Roles</div>
                 </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                   <div className="font-semibold text-left">Actions</div>
@@ -70,19 +59,116 @@ export default function UsuarioTable({ users }: { users: User[] }) {
             </thead>
             {/* Table body */}
             <tbody className="text-sm divide-y divide-gray-100 dark:divide-gray-700/60">
-              {users.map((user) => (
-                // <InvoicesTableItem
-                //   key={invoice.id}
-                //   invoice={invoice}
-                //   onCheckboxChange={handleCheckboxChange}
-                //   isSelected={selectedItems.includes(invoice.id)}
-                // />
+              {loading && (
                 <tr>
-                  <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap w-px">
-                    hola
+                  <td
+                    className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400"
+                    colSpan={8}
+                  >
+                    Cargando usuarios...
                   </td>
                 </tr>
-              ))}
+              )}
+
+              {error && !loading && (
+                <tr>
+                  <td
+                    className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-red-500"
+                    colSpan={8}
+                  >
+                    {error}
+                  </td>
+                </tr>
+              )}
+
+              {showEmpty && (
+                <tr>
+                  <td
+                    className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400"
+                    colSpan={8}
+                  >
+                    No hay usuarios disponibles.
+                  </td>
+                </tr>
+              )}
+
+              {!loading &&
+                !error &&
+                users.map((user) => (
+                  <tr key={user.id}>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="font-semibold text-gray-800 dark:text-gray-100">
+                        {user.nombre || "-"}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="text-gray-700 dark:text-gray-300">
+                        {user.apellido || "-"}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="text-gray-700 dark:text-gray-300">
+                        {user.email}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="text-gray-700 dark:text-gray-300">
+                        {user.cedula || "-"}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="text-gray-700 dark:text-gray-300">
+                        {user.categoria?.nombre ?? "-"}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="text-gray-700 dark:text-gray-300">
+                        {user.disciplina?.nombre ?? "-"}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="text-gray-700 dark:text-gray-300">
+                        {(user.roles && user.roles.length > 0
+                          ? user.roles
+                          : user.rolIds ?? []
+                        )
+                          .map((r) => String(r))
+                          .join(", ") || "-"}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/usuarios/${user.id}`}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500/60 dark:hover:text-indigo-300 transition-colors"
+                          aria-label={`Ver perfil de ${user.nombre ?? user.email}`}
+                          title="Ver perfil"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <Link
+                          href={`/usuarios/${user.id}/editar`}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500/60 dark:hover:text-indigo-300 transition-colors"
+                          aria-label={`Editar ${user.nombre ?? user.email}`}
+                          title="Editar"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // TODO: implementar eliminacion de usuario
+                          }}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-rose-300 hover:text-rose-600 dark:hover:border-rose-500/60 dark:hover:text-rose-300 transition-colors"
+                          aria-label={`Eliminar ${user.nombre ?? user.email}`}
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>

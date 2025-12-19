@@ -72,11 +72,15 @@ export default function ProfilePanel() {
       apellido: user.apellido ?? "",
       email: user.email ?? "",
       cedula: user.cedula ?? "",
-      categoriaId: categorias.some((c) => c.id === user.categoriaId)
-        ? user.categoriaId
+      categoriaId: categorias.some(
+        (c) => c.id === (user.categoria?.id ?? user.categoriaId)
+      )
+        ? user.categoria?.id ?? user.categoriaId
         : categorias[0].id,
-      disciplinaId: disciplinas.some((d) => d.id === user.disciplinaId)
-        ? user.disciplinaId
+      disciplinaId: disciplinas.some(
+        (d) => d.id === (user.disciplina?.id ?? user.disciplinaId)
+      )
+        ? user.disciplina?.id ?? user.disciplinaId
         : disciplinas[0].id,
     };
 

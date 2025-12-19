@@ -40,7 +40,6 @@ export async function apiFetch<T>(
     const msg = json?.message ?? `Error (${res.status})`;
     throw new ApiError(msg, res.status);
   }
-  console.log("API FETCH →", baseUrl + path);
 
   if (!json) throw new Error("Respuesta inválida del servidor");
   return json;

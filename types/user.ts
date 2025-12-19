@@ -1,3 +1,5 @@
+import type { CatalogItem } from "@/types/catalog";
+
 // app/types/user.ts (por ejemplo)
 export type User = {
   id: number;
@@ -5,9 +7,11 @@ export type User = {
   nombre: string;
   apellido: string;
   cedula: string;
-  categoriaId: number;
-  disciplinaId: number;
+  categoria?: CatalogItem;
+  disciplina?: CatalogItem;
+  rolIds?: number[];
   roles?: Role[];
+  pushToken?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -25,6 +29,8 @@ export type Role =
   | "SECRETARIA"
   | "DTM"
   | "DTM_EIDE"
+  | "USUARIO"
+  | "DEPORTISTA"
   | "PDA"
   | "FINANCIERO"
-  | "ENTRENADOR"; // Ejemplo de roles posibles
+  | "ENTRENADOR";
