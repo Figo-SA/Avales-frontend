@@ -1,9 +1,6 @@
-export type ApiEnvelope<T> = {
-  status: "success" | "error";
-  message: string;
-  data: T;
-  meta?: unknown;
-};
+import type { ApiResponse } from "@/types/api-response";
+
+export type ApiEnvelope<T> = ApiResponse<T>;
 
 export class ApiError extends Error {
   status: number;
@@ -23,7 +20,7 @@ function getApiUrl() {
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
-): Promise<ApiEnvelope<T>> {
+): Promise<ApiResponse<T>> {
   const res = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     credentials: "include",
@@ -32,15 +29,13 @@ export async function apiFetch<T>(
       ...(options.headers ?? {}),
     },
   });
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-  const json = (await res.json().catch(() => null)) as ApiEnvelope<T> | null;
+  const json = (await res.json().catch(() => null)) as ApiResponse<T> | null;
 
   if (!res.ok) {
     const msg = json?.message ?? `Error (${res.status})`;
     throw new ApiError(msg, res.status);
   }
 
-  if (!json) throw new Error("Respuesta inválida del servidor");
+  if (!json) throw new Error("Respuesta invalida del servidor");
   return json;
 }

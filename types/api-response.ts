@@ -1,7 +1,13 @@
-// app/types/api-response.ts
+export interface GlobalMeta {
+  requestId: string;
+  timestamp: string;
+  apiVersion: string;
+  durationMs: number;
+}
+
 export interface ApiResponse<T> {
   status: "success" | "error";
   message: string;
   data: T;
-  meta?: unknown;
+  meta?: GlobalMeta;
 }
