@@ -8,9 +8,7 @@ export type ListDeportistasOptions = {
   limit?: number;
 };
 
-export async function listDeportistas(
-  options: ListDeportistasOptions = {}
-) {
+export async function listDeportistas(options: ListDeportistasOptions = {}) {
   const params = new URLSearchParams();
 
   if (options.sexo) params.set("sexo", options.sexo);

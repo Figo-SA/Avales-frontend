@@ -54,15 +54,22 @@ export default function DeportistasPage() {
           page: currentPage,
           limit: PAGE_SIZE,
         });
-        const data = res.data;
-        const payload = res;
-        setDeportistas(data);
-        console.log("data:", data); // --- IGNORE ---
-        console.log("deportistas:", deportistas); // --- IGNORE ---
+        const items = res.data ?? [];
+        const meta = res.meta;
+        setDeportistas(items);
         setPagination({
-          page: payload?.pagination?.page ?? currentPage,
-          limit: payload?.pagination?.limit ?? PAGE_SIZE,
-          total: payload?.pagination?.total ?? data.length ?? 0,
+          page:
+            typeof meta?.page === "number" && meta.page > 0
+              ? meta.page
+              : currentPage,
+          limit:
+            typeof meta?.limit === "number" && meta.limit > 0
+              ? meta.limit
+              : PAGE_SIZE,
+          total:
+            typeof meta?.total === "number" && meta.total >= 0
+              ? meta.total
+              : items.length ?? 0,
         });
       } catch (err: any) {
         setError(err?.message ?? "No se pudo cargar los deportistas.");

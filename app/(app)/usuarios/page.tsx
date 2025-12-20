@@ -3,15 +3,16 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { listUsers } from "@/lib/api/user";
-import { User } from "@/types/user";
-import UsuarioTable from "./_components/usuario-table";
 import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
-import { deleteUser } from "@/lib/api/user";
 import Pagination from "@/components/ui/pagination";
+import UsuarioTable from "./_components/usuario-table";
+import { deleteUser, listUsers } from "@/lib/api/user";
+import type { User } from "@/types/user";
+
+const PAGE_SIZE = 8;
 
 export default function Usuarios() {
   const router = useRouter();
@@ -19,8 +20,16 @@ export default function Usuarios() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState("");
-  const [page, setPage] = useState(1);
+  const [q, setQ] = useState(() => searchParams.get("query") ?? "");
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page") ?? "1");
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  });
+  const [pagination, setPagination] = useState({
+    page,
+    limit: PAGE_SIZE,
+    total: 0,
+  });
   const [toast, setToast] = useState<{
     variant: "success" | "error";
     message: string;
@@ -30,15 +39,45 @@ export default function Usuarios() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const pageSize = 8;
+  const pageSize = pagination.limit || PAGE_SIZE;
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil((pagination.total || 0) / pageSize)),
+    [pagination.total, pageSize]
+  );
+  const currentPage = Math.min(page, totalPages);
+  const showing = users.length;
 
-  const fetchUsers = async () => {
+  useEffect(() => {
+    if (page === currentPage) return;
+    setPage(currentPage);
+  }, [page, currentPage]);
+
+  const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await listUsers();
-      console.log(res.data);
-      setUsers(res.data ?? []);
+      const res = await listUsers({
+        query: q.trim() || undefined,
+        page: currentPage,
+        limit: pageSize,
+      });
+      const items = res.data ?? [];
+      const meta = res.meta;
+      setUsers(items);
+      setPagination({
+        page:
+          typeof meta?.page === "number" && meta.page > 0
+            ? meta.page
+            : currentPage,
+        limit:
+          typeof meta?.limit === "number" && meta.limit > 0
+            ? meta.limit
+            : pageSize,
+        total:
+          typeof meta?.total === "number" && meta.total >= 0
+            ? meta.total
+            : items.length ?? 0,
+      });
     } catch (err: any) {
       const msg = err?.message ?? "No se pudo cargar la lista de usuarios.";
       setError(msg);
@@ -49,11 +88,22 @@ export default function Usuarios() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [q, currentPage, pageSize]);
 
   useEffect(() => {
     void fetchUsers();
-  }, []);
+  }, [fetchUsers]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set("query", q.trim());
+    if (currentPage > 1) params.set("page", String(currentPage));
+
+    router.replace(
+      params.toString() ? `/usuarios?${params}` : "/usuarios",
+      { scroll: false }
+    );
+  }, [q, currentPage, router]);
 
   // leer mensaje de exito desde querystring y limpiar la URL
   useEffect(() => {
@@ -85,30 +135,13 @@ export default function Usuarios() {
       scroll: false,
     });
   }, [searchParams, router]);
+
   useEffect(() => {
     if (!toast) return;
 
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
   }, [toast]);
-
-  const filtered = useMemo(() => {
-    const qq = q.trim().toLowerCase();
-    return users.filter((u) => {
-      const fullName = `${u.nombre} ${u.apellido}`.toLowerCase();
-      return (
-        !qq ||
-        fullName.includes(qq) ||
-        u.email.toLowerCase().includes(qq) ||
-        u.cedula.includes(qq) ||
-        String(u.id).includes(qq)
-      );
-    });
-  }, [q, users]);
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
-  const safePage = Math.min(page, totalPages);
-  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const handleDelete = (user: User) => {
     setConfirmUser(user);
@@ -185,7 +218,7 @@ export default function Usuarios() {
         </div>
 
         <UsuarioTable
-          users={paged}
+          users={users}
           loading={loading}
           error={error}
           onDelete={handleDelete}
@@ -193,11 +226,11 @@ export default function Usuarios() {
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
-            Página {safePage} de {totalPages} (mostrando {paged.length} de{" "}
-            {filtered.length})
+            Pagina {currentPage} de {totalPages} (mostrando {showing} de{" "}
+            {pagination.total})
           </div>
           <Pagination
-            currentPage={safePage}
+            currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setPage}
           />
@@ -208,7 +241,9 @@ export default function Usuarios() {
         title="Eliminar usuario"
         description={
           confirmUser
-            ? `¿Seguro que quieres eliminar a ${confirmUser.nombre ?? confirmUser.email}?`
+            ? `Seguro que quieres eliminar a ${
+                confirmUser.nombre ?? confirmUser.email
+              }?`
             : ""
         }
         confirmLabel="Eliminar"
