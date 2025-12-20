@@ -68,6 +68,14 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
   },
   {
     type: "link",
+    label: "Deportistas",
+    href: "/deportistas",
+    segment: "deportistas",
+    icon: "users",
+    roles: ["SUPER_ADMIN", "ADMIN"],
+  },
+  {
+    type: "link",
     label: "Usuarios",
     href: "/usuarios",
     segment: "usuarios",
