@@ -205,6 +205,7 @@ export type ApproveRejectInput = {
  */
 export type EventoFilters = {
   estado?: EventoStatus;
+  disciplinaId?: number;
   search?: string;
   page?: number;
   limit?: number;

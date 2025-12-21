@@ -22,16 +22,17 @@ export async function listDeportistas(filters?: DeportistaFilters) {
 }
 
 /**
- * Lista deportistas asignados al entrenador autenticado
+ * Lista deportistas filtrados por disciplina (usado por entrenadores)
+ * Usa el endpoint general /deportistas con parámetros de filtro
  */
 export async function listMisDeportistas(filters?: DeportistaFilters) {
   const params = new URLSearchParams();
   if (filters?.categoriaId) params.append("categoriaId", String(filters.categoriaId));
   if (filters?.disciplinaId) params.append("disciplinaId", String(filters.disciplinaId));
-  if (filters?.search) params.append("search", filters.search);
+  if (filters?.search) params.append("query", filters.search);
 
   const query = params.toString();
-  return apiFetch<Deportista[]>(`/deportistas/mis-deportistas${query ? `?${query}` : ""}`);
+  return apiFetch<Deportista[]>(`/deportistas${query ? `?${query}` : ""}`);
 }
 
 /**

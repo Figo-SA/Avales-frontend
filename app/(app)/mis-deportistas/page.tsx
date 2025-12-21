@@ -4,18 +4,24 @@ import { useEffect, useState } from "react";
 import { Search, User } from "lucide-react";
 import { listMisDeportistas } from "@/lib/api/deportista";
 import type { Deportista } from "@/types/deportista";
+import { useAuth } from "@/app/providers/auth-provider";
 
 export default function MisDeportistasPage() {
+  const { user, loading: authLoading } = useAuth();
   const [deportistas, setDeportistas] = useState<Deportista[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
+    if (authLoading) return;
+
     const load = async () => {
       try {
         setLoading(true);
-        const res = await listMisDeportistas();
+        // Filtrar por la disciplina del entrenador si existe
+        const disciplinaId = user?.disciplina?.id;
+        const res = await listMisDeportistas(disciplinaId ? { disciplinaId } : undefined);
         setDeportistas(res.data ?? []);
       } catch (err: any) {
         setError(err?.message ?? "Error al cargar deportistas");
@@ -24,7 +30,7 @@ export default function MisDeportistasPage() {
       }
     };
     void load();
-  }, []);
+  }, [authLoading, user?.disciplina?.id]);
 
   const filteredDeportistas = deportistas.filter((d) => {
     const fullName = `${d.user?.nombre ?? ""} ${d.user?.apellido ?? ""} ${d.cedula}`.toLowerCase();
@@ -58,19 +64,19 @@ export default function MisDeportistasPage() {
       </div>
 
       {/* Loading */}
-      {loading && (
+      {(loading || authLoading) && (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           Cargando deportistas...
         </div>
       )}
 
       {/* Error */}
-      {error && !loading && (
+      {error && !loading && !authLoading && (
         <div className="text-center py-12 text-red-500">{error}</div>
       )}
 
       {/* Lista */}
-      {!loading && !error && (
+      {!loading && !authLoading && !error && (
         <>
           {filteredDeportistas.length === 0 ? (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">

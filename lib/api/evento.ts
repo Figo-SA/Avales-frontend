@@ -14,6 +14,7 @@ import type {
 export async function listEventos(filters?: EventoFilters) {
   const params = new URLSearchParams();
   if (filters?.estado) params.append("estado", filters.estado);
+  if (filters?.disciplinaId) params.append("disciplinaId", String(filters.disciplinaId));
   if (filters?.search) params.append("search", filters.search);
   if (filters?.page) params.append("page", String(filters.page));
   if (filters?.limit) params.append("limit", String(filters.limit));

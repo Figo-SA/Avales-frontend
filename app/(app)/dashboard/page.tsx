@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -19,76 +19,50 @@ import DisciplineFilter from "@/components/dashboard/discipline-filter";
 import AvalListItem, { type AvalListItemData } from "@/components/dashboard/aval-list-item";
 import AvalCardV2, { type AvalCardData } from "@/components/dashboard/aval-card-v2";
 import type { AvalStatusV2 } from "@/components/dashboard/aval-status-badge-v2";
+import { listEventos } from "@/lib/api/evento";
+import type { Evento, EventoStatus } from "@/types/evento";
 
-// Mock data for demonstration
-const MOCK_AVALES: (AvalListItemData & AvalCardData)[] = [
-  {
-    id: 1,
-    codigo: "Aval Nro. 067",
-    tipo: "Aval Técnico de Participación Competitiva",
-    disciplina: "Lucha Olímpica",
-    rol: "Entrenador",
-    fecha: "2024-07-16",
-    estado: "EN_PROCESO",
-  },
-  {
-    id: 2,
-    codigo: "Aval Nro. 066",
-    tipo: "Aval Técnico de Participación Competitiva",
-    disciplina: "Atletismo",
-    rol: "DTM",
-    fecha: "2024-07-12",
-    estado: "EN_PROCESO",
-  },
-  {
-    id: 3,
-    codigo: "Aval Nro. 065",
-    tipo: "Aval Técnico de Participación Competitiva",
-    disciplina: "Gimnasia",
-    rol: "PDA",
-    fecha: "2024-07-10",
-    estado: "APROBADO",
-  },
-  {
-    id: 4,
-    codigo: "Aval Nro. 063",
-    tipo: "Aval Técnico de Participación Competitiva",
-    disciplina: "Atletismo",
-    rol: "DTM",
-    fecha: "2024-07-08",
-    estado: "APROBADO",
-  },
-  {
-    id: 5,
-    codigo: "Aval Nro. 060",
-    tipo: "Aval Técnico de Participación Competitiva",
-    disciplina: "Lucha Olímpica",
-    rol: "Entrenador",
-    fecha: "2024-07-05",
-    estado: "APROBADO",
-  },
-  {
-    id: 6,
-    codigo: "Aval Nro. 040",
-    tipo: "Aval Técnico de Participación Competitiva",
-    disciplina: "Gimnasia",
-    rol: "DTM",
-    fecha: "2024-06-20",
-    estado: "RECHAZADO",
-  },
-];
+type AvalData = AvalListItemData & AvalCardData;
 
-const MOCK_DISCIPLINES = [
-  { id: 1, nombre: "Atletismo" },
-  { id: 2, nombre: "Gimnasia" },
-  { id: 3, nombre: "Lucha Olímpica" },
-];
+// Map backend EventoStatus to frontend AvalStatusV2
+function mapEventoStatusToAvalStatus(status: EventoStatus): AvalStatusV2 {
+  switch (status) {
+    case "DISPONIBLE":
+    case "SOLICITADO":
+      return "EN_PROCESO";
+    case "ACEPTADO":
+      return "APROBADO";
+    case "RECHAZADO":
+      return "RECHAZADO";
+    default:
+      return "EN_PROCESO";
+  }
+}
+
+// Transform Evento to AvalData format
+function eventoToAvalData(evento: Evento): AvalData {
+  return {
+    id: evento.id,
+    codigo: evento.codigo,
+    tipo: `${evento.tipoEvento} - ${evento.tipoParticipacion}`,
+    disciplina: evento.disciplina?.nombre ?? "Sin disciplina",
+    rol: evento.tipoEvento,
+    fecha: evento.fechaInicio,
+    estado: mapEventoStatusToAvalStatus(evento.estado),
+    descripcion: evento.nombre,
+  };
+}
 
 type SortOption = "recientes" | "antiguos" | "codigo";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, loading, error } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
+
+  // Data state
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [loadingEventos, setLoadingEventos] = useState(true);
+  const [eventosError, setEventosError] = useState<string | null>(null);
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>("list");
@@ -99,24 +73,66 @@ export default function Dashboard() {
   const [showFilters, setShowFilters] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
+  // Check if user is an ENTRENADOR
+  const isEntrenador = user?.roles?.includes("ENTRENADOR") ?? false;
+
+  // Load eventos from API
+  const loadEventos = useCallback(async () => {
+    if (authLoading || !user) return;
+
+    try {
+      setLoadingEventos(true);
+      setEventosError(null);
+
+      // For trainers, filter by their discipline
+      const disciplinaId = isEntrenador ? user.disciplina?.id : undefined;
+
+      const res = await listEventos({ disciplinaId, limit: 100 });
+      setEventos(res.data?.items ?? []);
+    } catch (err: any) {
+      console.error("Error loading eventos:", err);
+      setEventosError(err?.message ?? "Error al cargar eventos");
+    } finally {
+      setLoadingEventos(false);
+    }
+  }, [authLoading, user, isEntrenador]);
+
   useEffect(() => {
-    if (!loading && !user) {
+    if (!authLoading && !user) {
       router.replace("/signin");
     }
-  }, [loading, user, router]);
+  }, [authLoading, user, router]);
+
+  useEffect(() => {
+    void loadEventos();
+  }, [loadEventos]);
+
+  // Convert eventos to avales format
+  const avales = useMemo(() => eventos.map(eventoToAvalData), [eventos]);
+
+  // Get unique disciplines from loaded events
+  const disciplines = useMemo(() => {
+    const disciplineMap = new Map<number, string>();
+    eventos.forEach((e) => {
+      if (e.disciplina?.id && e.disciplina?.nombre) {
+        disciplineMap.set(e.disciplina.id, e.disciplina.nombre);
+      }
+    });
+    return Array.from(disciplineMap.entries()).map(([id, nombre]) => ({ id, nombre }));
+  }, [eventos]);
 
   // Filter and sort avales
   const filteredAvales = useMemo(() => {
-    let result = [...MOCK_AVALES];
+    let result = [...avales];
 
     // Filter by status
     if (statusFilter !== "TODOS") {
       result = result.filter((a) => a.estado === statusFilter);
     }
 
-    // Filter by discipline
-    if (selectedDisciplines.length > 0) {
-      const disciplineNames = MOCK_DISCIPLINES
+    // Filter by discipline (only for non-trainers, trainers are already filtered by API)
+    if (!isEntrenador && selectedDisciplines.length > 0) {
+      const disciplineNames = disciplines
         .filter((d) => selectedDisciplines.includes(d.id))
         .map((d) => d.nombre);
       result = result.filter((a) => disciplineNames.includes(a.disciplina));
@@ -129,7 +145,8 @@ export default function Dashboard() {
         (a) =>
           a.codigo.toLowerCase().includes(query) ||
           a.disciplina.toLowerCase().includes(query) ||
-          a.rol?.toLowerCase().includes(query)
+          a.rol?.toLowerCase().includes(query) ||
+          a.descripcion?.toLowerCase().includes(query)
       );
     }
 
@@ -148,18 +165,18 @@ export default function Dashboard() {
     });
 
     return result;
-  }, [statusFilter, selectedDisciplines, searchQuery, sortBy]);
+  }, [avales, statusFilter, selectedDisciplines, searchQuery, sortBy, disciplines, isEntrenador]);
 
   // Count by status
   const statusCounts = useMemo(() => {
     return {
-      TODOS: MOCK_AVALES.length,
-      EN_PROCESO: MOCK_AVALES.filter((a) => a.estado === "EN_PROCESO").length,
-      APROBADO: MOCK_AVALES.filter((a) => a.estado === "APROBADO").length,
-      RECHAZADO: MOCK_AVALES.filter((a) => a.estado === "RECHAZADO").length,
-      ACTIVO: MOCK_AVALES.filter((a) => a.estado === "ACTIVO").length,
+      TODOS: avales.length,
+      EN_PROCESO: avales.filter((a) => a.estado === "EN_PROCESO").length,
+      APROBADO: avales.filter((a) => a.estado === "APROBADO").length,
+      RECHAZADO: avales.filter((a) => a.estado === "RECHAZADO").length,
+      ACTIVO: avales.filter((a) => a.estado === "ACTIVO").length,
     };
-  }, []);
+  }, [avales]);
 
   const statusOptions = [
     { value: "TODOS" as const, label: "Todos", count: statusCounts.TODOS },
@@ -177,24 +194,33 @@ export default function Dashboard() {
   const activeFiltersCount =
     selectedDisciplines.length + (searchQuery ? 1 : 0);
 
-  if (loading) {
+  if (authLoading || loadingEventos) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Cargando tu sesión...</p>
+          <p className="text-sm text-slate-500">
+            {authLoading ? "Cargando tu sesión..." : "Cargando eventos..."}
+          </p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (authError || eventosError) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg font-semibold text-rose-600">
-            No pudimos cargar tu sesión. Intenta nuevamente.
+            {authError ?? eventosError}
           </p>
+          <button
+            type="button"
+            onClick={() => void loadEventos()}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -212,7 +238,9 @@ export default function Dashboard() {
               Dashboard de Avales
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Gestiona y revisa todos los avales deportivos
+              {isEntrenador && user.disciplina?.nombre
+                ? `Eventos de ${user.disciplina.nombre}`
+                : "Gestiona y revisa todos los avales deportivos"}
             </p>
           </div>
 
@@ -274,24 +302,26 @@ export default function Dashboard() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Filters Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${
-                    showFilters || activeFiltersCount > 0
-                      ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
-                      : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
-                  }`}
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  <span className="hidden sm:inline">Filtros</span>
-                  {activeFiltersCount > 0 && (
-                    <span className="w-5 h-5 flex items-center justify-center bg-indigo-500 text-white text-xs rounded-full">
-                      {activeFiltersCount}
-                    </span>
-                  )}
-                </button>
+                {/* Filters Toggle - Only show for non-trainers */}
+                {!isEntrenador && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className={`inline-flex items-center gap-2 px-3 py-2 border rounded-lg text-sm font-medium transition-colors ${
+                      showFilters || activeFiltersCount > 0
+                        ? "bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
+                        : "bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    <SlidersHorizontal className="w-4 h-4" />
+                    <span className="hidden sm:inline">Filtros</span>
+                    {activeFiltersCount > 0 && (
+                      <span className="w-5 h-5 flex items-center justify-center bg-indigo-500 text-white text-xs rounded-full">
+                        {activeFiltersCount}
+                      </span>
+                    )}
+                  </button>
+                )}
 
                 {/* Sort Dropdown */}
                 <div className="relative">
@@ -344,11 +374,11 @@ export default function Dashboard() {
 
           {/* Content Area */}
           <div className="flex">
-            {/* Sidebar Filters */}
-            {showFilters && (
+            {/* Sidebar Filters - Only for non-trainers */}
+            {showFilters && !isEntrenador && (
               <div className="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-700 p-4 bg-slate-50/50 dark:bg-slate-800/50">
                 <DisciplineFilter
-                  disciplines={MOCK_DISCIPLINES}
+                  disciplines={disciplines}
                   selected={selectedDisciplines}
                   onChange={setSelectedDisciplines}
                 />
@@ -366,8 +396,9 @@ export default function Dashboard() {
                     No se encontraron avales
                   </h3>
                   <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-                    No hay avales que coincidan con los filtros seleccionados.
-                    Intenta ajustar los criterios de búsqueda.
+                    {isEntrenador
+                      ? "No hay eventos disponibles para tu disciplina."
+                      : "No hay avales que coincidan con los filtros seleccionados. Intenta ajustar los criterios de búsqueda."}
                   </p>
                 </div>
               ) : viewMode === "list" ? (
@@ -445,7 +476,7 @@ export default function Dashboard() {
                 </span>{" "}
                 de{" "}
                 <span className="font-medium text-slate-700 dark:text-slate-300">
-                  {MOCK_AVALES.length}
+                  {avales.length}
                 </span>{" "}
                 avales
               </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useAppProvider } from "@/app/providers/app-provider";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useWindowWidth } from "@/components/utils/use-window-width";
@@ -28,14 +28,8 @@ export default function Sidebar({
   const expandOnly =
     !sidebarExpanded && breakpoint && breakpoint >= 1024 && breakpoint < 1536;
   const { user, loading } = useAuth();
-  if (loading || !user) return null;
 
-  if (!canSeeSidebar(user, ROLES_WITHOUT_SIDEBAR)) return null;
-
-  const items = filterSidebarItems(SIDEBAR_ITEMS, user);
-  if (items.length === 0) return null;
-
-  // close on click outside
+  // Close on click outside
   useEffect(() => {
     const clickHandler = ({ target }: { target: EventTarget | null }): void => {
       if (!sidebar.current) return;
@@ -44,9 +38,9 @@ export default function Sidebar({
     };
     document.addEventListener("click", clickHandler);
     return () => document.removeEventListener("click", clickHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
 
-  // close if the esc key is pressed
+  // Close if the esc key is pressed
   useEffect(() => {
     const keyHandler = ({ keyCode }: { keyCode: number }): void => {
       if (!sidebarOpen || keyCode !== 27) return;
@@ -54,7 +48,18 @@ export default function Sidebar({
     };
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
-  });
+  }, [sidebarOpen, setSidebarOpen]);
+
+  // Memoize filtered items
+  const items = useMemo(() => {
+    if (!user) return [];
+    return filterSidebarItems(SIDEBAR_ITEMS, user);
+  }, [user]);
+
+  // Early returns after hooks
+  if (loading || !user) return null;
+  if (!canSeeSidebar(user, ROLES_WITHOUT_SIDEBAR)) return null;
+  if (items.length === 0) return null;
 
   return (
     <div className={`min-w-fit ${sidebarExpanded ? "sidebar-expanded" : ""}`}>
