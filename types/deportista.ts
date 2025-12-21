@@ -9,6 +9,7 @@ export type Deportista = {
   categoria?: CatalogItem;
   disciplina?: CatalogItem;
   genero?: string;
+  club?: string;
   afiliacion: boolean;
   afiliacionInicio?: string | null;
   afiliacionFin?: string | null;

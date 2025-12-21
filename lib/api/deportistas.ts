@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api/client";
-import type { DeportistaListResponse } from "@/types/deportista";
+import type { Deportista, DeportistaListResponse } from "@/types/deportista";
+import type { CreateDeportistaPayload } from "@/lib/validation/deportista";
 
 export type ListDeportistasOptions = {
   sexo?: string;
@@ -20,4 +21,11 @@ export async function listDeportistas(options: ListDeportistasOptions = {}) {
   const url = qs ? `/deportistas?${qs}` : "/deportistas";
 
   return apiFetch<DeportistaListResponse>(url, { method: "GET" });
+}
+
+export async function createDeportista(values: CreateDeportistaPayload) {
+  return apiFetch<Deportista>("/deportistas", {
+    method: "POST",
+    body: JSON.stringify(values),
+  });
 }

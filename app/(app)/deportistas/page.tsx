@@ -29,6 +29,11 @@ export default function DeportistasPage() {
     limit: PAGE_SIZE,
     total: 0,
   });
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+    description?: string;
+  } | null>(null);
 
   const limit = pagination.limit || PAGE_SIZE;
   const totalPages = useMemo(
@@ -72,7 +77,9 @@ export default function DeportistasPage() {
               : items.length ?? 0,
         });
       } catch (err: any) {
-        setError(err?.message ?? "No se pudo cargar los deportistas.");
+        const msg = err?.message ?? "No se pudo cargar los deportistas.";
+        setError(msg);
+        setToast({ variant: "error", message: msg });
       } finally {
         setLoading(false);
       }
@@ -93,8 +100,56 @@ export default function DeportistasPage() {
     );
   }, [q, sexo, currentPage, router]);
 
+  // mostrar toast cuando viene status=created desde la creacion
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (!status) return;
+
+    if (status === "created") {
+      setToast({
+        variant: "success",
+        message: "Deportista creado correctamente.",
+        description: "El listado se actualiza automaticamente.",
+      });
+    } else if (status === "updated") {
+      setToast({
+        variant: "success",
+        message: "Deportista actualizado correctamente.",
+      });
+    } else if (status === "error") {
+      setToast({
+        variant: "error",
+        message: "No se pudo procesar la solicitud.",
+      });
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+    router.replace(
+      params.toString() ? `/deportistas?${params}` : "/deportistas",
+      { scroll: false }
+    );
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   return (
     <>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            description={toast.description}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
+
       {error && !loading && (
         <div className="fixed top-4 right-4 z-50 max-w-sm w-full drop-shadow-lg">
           <AlertBanner
@@ -135,9 +190,15 @@ export default function DeportistasPage() {
               }}
             >
               <option value="">Todos</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
             </select>
+            <a
+              href="/deportistas/nuevo"
+              className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+            >
+              Nuevo deportista
+            </a>
           </div>
         </div>
 

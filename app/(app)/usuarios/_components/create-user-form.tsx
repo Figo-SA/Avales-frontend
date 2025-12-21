@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { ApiError } from "@/lib/api/client";
 import { createUser, updateUser } from "@/lib/api/user";
 import { getCatalog } from "@/lib/api/catalog";
 import {
@@ -70,6 +71,7 @@ export default function CreateUserForm({
     reset,
     control,
     formState: { errors, isSubmitting },
+    setError,
   } = useForm<UserFormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -165,11 +167,26 @@ export default function CreateUserForm({
         });
         setSubmitMsg("Usuario creado correctamente.");
       }
-    } catch (err: any) {
-      setSubmitMsg(
-        err?.message ??
-          `No se pudo ${mode === "edit" ? "actualizar" : "crear"} el usuario.`
-      );
+    } catch (err: unknown) {
+      const fallback = `No se pudo ${
+        mode === "edit" ? "actualizar" : "crear"
+      } el usuario.`;
+      let message = fallback;
+
+      if (err instanceof ApiError) {
+        const problem = err.problem;
+        const detail =
+          problem?.detail ?? problem?.title ?? err.message ?? fallback;
+        if (problem?.field) {
+          const fieldName = problem.field as keyof UserFormValues;
+          setError(fieldName, { type: "server", message: detail });
+        }
+        message = detail;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setSubmitMsg(message);
     }
   };
 

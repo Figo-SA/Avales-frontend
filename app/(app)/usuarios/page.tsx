@@ -99,10 +99,9 @@ export default function Usuarios() {
     if (q.trim()) params.set("query", q.trim());
     if (currentPage > 1) params.set("page", String(currentPage));
 
-    router.replace(
-      params.toString() ? `/usuarios?${params}` : "/usuarios",
-      { scroll: false }
-    );
+    router.replace(params.toString() ? `/usuarios?${params}` : "/usuarios", {
+      scroll: false,
+    });
   }, [q, currentPage, router]);
 
   // leer mensaje de exito desde querystring y limpiar la URL

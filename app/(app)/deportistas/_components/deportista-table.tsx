@@ -18,8 +18,9 @@ function formatDate(value?: string | null) {
 function formatGenero(genero?: string | null) {
   if (!genero) return "-";
   const upper = genero.toUpperCase();
-  if (upper === "M") return "Masculino";
-  if (upper === "F") return "Femenino";
+  if (upper === "M" || upper === "MASCULINO") return "Masculino";
+  if (upper === "F" || upper === "FEMENINO") return "Femenino";
+  if (upper === "O" || upper === "OTRO") return "Otro";
   return genero;
 }
 
