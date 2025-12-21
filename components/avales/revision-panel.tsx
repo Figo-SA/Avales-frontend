@@ -2,29 +2,31 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X, RotateCcw } from "lucide-react";
-import { aprobarAval, devolverAval, rechazarAval } from "@/lib/api/aval";
-import type { Aval } from "@/types/aval";
+import { Check, X } from "lucide-react";
+import { aprobarEvento, rechazarEvento } from "@/lib/api/evento";
+import { useAuth } from "@/app/providers/auth-provider";
+import type { Evento } from "@/types/evento";
 
 type Props = {
-  aval: Aval;
+  evento: Evento;
   onSuccess?: () => void;
 };
 
-type Action = "aprobar" | "devolver" | "rechazar" | null;
+type Action = "aprobar" | "rechazar" | null;
 
-export default function RevisionPanel({ aval, onSuccess }: Props) {
+export default function RevisionPanel({ evento, onSuccess }: Props) {
   const router = useRouter();
+  const { user } = useAuth();
   const [action, setAction] = useState<Action>(null);
-  const [observaciones, setObservaciones] = useState("");
+  const [motivo, setMotivo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleAction = async () => {
-    if (!action) return;
+    if (!action || !user) return;
 
-    if ((action === "devolver" || action === "rechazar") && !observaciones.trim()) {
-      setError("Las observaciones son obligatorias");
+    if (action === "rechazar" && !motivo.trim()) {
+      setError("El motivo es obligatorio para rechazar");
       return;
     }
 
@@ -32,16 +34,15 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
     setError(null);
 
     try {
-      switch (action) {
-        case "aprobar":
-          await aprobarAval(aval.id, observaciones || undefined);
-          break;
-        case "devolver":
-          await devolverAval(aval.id, observaciones);
-          break;
-        case "rechazar":
-          await rechazarAval(aval.id, observaciones);
-          break;
+      const data = {
+        usuarioId: user.id,
+        motivo: motivo || undefined,
+      };
+
+      if (action === "aprobar") {
+        await aprobarEvento(evento.id, data);
+      } else {
+        await rechazarEvento(evento.id, data);
       }
 
       onSuccess?.();
@@ -53,12 +54,12 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
     }
   };
 
-  const canReview = aval.status === "ENVIADO" || aval.status === "EN_REVISION";
+  const canReview = evento.estado === "SOLICITADO";
 
   if (!canReview) {
     return (
       <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 text-center text-gray-500 dark:text-gray-400">
-        Este aval no está disponible para revisión
+        Este evento no está disponible para revisión
       </div>
     );
   }
@@ -91,18 +92,6 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
         </button>
         <button
           type="button"
-          onClick={() => setAction("devolver")}
-          className={`btn flex items-center gap-2 ${
-            action === "devolver"
-              ? "bg-orange-500 text-white"
-              : "bg-orange-100 text-orange-700 hover:bg-orange-200 dark:bg-orange-900/30 dark:text-orange-400"
-          }`}
-        >
-          <RotateCcw className="w-4 h-4" />
-          Devolver
-        </button>
-        <button
-          type="button"
           onClick={() => setAction("rechazar")}
           className={`btn flex items-center gap-2 ${
             action === "rechazar"
@@ -115,23 +104,23 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
         </button>
       </div>
 
-      {/* Observaciones (obligatorias para devolver/rechazar) */}
+      {/* Motivo (obligatorio para rechazar) */}
       {action && (
         <div className="space-y-3 pt-4 border-t border-gray-200 dark:border-gray-700">
           <label className="block text-sm font-medium">
-            Observaciones{" "}
-            {(action === "devolver" || action === "rechazar") && (
+            Motivo{" "}
+            {action === "rechazar" && (
               <span className="text-red-500">*</span>
             )}
           </label>
           <textarea
             rows={3}
-            value={observaciones}
-            onChange={(e) => setObservaciones(e.target.value)}
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
             placeholder={
               action === "aprobar"
-                ? "Observaciones opcionales..."
-                : "Indica el motivo de la devolución/rechazo..."
+                ? "Comentario opcional..."
+                : "Indica el motivo del rechazo..."
             }
             className="form-textarea w-full"
           />
@@ -141,7 +130,7 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
               type="button"
               onClick={() => {
                 setAction(null);
-                setObservaciones("");
+                setMotivo("");
                 setError(null);
               }}
               className="btn border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300"
@@ -155,8 +144,6 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
               className={`btn text-white ${
                 action === "aprobar"
                   ? "bg-green-500 hover:bg-green-600"
-                  : action === "devolver"
-                  ? "bg-orange-500 hover:bg-orange-600"
                   : "bg-red-500 hover:bg-red-600"
               }`}
             >
@@ -164,8 +151,6 @@ export default function RevisionPanel({ aval, onSuccess }: Props) {
                 ? "Procesando..."
                 : action === "aprobar"
                 ? "Confirmar Aprobación"
-                : action === "devolver"
-                ? "Confirmar Devolución"
                 : "Confirmar Rechazo"}
             </button>
           </div>

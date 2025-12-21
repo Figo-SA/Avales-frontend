@@ -6,26 +6,26 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Calendar,
-  User,
+  MapPin,
   Users,
   FileText,
 } from "lucide-react";
-import { getAval } from "@/lib/api/aval";
-import type { Aval } from "@/types/aval";
+import { getEvento } from "@/lib/api/evento";
+import type { Evento } from "@/types/evento";
 import AvalStatusBadge from "@/components/avales/aval-status-badge";
 import RevisionPanel from "@/components/avales/revision-panel";
 
-export default function RevisarAvalPage() {
+export default function RevisarEventoPage() {
   const params = useParams<{ id: string }>();
-  const avalId = Number(params?.id);
+  const eventoId = Number(params?.id);
 
-  const [aval, setAval] = useState<Aval | null>(null);
+  const [evento, setEvento] = useState<Evento | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!params?.id || Number.isNaN(avalId)) {
-      setError("ID de aval inválido");
+    if (!params?.id || Number.isNaN(eventoId)) {
+      setError("ID de evento inválido");
       setLoading(false);
       return;
     }
@@ -33,19 +33,19 @@ export default function RevisarAvalPage() {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await getAval(avalId);
-        setAval(res.data ?? null);
+        const res = await getEvento(eventoId);
+        setEvento(res.data ?? null);
         if (!res.data) {
-          setError("Aval no encontrado");
+          setError("Evento no encontrado");
         }
       } catch (err: any) {
-        setError(err?.message ?? "Error al cargar el aval");
+        setError(err?.message ?? "Error al cargar el evento");
       } finally {
         setLoading(false);
       }
     };
     void load();
-  }, [params?.id, avalId]);
+  }, [params?.id, eventoId]);
 
   const formatDate = (date: string) =>
     new Date(date).toLocaleDateString("es-EC", {
@@ -59,16 +59,16 @@ export default function RevisarAvalPage() {
   if (loading) {
     return (
       <div className="px-4 sm:px-6 lg:px-8 py-8 text-center text-gray-500">
-        Cargando aval...
+        Cargando evento...
       </div>
     );
   }
 
-  if (error || !aval) {
+  if (error || !evento) {
     return (
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center py-12">
-          <p className="text-red-500 mb-4">{error ?? "Aval no encontrado"}</p>
+          <p className="text-red-500 mb-4">{error ?? "Evento no encontrado"}</p>
           <Link
             href="/revision"
             className="btn bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
@@ -79,6 +79,9 @@ export default function RevisarAvalPage() {
       </div>
     );
   }
+
+  const totalAtletas = evento.numAtletasHombres + evento.numAtletasMujeres;
+  const totalEntrenadores = evento.numEntrenadoresHombres + evento.numEntrenadoresMujeres;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-4xl mx-auto">
@@ -96,38 +99,21 @@ export default function RevisarAvalPage() {
           <div>
             <div className="flex items-center gap-3">
               <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
-                Revisar: {aval.codigo}
+                Revisar: {evento.codigo}
               </h1>
-              <AvalStatusBadge status={aval.status} />
+              <AvalStatusBadge status={evento.estado} />
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Enviado el {formatDate(aval.fechaEnvio ?? aval.createdAt)}
+              {evento.nombre}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Información del entrenador */}
-      {aval.entrenador && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-3">
-            <User className="w-5 h-5 text-blue-500" />
-            <div>
-              <p className="text-xs text-blue-600 dark:text-blue-400">
-                Solicitado por
-              </p>
-              <p className="font-medium text-blue-800 dark:text-blue-200">
-                {aval.entrenador.nombre} {aval.entrenador.apellido}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Información del aval */}
+      {/* Información del evento */}
       <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
-          Información del Aval
+          Información del Evento
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -135,10 +121,22 @@ export default function RevisarAvalPage() {
             <FileText className="w-5 h-5 text-gray-400" />
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
+                Tipo de Evento
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-100">
+                {evento.tipoEvento}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-gray-400" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Disciplina
               </p>
               <p className="font-medium text-gray-800 dark:text-gray-100">
-                {aval.disciplina?.nombre ?? "—"}
+                {evento.disciplina?.nombre ?? "—"}
               </p>
             </div>
           </div>
@@ -150,7 +148,19 @@ export default function RevisarAvalPage() {
                 Categoría
               </p>
               <p className="font-medium text-gray-800 dark:text-gray-100">
-                {aval.categoria?.nombre ?? "—"}
+                {evento.categoria?.nombre ?? "—"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5 text-gray-400" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Ubicación
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-100">
+                {evento.lugar}, {evento.ciudad}
               </p>
             </div>
           </div>
@@ -159,10 +169,22 @@ export default function RevisarAvalPage() {
             <Calendar className="w-5 h-5 text-gray-400" />
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Fecha de creación
+                Fecha de Inicio
               </p>
               <p className="font-medium text-gray-800 dark:text-gray-100">
-                {formatDate(aval.createdAt)}
+                {formatDate(evento.fechaInicio)}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Calendar className="w-5 h-5 text-gray-400" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Fecha de Fin
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-100">
+                {formatDate(evento.fechaFin)}
               </p>
             </div>
           </div>
@@ -171,62 +193,69 @@ export default function RevisarAvalPage() {
             <Users className="w-5 h-5 text-gray-400" />
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Deportistas
+                Participantes
               </p>
               <p className="font-medium text-gray-800 dark:text-gray-100">
-                {aval.deportistas?.length ?? 0} incluido
-                {(aval.deportistas?.length ?? 0) !== 1 ? "s" : ""}
+                {totalAtletas} atletas, {totalEntrenadores} entrenadores
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5 text-gray-400" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Alcance
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-100">
+                {evento.alcance}
               </p>
             </div>
           </div>
         </div>
-
-        {aval.observaciones && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-              Observaciones del solicitante
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              {aval.observaciones}
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* Deportistas */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-            Deportistas ({aval.deportistas?.length ?? 0})
+      {/* Información del aval técnico si existe */}
+      {evento.coleccion?.avalTecnico && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">
+            Información del Aval Técnico
           </h2>
-        </div>
 
-        {aval.deportistas && aval.deportistas.length > 0 ? (
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {aval.deportistas.map((d) => (
-              <li key={d.id} className="py-3 flex items-center gap-3">
-                <User className="w-5 h-5 text-gray-400" />
-                <div>
-                  <p className="font-medium text-gray-800 dark:text-gray-100">
-                    {d.user?.nombre} {d.user?.apellido}
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    CI: {d.cedula} • {d.disciplina?.nombre} • {d.categoria?.nombre}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">
-            No hay deportistas asignados
-          </p>
-        )}
-      </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Transporte de Salida
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-100">
+                {evento.coleccion.avalTecnico.transporteSalida}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Transporte de Retorno
+              </p>
+              <p className="font-medium text-gray-800 dark:text-gray-100">
+                {evento.coleccion.avalTecnico.transporteRetorno}
+              </p>
+            </div>
+          </div>
+
+          {evento.coleccion.avalTecnico.observaciones && (
+            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                Observaciones
+              </p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                {evento.coleccion.avalTecnico.observaciones}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Panel de revisión */}
-      <RevisionPanel aval={aval} />
+      <RevisionPanel evento={evento} />
     </div>
   );
 }

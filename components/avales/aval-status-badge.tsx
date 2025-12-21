@@ -1,40 +1,30 @@
 "use client";
 
-import type { AvalStatus } from "@/types/aval";
+import type { EventoStatus } from "@/types/evento";
 
 type Props = {
-  status: AvalStatus;
+  status: EventoStatus;
   size?: "sm" | "md";
 };
 
 const STATUS_CONFIG: Record<
-  AvalStatus,
+  EventoStatus,
   { label: string; bg: string; text: string }
 > = {
-  BORRADOR: {
-    label: "Borrador",
+  DISPONIBLE: {
+    label: "Disponible",
     bg: "bg-gray-100 dark:bg-gray-700",
     text: "text-gray-600 dark:text-gray-300",
   },
-  ENVIADO: {
-    label: "Enviado",
+  SOLICITADO: {
+    label: "Solicitado",
     bg: "bg-blue-100 dark:bg-blue-900/30",
     text: "text-blue-600 dark:text-blue-400",
   },
-  EN_REVISION: {
-    label: "En Revisión",
-    bg: "bg-yellow-100 dark:bg-yellow-900/30",
-    text: "text-yellow-700 dark:text-yellow-400",
-  },
-  APROBADO: {
-    label: "Aprobado",
+  ACEPTADO: {
+    label: "Aceptado",
     bg: "bg-green-100 dark:bg-green-900/30",
     text: "text-green-600 dark:text-green-400",
-  },
-  DEVUELTO: {
-    label: "Devuelto",
-    bg: "bg-orange-100 dark:bg-orange-900/30",
-    text: "text-orange-600 dark:text-orange-400",
   },
   RECHAZADO: {
     label: "Rechazado",

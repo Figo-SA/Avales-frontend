@@ -1,22 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { FileCheck, Calendar, User, Users } from "lucide-react";
-import type { Aval } from "@/types/aval";
+import { FileCheck, Calendar, MapPin, Users } from "lucide-react";
+import type { Evento } from "@/types/evento";
 import AvalStatusBadge from "./aval-status-badge";
 
 type Props = {
-  aval: Aval;
+  evento: Evento;
   href: string;
-  showEntrenador?: boolean;
 };
 
-export default function AvalCard({ aval, href, showEntrenador = false }: Props) {
-  const fechaCreacion = new Date(aval.createdAt).toLocaleDateString("es-EC", {
+export default function AvalCard({ evento, href }: Props) {
+  const fechaInicio = new Date(evento.fechaInicio).toLocaleDateString("es-EC", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
+
+  const totalAtletas = evento.numAtletasHombres + evento.numAtletasMujeres;
+  const totalEntrenadores = evento.numEntrenadoresHombres + evento.numEntrenadoresMujeres;
 
   return (
     <Link
@@ -27,57 +29,56 @@ export default function AvalCard({ aval, href, showEntrenador = false }: Props) 
         <div className="flex items-center gap-2">
           <FileCheck className="w-5 h-5 text-violet-500" />
           <span className="font-semibold text-gray-800 dark:text-gray-100">
-            {aval.codigo}
+            {evento.codigo}
           </span>
         </div>
-        <AvalStatusBadge status={aval.status} size="sm" />
+        <AvalStatusBadge status={evento.estado} size="sm" />
       </div>
+
+      <h3 className="font-medium text-gray-800 dark:text-gray-100 mb-2">
+        {evento.nombre}
+      </h3>
 
       <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
         {/* Disciplina y Categoría */}
         <div className="flex items-center gap-4">
-          {aval.disciplina && (
+          {evento.disciplina && (
             <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs">
-              {aval.disciplina.nombre}
+              {evento.disciplina.nombre}
             </span>
           )}
-          {aval.categoria && (
+          {evento.categoria && (
             <span className="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded text-xs">
-              {aval.categoria.nombre}
+              {evento.categoria.nombre}
             </span>
           )}
         </div>
 
-        {/* Deportistas */}
+        {/* Ubicación */}
+        <div className="flex items-center gap-2">
+          <MapPin className="w-4 h-4" />
+          <span>{evento.lugar}, {evento.ciudad}</span>
+        </div>
+
+        {/* Participantes */}
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4" />
           <span>
-            {aval.deportistas?.length || 0} deportista
-            {(aval.deportistas?.length || 0) !== 1 ? "s" : ""}
+            {totalAtletas} atleta{totalAtletas !== 1 ? "s" : ""} • {totalEntrenadores} entrenador{totalEntrenadores !== 1 ? "es" : ""}
           </span>
         </div>
-
-        {/* Entrenador (opcional) */}
-        {showEntrenador && aval.entrenador && (
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4" />
-            <span>
-              {aval.entrenador.nombre} {aval.entrenador.apellido}
-            </span>
-          </div>
-        )}
 
         {/* Fecha */}
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4" />
-          <span>{fechaCreacion}</span>
+          <span>{fechaInicio}</span>
         </div>
       </div>
 
-      {/* Observaciones si fue devuelto */}
-      {aval.status === "DEVUELTO" && aval.observaciones && (
-        <div className="mt-3 p-2 bg-orange-50 dark:bg-orange-900/20 rounded text-xs text-orange-700 dark:text-orange-300">
-          <strong>Observaciones:</strong> {aval.observaciones}
+      {/* Comentario si fue rechazado */}
+      {evento.estado === "RECHAZADO" && evento.coleccion?.comentario && (
+        <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-700 dark:text-red-300">
+          <strong>Motivo:</strong> {evento.coleccion.comentario}
         </div>
       )}
     </Link>

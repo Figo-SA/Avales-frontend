@@ -4,29 +4,27 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Plus, Filter } from "lucide-react";
-import { listMisAvales } from "@/lib/api/aval";
-import type { Aval, AvalStatus } from "@/types/aval";
+import { listEventos } from "@/lib/api/evento";
+import type { Evento, EventoStatus } from "@/types/evento";
 import AvalCard from "@/components/avales/aval-card";
 import AlertBanner from "@/components/ui/alert-banner";
 
-const STATUS_OPTIONS: { value: AvalStatus | ""; label: string }[] = [
+const STATUS_OPTIONS: { value: EventoStatus | ""; label: string }[] = [
   { value: "", label: "Todos" },
-  { value: "BORRADOR", label: "Borradores" },
-  { value: "ENVIADO", label: "Enviados" },
-  { value: "EN_REVISION", label: "En Revisión" },
-  { value: "APROBADO", label: "Aprobados" },
-  { value: "DEVUELTO", label: "Devueltos" },
+  { value: "DISPONIBLE", label: "Disponibles" },
+  { value: "SOLICITADO", label: "Solicitados" },
+  { value: "ACEPTADO", label: "Aceptados" },
   { value: "RECHAZADO", label: "Rechazados" },
 ];
 
 export default function MisAvalesPage() {
   const searchParams = useSearchParams();
-  const statusParam = searchParams.get("status") as AvalStatus | null;
+  const statusParam = searchParams.get("status") as EventoStatus | null;
 
-  const [avales, setAvales] = useState<Aval[]>([]);
+  const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filterStatus, setFilterStatus] = useState<AvalStatus | "">(
+  const [filterStatus, setFilterStatus] = useState<EventoStatus | "">(
     statusParam && STATUS_OPTIONS.some((o) => o.value === statusParam)
       ? statusParam
       : ""
@@ -40,12 +38,12 @@ export default function MisAvalesPage() {
       try {
         setLoading(true);
         setError(null);
-        const res = await listMisAvales(
-          filterStatus ? { status: filterStatus } : undefined
+        const res = await listEventos(
+          filterStatus ? { estado: filterStatus } : undefined
         );
-        setAvales(res.data ?? []);
+        setEventos(res.data?.items ?? []);
       } catch (err: any) {
-        setError(err?.message ?? "Error al cargar los avales");
+        setError(err?.message ?? "Error al cargar los eventos");
       } finally {
         setLoading(false);
       }
@@ -59,10 +57,10 @@ export default function MisAvalesPage() {
       <div className="sm:flex sm:justify-between sm:items-center mb-8">
         <div className="mb-4 sm:mb-0">
           <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
-            Mis Avales
+            Mis Eventos
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Gestiona tus solicitudes de avales deportivos
+            Gestiona tus eventos deportivos y solicitudes de aval
           </p>
         </div>
 
@@ -71,7 +69,7 @@ export default function MisAvalesPage() {
           className="btn bg-violet-500 hover:bg-violet-600 text-white flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          Nuevo Aval
+          Nuevo Evento
         </Link>
       </div>
 
@@ -80,7 +78,7 @@ export default function MisAvalesPage() {
         <div className="mb-6">
           <AlertBanner
             variant="success"
-            message="Aval guardado correctamente"
+            message="Operación realizada correctamente"
             onClose={() => setShowSuccess(false)}
           />
         </div>
@@ -111,7 +109,7 @@ export default function MisAvalesPage() {
       {/* Loading */}
       {loading && (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-          Cargando avales...
+          Cargando eventos...
         </div>
       )}
 
@@ -120,29 +118,29 @@ export default function MisAvalesPage() {
         <div className="text-center py-12 text-red-500">{error}</div>
       )}
 
-      {/* Lista de avales */}
+      {/* Lista de eventos */}
       {!loading && !error && (
         <>
-          {avales.length === 0 ? (
+          {eventos.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400 mb-4">
-                No tienes avales{filterStatus ? ` con estado "${filterStatus}"` : ""}
+                No tienes eventos{filterStatus ? ` con estado "${filterStatus}"` : ""}
               </p>
               <Link
                 href="/mis-avales/nuevo"
                 className="btn bg-violet-500 hover:bg-violet-600 text-white inline-flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                Crear mi primer aval
+                Crear mi primer evento
               </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {avales.map((aval) => (
+              {eventos.map((evento) => (
                 <AvalCard
-                  key={aval.id}
-                  aval={aval}
-                  href={`/mis-avales/${aval.id}`}
+                  key={evento.id}
+                  evento={evento}
+                  href={`/mis-avales/${evento.id}`}
                 />
               ))}
             </div>
