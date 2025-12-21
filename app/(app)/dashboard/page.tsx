@@ -88,7 +88,8 @@ export default function Dashboard() {
       const disciplinaId = isEntrenador ? user.disciplina?.id : undefined;
 
       const res = await listEventos({ disciplinaId, limit: 100 });
-      setEventos(res.data?.items ?? []);
+      // res.data es directamente el array de eventos
+      setEventos(res.data ?? []);
     } catch (err: any) {
       console.error("Error loading eventos:", err);
       setEventosError(err?.message ?? "Error al cargar eventos");

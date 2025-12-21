@@ -1,8 +1,18 @@
+export type ApiMeta = {
+  requestId?: string;
+  timestamp?: string;
+  apiVersion?: string;
+  durationMs?: number;
+  page?: number;
+  limit?: number;
+  total?: number;
+};
+
 export type ApiEnvelope<T> = {
   status: "success" | "error";
   message: string;
   data: T;
-  meta?: unknown;
+  meta?: ApiMeta;
 };
 
 export class ApiError extends Error {

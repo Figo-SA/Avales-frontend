@@ -41,7 +41,8 @@ export default function MisAvalesPage() {
         const res = await listEventos(
           filterStatus ? { estado: filterStatus } : undefined
         );
-        setEventos(res.data?.items ?? []);
+        // res.data es directamente el array de eventos
+        setEventos(res.data ?? []);
       } catch (err: any) {
         setError(err?.message ?? "Error al cargar los eventos");
       } finally {

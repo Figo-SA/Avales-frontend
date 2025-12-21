@@ -5,11 +5,11 @@ import type {
   CreateEventoInput,
   CreateSolicitudAvalInput,
   ApproveRejectInput,
-  PaginatedResponse,
 } from "@/types/evento";
 
 /**
  * Lista eventos paginados
+ * Retorna: { data: Evento[], meta: { page, limit, total } }
  */
 export async function listEventos(filters?: EventoFilters) {
   const params = new URLSearchParams();
@@ -20,7 +20,8 @@ export async function listEventos(filters?: EventoFilters) {
   if (filters?.limit) params.append("limit", String(filters.limit));
 
   const query = params.toString();
-  return apiFetch<PaginatedResponse<Evento>>(`/events/paginated${query ? `?${query}` : ""}`);
+  // El backend retorna: { status, message, data: Evento[], meta: { page, limit, total } }
+  return apiFetch<Evento[]>(`/events/paginated${query ? `?${query}` : ""}`);
 }
 
 /**

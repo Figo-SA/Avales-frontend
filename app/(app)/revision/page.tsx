@@ -23,7 +23,8 @@ export default function RevisionPage() {
         setLoading(true);
         // Listar eventos con estado SOLICITADO (pendientes de revisión)
         const res = await listEventos({ estado: "SOLICITADO" });
-        setEventos(res.data?.items ?? []);
+        // res.data es directamente el array de eventos
+        setEventos(res.data ?? []);
       } catch (err: any) {
         setError(err?.message ?? "Error al cargar eventos pendientes");
       } finally {

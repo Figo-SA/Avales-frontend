@@ -40,8 +40,9 @@ export default function DeportistasPage() {
           limit: itemsPerPage,
           query: searchQuery || undefined,
         });
-        setDeportistas(res.data?.items ?? []);
-        setTotalItems(res.data?.pagination?.total ?? 0);
+        // El backend retorna: { status, message, data: [...], meta: { page, limit, total } }
+        setDeportistas(res.data ?? []);
+        setTotalItems(res.meta?.total ?? 0);
       } catch (err: any) {
         console.error("Error loading deportistas:", err);
         setError(err?.message ?? "Error al cargar deportistas");

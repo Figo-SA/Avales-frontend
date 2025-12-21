@@ -22,7 +22,8 @@ export default function HistorialRevisionPage() {
       try {
         setLoading(true);
         const res = await listEventos({ estado: filterStatus });
-        setEventos(res.data?.items ?? []);
+        // res.data es directamente el array de eventos
+        setEventos(res.data ?? []);
       } catch (err: any) {
         setError(err?.message ?? "Error al cargar historial");
       } finally {

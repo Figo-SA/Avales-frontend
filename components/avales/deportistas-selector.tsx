@@ -26,7 +26,8 @@ export default function DeportistasSelector({
       try {
         setLoading(true);
         const res = await listDeportistas({ limit: 100 });
-        setDeportistas(res.data?.items ?? []);
+        // res.data es directamente el array de deportistas
+        setDeportistas(res.data ?? []);
       } catch (err: any) {
         setError(err?.message ?? "Error cargando deportistas");
       } finally {

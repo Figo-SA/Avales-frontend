@@ -10,6 +10,7 @@ import type {
 
 /**
  * Lista deportistas con paginación y filtros
+ * Retorna: { data: DeportistaListItem[], meta: { page, limit, total } }
  */
 export async function listDeportistas(filters?: DeportistaFilters) {
   const params = new URLSearchParams();
@@ -19,7 +20,8 @@ export async function listDeportistas(filters?: DeportistaFilters) {
   if (filters?.limit) params.append("limit", String(filters.limit));
 
   const query = params.toString();
-  return apiFetch<DeportistasPaginatedResponse>(`/deportistas${query ? `?${query}` : ""}`);
+  // El backend retorna: { status, message, data: DeportistaListItem[], meta: { page, limit, total } }
+  return apiFetch<DeportistaListItem[]>(`/deportistas${query ? `?${query}` : ""}`);
 }
 
 /**
