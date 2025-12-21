@@ -1,27 +1,46 @@
-import type { User } from "./user";
 import type { CatalogItem } from "./catalog";
 
 /**
+ * Género del deportista
+ */
+export type DeportistaGenero = "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO";
+
+/**
  * Deportista registrado en el sistema
+ * Coincide con DeportistaResponseDto del backend
  */
 export type Deportista = {
   id: number;
-  userId: number;
-  user?: User;
+  nombres: string;
+  apellidos: string;
   cedula: string;
   fechaNacimiento: string;
-  genero?: "M" | "F";
-  telefono?: string;
-  direccion?: string;
-  categoriaId: number;
+  genero: DeportistaGenero;
+  categoriaId?: number;
   categoria?: CatalogItem;
-  disciplinaId: number;
+  disciplinaId?: number;
   disciplina?: CatalogItem;
-  entrenadorId?: number;
-  entrenador?: User;
-  clubId?: number;
+  afiliacion: boolean;
+  afiliacionInicio?: string;
+  afiliacionFin?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * Respuesta simplificada para listas (ParticipantResponseDto)
+ */
+export type DeportistaListItem = {
+  id: number;
+  nombres: string;
+  apellidos: string;
+  cedula: string;
+  sexo?: string;
+  fechaNacimiento: string;
   club?: string;
-  activo: boolean;
+  afiliacion: boolean;
+  afiliacionInicio?: string;
+  afiliacionFin?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -30,48 +49,40 @@ export type Deportista = {
  * Datos para crear un deportista
  */
 export type CreateDeportistaInput = {
-  userId?: number;
-  nombre: string;
-  apellido: string;
-  email: string;
+  nombres: string;
+  apellidos: string;
   cedula: string;
   fechaNacimiento: string;
-  genero?: "M" | "F";
-  telefono?: string;
-  direccion?: string;
+  genero: DeportistaGenero;
   categoriaId: number;
   disciplinaId: number;
-  entrenadorId?: number;
-  clubId?: number;
 };
 
 /**
  * Datos para actualizar un deportista
  */
 export type UpdateDeportistaInput = Partial<CreateDeportistaInput> & {
-  activo?: boolean;
+  afiliacion?: boolean;
 };
 
 /**
  * Filtros para listar deportistas
  */
 export type DeportistaFilters = {
-  categoriaId?: number;
-  disciplinaId?: number;
-  entrenadorId?: number;
-  activo?: boolean;
-  search?: string;
+  sexo?: string;
+  query?: string;
+  page?: number;
+  limit?: number;
 };
 
 /**
  * Respuesta paginada de deportistas
  */
-export type DeportistasResponse = {
-  data: Deportista[];
-  meta: {
-    total: number;
+export type DeportistasPaginatedResponse = {
+  items: DeportistaListItem[];
+  pagination: {
     page: number;
     limit: number;
-    totalPages: number;
+    total: number;
   };
 };

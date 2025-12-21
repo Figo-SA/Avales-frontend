@@ -1,42 +1,36 @@
 import { apiFetch } from "@/lib/api/client";
 import type {
   Deportista,
+  DeportistaListItem,
   DeportistaFilters,
+  DeportistasPaginatedResponse,
   CreateDeportistaInput,
   UpdateDeportistaInput,
 } from "@/types/deportista";
 
 /**
- * Lista todos los deportistas (Admin)
+ * Lista deportistas con paginación y filtros
  */
 export async function listDeportistas(filters?: DeportistaFilters) {
   const params = new URLSearchParams();
-  if (filters?.categoriaId) params.append("categoriaId", String(filters.categoriaId));
-  if (filters?.disciplinaId) params.append("disciplinaId", String(filters.disciplinaId));
-  if (filters?.entrenadorId) params.append("entrenadorId", String(filters.entrenadorId));
-  if (filters?.activo !== undefined) params.append("activo", String(filters.activo));
-  if (filters?.search) params.append("search", filters.search);
+  if (filters?.sexo) params.append("sexo", filters.sexo);
+  if (filters?.query) params.append("query", filters.query);
+  if (filters?.page) params.append("page", String(filters.page));
+  if (filters?.limit) params.append("limit", String(filters.limit));
 
   const query = params.toString();
-  return apiFetch<Deportista[]>(`/deportistas${query ? `?${query}` : ""}`);
+  return apiFetch<DeportistasPaginatedResponse>(`/deportistas${query ? `?${query}` : ""}`);
 }
 
 /**
- * Lista deportistas filtrados por disciplina (usado por entrenadores)
- * Usa el endpoint general /deportistas con parámetros de filtro
+ * Busca un deportista por cédula
  */
-export async function listMisDeportistas(filters?: DeportistaFilters) {
-  const params = new URLSearchParams();
-  if (filters?.categoriaId) params.append("categoriaId", String(filters.categoriaId));
-  if (filters?.disciplinaId) params.append("disciplinaId", String(filters.disciplinaId));
-  if (filters?.search) params.append("query", filters.search);
-
-  const query = params.toString();
-  return apiFetch<Deportista[]>(`/deportistas${query ? `?${query}` : ""}`);
+export async function buscarDeportistaPorCedula(cedula: string) {
+  return apiFetch<DeportistaListItem>(`/deportistas/buscar/cedula?cedula=${encodeURIComponent(cedula)}`);
 }
 
 /**
- * Obtiene un deportista por ID
+ * Obtiene un deportista por ID (respuesta detallada)
  */
 export async function getDeportista(id: number) {
   return apiFetch<Deportista>(`/deportistas/${id}`);
@@ -63,7 +57,7 @@ export async function updateDeportista(id: number, data: UpdateDeportistaInput) 
 }
 
 /**
- * Elimina un deportista
+ * Elimina un deportista (soft delete)
  */
 export async function deleteDeportista(id: number) {
   return apiFetch<void>(`/deportistas/${id}`, {

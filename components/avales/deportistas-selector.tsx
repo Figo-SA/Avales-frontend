@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Check, Search, X } from "lucide-react";
-import type { Deportista } from "@/types/deportista";
-import { listMisDeportistas } from "@/lib/api/deportista";
+import type { DeportistaListItem } from "@/types/deportista";
+import { listDeportistas } from "@/lib/api/deportista";
 
 type Props = {
   selectedIds: number[];
@@ -16,7 +16,7 @@ export default function DeportistasSelector({
   onChange,
   disabled = false,
 }: Props) {
-  const [deportistas, setDeportistas] = useState<Deportista[]>([]);
+  const [deportistas, setDeportistas] = useState<DeportistaListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -25,8 +25,8 @@ export default function DeportistasSelector({
     const load = async () => {
       try {
         setLoading(true);
-        const res = await listMisDeportistas();
-        setDeportistas(res.data ?? []);
+        const res = await listDeportistas({ limit: 100 });
+        setDeportistas(res.data?.items ?? []);
       } catch (err: any) {
         setError(err?.message ?? "Error cargando deportistas");
       } finally {
@@ -37,7 +37,7 @@ export default function DeportistasSelector({
   }, []);
 
   const filteredDeportistas = deportistas.filter((d) => {
-    const fullName = `${d.user?.nombre ?? ""} ${d.user?.apellido ?? ""} ${d.cedula}`.toLowerCase();
+    const fullName = `${d.nombres ?? ""} ${d.apellidos ?? ""} ${d.cedula}`.toLowerCase();
     return fullName.includes(search.toLowerCase());
   });
 
@@ -76,7 +76,7 @@ export default function DeportistasSelector({
               key={d.id}
               className="inline-flex items-center gap-1 bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 px-2 py-1 rounded-full text-sm"
             >
-              {d.user?.nombre} {d.user?.apellido}
+              {d.nombres} {d.apellidos}
               {!disabled && (
                 <button
                   type="button"
@@ -126,10 +126,10 @@ export default function DeportistasSelector({
                   >
                     <div>
                       <div className="font-medium text-gray-800 dark:text-gray-100">
-                        {d.user?.nombre} {d.user?.apellido}
+                        {d.nombres} {d.apellidos}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
-                        CI: {d.cedula} • {d.disciplina?.nombre} • {d.categoria?.nombre}
+                        CI: {d.cedula}
                       </div>
                     </div>
                     {isSelected && (
