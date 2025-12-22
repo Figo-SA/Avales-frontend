@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api/client";
-import type { DeportistaListResponse } from "@/types/deportista";
+import type { Deportista, DeportistaListResponse } from "@/types/deportista";
+import type { CreateDeportistaPayload } from "@/lib/validation/deportista";
 
 export type ListDeportistasOptions = {
   sexo?: string;
@@ -8,9 +9,7 @@ export type ListDeportistasOptions = {
   limit?: number;
 };
 
-export async function listDeportistas(
-  options: ListDeportistasOptions = {}
-) {
+export async function listDeportistas(options: ListDeportistasOptions = {}) {
   const params = new URLSearchParams();
 
   if (options.sexo) params.set("sexo", options.sexo);
@@ -22,4 +21,43 @@ export async function listDeportistas(
   const url = qs ? `/deportistas?${qs}` : "/deportistas";
 
   return apiFetch<DeportistaListResponse>(url, { method: "GET" });
+}
+
+export async function createDeportista(values: CreateDeportistaPayload) {
+  return apiFetch<Deportista>("/deportistas", {
+    method: "POST",
+    body: JSON.stringify(values),
+  });
+}
+
+export async function getDeportista(id: number) {
+  return apiFetch<Deportista>(`/deportistas/${id}`, { method: "GET" });
+}
+
+export type UpdateDeportistaPayload = Partial<CreateDeportistaPayload>;
+
+export async function updateDeportista(
+  id: number,
+  values: UpdateDeportistaPayload
+) {
+  return apiFetch<Deportista>(`/deportistas/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(values),
+  });
+}
+
+export async function softDeleteDeportista(id: number) {
+  return apiFetch<void>(`/deportistas/${id}`, { method: "DELETE" });
+}
+
+export async function restoreDeportista(id: number) {
+  return apiFetch<Deportista>(`/deportistas/${id}/recuperar`, {
+    method: "POST",
+  });
+}
+
+export async function hardDeleteDeportista(id: number) {
+  return apiFetch<void>(`/deportistas/${id}/definitivo`, {
+    method: "DELETE",
+  });
 }

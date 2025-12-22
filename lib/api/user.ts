@@ -1,5 +1,5 @@
 import { apiFetch } from "@/lib/api/client";
-import type { User } from "@/types/user";
+import type { User, UserListResponse } from "@/types/user";
 import type {
   ProfileFormValues,
   CreateUserFormValues,
@@ -20,8 +20,23 @@ export async function updateUser(
   });
 }
 
-export async function listUsers() {
-  return apiFetch<User[]>("/users", { method: "GET" });
+export type ListUsersOptions = {
+  query?: string;
+  page?: number;
+  limit?: number;
+};
+
+export async function listUsers(options: ListUsersOptions = {}) {
+  const params = new URLSearchParams();
+
+  if (options.query) params.set("query", options.query);
+  if (options.page) params.set("page", String(options.page));
+  if (options.limit) params.set("limit", String(options.limit));
+
+  const qs = params.toString();
+  const url = qs ? `/users?${qs}` : "/users";
+
+  return apiFetch<UserListResponse>(url, { method: "GET" });
 }
 
 export async function createUser(values: CreateUserFormValues) {

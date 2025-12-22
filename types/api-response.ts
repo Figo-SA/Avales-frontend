@@ -3,6 +3,9 @@ export interface GlobalMeta {
   timestamp: string;
   apiVersion: string;
   durationMs: number;
+  page?: number;
+  limit?: number;
+  total?: number;
 }
 
 export interface ApiResponse<T> {

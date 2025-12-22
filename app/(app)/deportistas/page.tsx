@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import AlertBanner from "@/components/ui/alert-banner";
+import ConfirmModal from "@/components/ui/confirm-modal";
 import Pagination from "@/components/ui/pagination";
 import DeportistaTable from "./_components/deportista-table";
-import { listDeportistas } from "@/lib/api/deportistas";
+import {
+  listDeportistas,
+  softDeleteDeportista,
+} from "@/lib/api/deportistas";
 import type { Deportista } from "@/types/deportista";
 
 const PAGE_SIZE = 10;
@@ -29,6 +33,11 @@ export default function DeportistasPage() {
     limit: PAGE_SIZE,
     total: 0,
   });
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+    description?: string;
+  } | null>(null);
 
   const limit = pagination.limit || PAGE_SIZE;
   const totalPages = useMemo(
@@ -37,42 +46,55 @@ export default function DeportistasPage() {
   );
   const currentPage = Math.min(page, totalPages);
   const showing = deportistas.length;
+  const [confirmDeportista, setConfirmDeportista] =
+    useState<Deportista | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (page === currentPage) return;
     setPage(currentPage);
   }, [page, currentPage]);
 
-  useEffect(() => {
-    const fetchDeportistas = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await listDeportistas({
-          query: q.trim() || undefined,
-          sexo: sexo || undefined,
-          page: currentPage,
-          limit: PAGE_SIZE,
-        });
-        const data = res.data;
-        const payload = res;
-        setDeportistas(data);
-        console.log("data:", data); // --- IGNORE ---
-        console.log("deportistas:", deportistas); // --- IGNORE ---
-        setPagination({
-          page: payload?.pagination?.page ?? currentPage,
-          limit: payload?.pagination?.limit ?? PAGE_SIZE,
-          total: payload?.pagination?.total ?? data.length ?? 0,
-        });
-      } catch (err: any) {
-        setError(err?.message ?? "No se pudo cargar los deportistas.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchDeportistas();
+  const fetchDeportistas = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await listDeportistas({
+        query: q.trim() || undefined,
+        sexo: sexo || undefined,
+        page: currentPage,
+        limit: PAGE_SIZE,
+      });
+      const items = res.data ?? [];
+      const meta = res.meta;
+      setDeportistas(items);
+      setPagination({
+        page:
+          typeof meta?.page === "number" && meta.page > 0
+            ? meta.page
+            : currentPage,
+        limit:
+          typeof meta?.limit === "number" && meta.limit > 0
+            ? meta.limit
+            : PAGE_SIZE,
+        total:
+          typeof meta?.total === "number" && meta.total >= 0
+            ? meta.total
+            : items.length ?? 0,
+      });
+    } catch (err: any) {
+      const msg = err?.message ?? "No se pudo cargar los deportistas.";
+      setError(msg);
+      setToast({ variant: "error", message: msg });
+    } finally {
+      setLoading(false);
+    }
   }, [currentPage, q, sexo]);
+
+  useEffect(() => {
+    void fetchDeportistas();
+  }, [fetchDeportistas]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -86,8 +108,88 @@ export default function DeportistasPage() {
     );
   }, [q, sexo, currentPage, router]);
 
+  // mostrar toast cuando viene status=created desde la creacion
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (!status) return;
+
+    if (status === "created") {
+      setToast({
+        variant: "success",
+        message: "Deportista creado correctamente.",
+        description: "El listado se actualiza automaticamente.",
+      });
+    } else if (status === "updated") {
+      setToast({
+        variant: "success",
+        message: "Deportista actualizado correctamente.",
+      });
+    } else if (status === "error") {
+      setToast({
+        variant: "error",
+        message: "No se pudo procesar la solicitud.",
+      });
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+    router.replace(
+      params.toString() ? `/deportistas?${params}` : "/deportistas",
+      { scroll: false }
+    );
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  useEffect(() => {
+    if (confirmOpen) return;
+    const timer = setTimeout(() => setConfirmDeportista(null), 180);
+    return () => clearTimeout(timer);
+  }, [confirmOpen]);
+
+  const handleDelete = (deportista: Deportista) => {
+    setConfirmDeportista(deportista);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmDeportista) return;
+    try {
+      setDeleting(true);
+      await softDeleteDeportista(confirmDeportista.id);
+      setToast({
+        variant: "success",
+        message: "Deportista eliminado correctamente.",
+      });
+      await fetchDeportistas();
+    } catch (err: any) {
+      setToast({
+        variant: "error",
+        message: err?.message ?? "No se pudo eliminar el deportista.",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
   return (
     <>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            description={toast.description}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
+
       {error && !loading && (
         <div className="fixed top-4 right-4 z-50 max-w-sm w-full drop-shadow-lg">
           <AlertBanner
@@ -128,9 +230,15 @@ export default function DeportistasPage() {
               }}
             >
               <option value="">Todos</option>
-              <option value="M">Masculino</option>
-              <option value="F">Femenino</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
             </select>
+            <a
+              href="/deportistas/nuevo"
+              className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+            >
+              Nuevo deportista
+            </a>
           </div>
         </div>
 
@@ -138,6 +246,7 @@ export default function DeportistasPage() {
           deportistas={deportistas}
           loading={loading}
           error={error}
+          onDelete={handleDelete}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
@@ -152,6 +261,21 @@ export default function DeportistasPage() {
           />
         </div>
       </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Eliminar deportista"
+        description={`Seguro que quieres eliminar a ${
+          confirmDeportista?.nombres ?? confirmDeportista?.cedula ?? ""
+        }?`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (deleting) return;
+          setConfirmOpen(false);
+        }}
+      />
     </>
   );
 }

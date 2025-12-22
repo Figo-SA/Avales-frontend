@@ -34,3 +34,4 @@ export type Role =
   | "PDA"
   | "FINANCIERO"
   | "ENTRENADOR";
+export type UserListResponse = User[];

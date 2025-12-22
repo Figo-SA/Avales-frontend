@@ -7,8 +7,11 @@ export type Deportista = {
   cedula: string;
   fechaNacimiento?: string;
   categoria?: CatalogItem;
+  categoriaId?: number;
   disciplina?: CatalogItem;
+  disciplinaId?: number;
   genero?: string;
+  club?: string;
   afiliacion: boolean;
   afiliacionInicio?: string | null;
   afiliacionFin?: string | null;
@@ -16,15 +19,4 @@ export type Deportista = {
   updatedAt?: string;
 };
 
-export type Pagination = {
-  page: number;
-  limit: number;
-  total: number;
-};
-
-export type PaginatedResult<T> = {
-  data: T[];
-  pagination: Pagination;
-};
-
-export type DeportistaListResponse = PaginatedResult<Deportista>;
+export type DeportistaListResponse = Deportista[];

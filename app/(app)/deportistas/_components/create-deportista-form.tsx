@@ -1,31 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 
 import DatePicker from "@/components/forms/DatePicker";
-import { createDeportista } from "@/lib/api/deportistas";
 import { ApiError } from "@/lib/api/client";
+import { createDeportista, updateDeportista } from "@/lib/api/deportistas";
 import { getCatalog } from "@/lib/api/catalog";
 import type { CatalogItem } from "@/types/catalog";
+import type { Deportista } from "@/types/deportista";
 import {
   deportistaSchema,
   type CreateDeportistaPayload,
   type DeportistaFormValues,
 } from "@/lib/validation/deportista";
 
-type Props = {
-  onCreated?: () => Promise<void>;
+const EMPTY_FORM_VALUES: DeportistaFormValues = {
+  nombres: "",
+  apellidos: "",
+  cedula: "",
+  genero: undefined as any,
+  fechaNacimiento: "",
+  categoriaId: undefined as any,
+  disciplinaId: undefined as any,
+  afiliacion: false,
+  afiliacionInicio: "",
+  afiliacionFin: "",
 };
 
-export default function CreateDeportistaForm({ onCreated }: Props) {
+const mapDeportistaToFormValues = (
+  deportista: Deportista
+): DeportistaFormValues => ({
+  nombres: deportista.nombres ?? "",
+  apellidos: deportista.apellidos ?? "",
+  cedula: deportista.cedula ?? "",
+  genero: (deportista.genero ?? undefined) as DeportistaFormValues["genero"],
+  fechaNacimiento: deportista.fechaNacimiento ?? "",
+  categoriaId:
+    deportista.categoriaId ??
+    deportista.categoria?.id ??
+    (undefined as unknown as DeportistaFormValues["categoriaId"]),
+  disciplinaId:
+    deportista.disciplinaId ??
+    deportista.disciplina?.id ??
+    (undefined as unknown as DeportistaFormValues["disciplinaId"]),
+  afiliacion: deportista.afiliacion ?? false,
+  afiliacionInicio: deportista.afiliacionInicio ?? "",
+  afiliacionFin: deportista.afiliacionFin ?? "",
+});
+
+type Props = {
+  mode?: "create" | "edit";
+  deportista?: Deportista;
+  onCreated?: () => Promise<void>;
+  onUpdated?: () => Promise<void>;
+};
+
+export default function CreateDeportistaForm({
+  mode = "create",
+  deportista,
+  onCreated,
+  onUpdated,
+}: Props) {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<CatalogItem[]>([]);
   const [disciplinas, setDisciplinas] = useState<CatalogItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
+
+  const initialValues = useMemo<DeportistaFormValues>(() => {
+    if (mode === "edit" && deportista) {
+      return mapDeportistaToFormValues(deportista);
+    }
+    return EMPTY_FORM_VALUES;
+  }, [deportista, mode]);
+
   const {
     register,
     handleSubmit,
@@ -37,19 +88,15 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
     setError,
   } = useForm<DeportistaFormValues>({
     resolver: zodResolver(deportistaSchema),
-    defaultValues: {
-      nombres: "",
-      apellidos: "",
-      cedula: "",
-      genero: undefined as any,
-      fechaNacimiento: "",
-      categoriaId: undefined as any,
-      disciplinaId: undefined as any,
-      afiliacion: false,
-      afiliacionInicio: "",
-      afiliacionFin: "",
-    },
+    defaultValues: initialValues,
   });
+
+  useEffect(() => {
+    if (mode !== "edit" || !deportista || catalogLoading) {
+      return;
+    }
+    reset(initialValues);
+  }, [deportista, initialValues, mode, catalogLoading, reset]);
 
   const afiliacion = watch("afiliacion", false);
   const afiliacionInicio = watch("afiliacionInicio");
@@ -98,11 +145,12 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
 
   const onSubmit = async (values: DeportistaFormValues) => {
     setSubmitError(null);
+
     const payload: CreateDeportistaPayload = {
       nombres: values.nombres.trim(),
       apellidos: values.apellidos.trim(),
       cedula: values.cedula.trim(),
-      genero: values.genero,
+      genero: values.genero.toUpperCase() as "MASCULINO" | "FEMENINO" | "OTRO",
       fechaNacimiento: new Date(values.fechaNacimiento).toISOString(),
       categoriaId: values.categoriaId,
       disciplinaId: values.disciplinaId,
@@ -116,24 +164,26 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
     };
 
     try {
-      await createDeportista(payload);
-      reset({
-        nombres: "",
-        apellidos: "",
-        cedula: "",
-        genero: undefined as any,
-        fechaNacimiento: "",
-        categoriaId: undefined as any,
-        disciplinaId: undefined as any,
-        afiliacion: false,
-        afiliacionInicio: "",
-        afiliacionFin: "",
-      });
-      if (onCreated) {
-        await onCreated();
+      if (mode === "edit") {
+        if (!deportista?.id) {
+          throw new Error("No se pudo identificar el deportista a editar.");
+        }
+        await updateDeportista(deportista.id, payload);
+        if (onUpdated) {
+          await onUpdated();
+        }
+      } else {
+        await createDeportista(payload);
+        reset(EMPTY_FORM_VALUES);
+        if (onCreated) {
+          await onCreated();
+        }
       }
     } catch (err: unknown) {
-      const fallback = "No se pudo crear el deportista. Intenta nuevamente.";
+      const fallback =
+        mode === "edit"
+          ? "No se pudo actualizar el deportista. Intenta nuevamente."
+          : "No se pudo crear el deportista. Intenta nuevamente.";
       let message = fallback;
 
       if (err instanceof ApiError) {
@@ -152,6 +202,12 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
       setSubmitError(message);
     }
   };
+
+  const buttonLabel = isSubmitting
+    ? "Guardando..."
+    : mode === "edit"
+    ? "Guardar cambios"
+    : "Guardar deportista";
 
   return (
     <form
@@ -236,9 +292,9 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
               {...register("genero")}
             >
               <option value="">Selecciona una opcion</option>
-              <option value="MASCULINO">Masculino</option>
-              <option value="FEMENINO">Femenino</option>
-              <option value="OTRO">Otro</option>
+              <option value="masculino">Masculino</option>
+              <option value="femenino">Femenino</option>
+              <option value="otro">Otro</option>
             </select>
             {errors.genero && (
               <p className="mt-1 text-xs text-red-600">
@@ -413,7 +469,7 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
           disabled={isSubmitting || catalogLoading}
           className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
         >
-          {isSubmitting ? "Guardando..." : "Guardar deportista"}
+          {buttonLabel}
         </button>
       </div>
     </form>
