@@ -65,7 +65,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: "Deportistas",
     href: "/deportistas",
     segment: "deportistas",
-    icon: "users",
+    icon: "deportistas",
     roles: ["SUPER_ADMIN", "ADMIN"],
   },
   {
@@ -73,7 +73,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: "Usuarios",
     href: "/usuarios",
     segment: "usuarios",
-    icon: "users",
+    icon: "usuarios",
     roles: ["SUPER_ADMIN", "ADMIN"],
   },
   {
@@ -81,7 +81,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: "Avales",
     href: "/avales",
     segment: "avales",
-    icon: "aval",
+    icon: "avales",
     roles: ["SUPER_ADMIN", "ADMIN"],
   },
 ];
