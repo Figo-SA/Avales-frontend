@@ -133,8 +133,7 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
         await onCreated();
       }
     } catch (err: unknown) {
-      const fallback =
-        "No se pudo crear el deportista. Intenta nuevamente.";
+      const fallback = "No se pudo crear el deportista. Intenta nuevamente.";
       let message = fallback;
 
       if (err instanceof ApiError) {
@@ -263,6 +262,7 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
                   id="fechaNacimiento"
                   value={field.value ?? ""}
                   onChange={field.onChange}
+                  mode="single"
                 />
                 {errors.fechaNacimiento && (
                   <p className="mt-1 text-xs text-red-600">
@@ -366,6 +366,7 @@ export default function CreateDeportistaForm({ onCreated }: Props) {
                   onChange={field.onChange}
                   disabled={!afiliacion}
                   placeholder="Selecciona fecha de inicio"
+                  mode="single"
                 />
                 {errors.afiliacionInicio && (
                   <p className="mt-1 text-xs text-red-600">
