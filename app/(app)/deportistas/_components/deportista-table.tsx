@@ -1,11 +1,15 @@
 "use client";
 
+import Link from "next/link";
+import { Pencil, Trash2 } from "lucide-react";
+
 import type { Deportista } from "@/types/deportista";
 
 type Props = {
   deportistas: Deportista[];
   loading?: boolean;
   error?: string | null;
+  onDelete?: (deportista: Deportista) => void;
 };
 
 function formatDate(value?: string | null) {
@@ -36,6 +40,7 @@ export default function DeportistaTable({
   deportistas,
   loading,
   error,
+  onDelete,
 }: Props) {
   const showEmpty = !loading && !error && deportistas.length === 0;
 
@@ -77,6 +82,9 @@ export default function DeportistaTable({
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                   <div className="font-semibold text-left">Afiliacion</div>
                 </th>
+                <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                  <div className="font-semibold text-left">Acciones</div>
+                </th>
               </tr>
             </thead>
             {/* Table body */}
@@ -85,7 +93,7 @@ export default function DeportistaTable({
                 <tr>
                   <td
                     className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400"
-                    colSpan={7}
+                    colSpan={8}
                   >
                     Cargando deportistas...
                   </td>
@@ -96,7 +104,7 @@ export default function DeportistaTable({
                 <tr>
                   <td
                     className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-red-500"
-                    colSpan={7}
+                    colSpan={8}
                   >
                     {error}
                   </td>
@@ -107,7 +115,7 @@ export default function DeportistaTable({
                 <tr>
                   <td
                     className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400"
-                    colSpan={7}
+                    colSpan={8}
                   >
                     No hay deportistas para mostrar.
                   </td>
@@ -151,6 +159,31 @@ export default function DeportistaTable({
                     <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {formatAfiliacion(d)}
+                      </div>
+                    </td>
+                    <td className="px-2 first:pl-5 last:pr-5 py-3  whitespace-nowrap">
+                      <div className="flex items-center justify-start gap-2">
+                        <Link
+                          href={`/deportistas/${d.id}/editar`}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-indigo-300 hover:text-indigo-600 dark:hover:border-indigo-500/60 dark:hover:text-indigo-300 transition-colors"
+                          aria-label={`Editar ${
+                            d.nombres ?? d.cedula ?? "deportista"
+                          }`}
+                          title="Editar deportista"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => onDelete?.(d)}
+                          className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700/70 text-gray-600 dark:text-gray-200 hover:border-rose-300 hover:text-rose-600 dark:hover:border-rose-500/60 dark:hover:text-rose-300 transition-colors"
+                          aria-label={`Eliminar ${
+                            d.nombres ?? d.cedula ?? "deportista"
+                          }`}
+                          title="Eliminar deportista"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>

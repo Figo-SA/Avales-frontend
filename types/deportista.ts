@@ -7,7 +7,9 @@ export type Deportista = {
   cedula: string;
   fechaNacimiento?: string;
   categoria?: CatalogItem;
+  categoriaId?: number;
   disciplina?: CatalogItem;
+  disciplinaId?: number;
   genero?: string;
   club?: string;
   afiliacion: boolean;

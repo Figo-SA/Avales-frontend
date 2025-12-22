@@ -29,3 +29,35 @@ export async function createDeportista(values: CreateDeportistaPayload) {
     body: JSON.stringify(values),
   });
 }
+
+export async function getDeportista(id: number) {
+  return apiFetch<Deportista>(`/deportistas/${id}`, { method: "GET" });
+}
+
+export type UpdateDeportistaPayload = Partial<CreateDeportistaPayload>;
+
+export async function updateDeportista(
+  id: number,
+  values: UpdateDeportistaPayload
+) {
+  return apiFetch<Deportista>(`/deportistas/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(values),
+  });
+}
+
+export async function softDeleteDeportista(id: number) {
+  return apiFetch<void>(`/deportistas/${id}`, { method: "DELETE" });
+}
+
+export async function restoreDeportista(id: number) {
+  return apiFetch<Deportista>(`/deportistas/${id}/recuperar`, {
+    method: "POST",
+  });
+}
+
+export async function hardDeleteDeportista(id: number) {
+  return apiFetch<void>(`/deportistas/${id}/definitivo`, {
+    method: "DELETE",
+  });
+}
