@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api/client";
 import type { Evento, EventoListResponse } from "@/types/evento";
+import type { CreateEventoPayload } from "@/lib/validation/evento";
 
 export type ListEventosOptions = {
   page?: number;
@@ -20,4 +21,65 @@ export async function listEventos(options: ListEventosOptions = {}) {
   const url = qs ? `/events?${qs}` : "/events";
 
   return apiFetch<EventoListResponse>(url, { method: "GET" });
+}
+
+export async function getEvento(id: number) {
+  return apiFetch<Evento>(`/events/${id}`, { method: "GET" });
+}
+
+export async function createEvento(
+  values: CreateEventoPayload,
+  archivo?: File
+) {
+  const formData = new FormData();
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+
+  if (archivo) {
+    formData.append("archivo", archivo);
+  }
+
+  return apiFetch<Evento>("/events", {
+    method: "POST",
+    body: formData,
+    headers: {},
+  });
+}
+
+export type UpdateEventoPayload = Partial<CreateEventoPayload>;
+
+export async function updateEvento(
+  id: number,
+  values: UpdateEventoPayload,
+  archivo?: File
+) {
+  const formData = new FormData();
+
+  Object.entries(values).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
+
+  if (archivo) {
+    formData.append("archivo", archivo);
+  }
+
+  return apiFetch<Evento>(`/events/${id}`, {
+    method: "PATCH",
+    body: formData,
+    headers: {},
+  });
+}
+
+export async function softDeleteEvento(id: number) {
+  return apiFetch<{ id: number }>(`/events/${id}`, { method: "DELETE" });
+}
+
+export async function restoreEvento(id: number) {
+  return apiFetch<Evento>(`/events/${id}/restore`, { method: "PATCH" });
 }

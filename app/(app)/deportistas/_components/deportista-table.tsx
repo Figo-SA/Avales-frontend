@@ -45,21 +45,10 @@ export default function DeportistaTable({
   const showEmpty = !loading && !error && deportistas.length === 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl relative">
-      <header className="px-5 py-4">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-          Deportistas{" "}
-          <span className="text-gray-400 dark:text-gray-500 font-medium">
-            {deportistas.length}
-          </span>
-        </h2>
-      </header>
-      <div>
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full dark:text-gray-300">
-            {/* Table header */}
-            <thead className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-t border-b border-gray-100 dark:border-gray-700/60">
+    <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl relative overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="table-auto w-full dark:text-gray-300">
+          <thead className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-b border-gray-100 dark:border-gray-700/60">
               <tr>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                   <div className="font-semibold text-left">Nombres</div>
@@ -126,42 +115,42 @@ export default function DeportistaTable({
                 !error &&
                 deportistas.map((d) => (
                   <tr key={d.id}>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="font-semibold text-gray-800 dark:text-gray-100">
                         {d.nombres || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {d.apellidos || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {d.cedula || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {d.categoria?.nombre ?? "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {d.disciplina?.nombre ?? "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {formatGenero(d.genero)}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {formatAfiliacion(d)}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3  whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="flex items-center justify-start gap-2">
                         <Link
                           href={`/deportistas/${d.id}/editar`}
@@ -189,8 +178,7 @@ export default function DeportistaTable({
                   </tr>
                 ))}
             </tbody>
-          </table>
-        </div>
+        </table>
       </div>
     </div>
   );

@@ -20,7 +20,7 @@ export default function DeportistasPage() {
   const searchParams = useSearchParams();
 
   const [q, setQ] = useState(() => searchParams.get("query") ?? "");
-  const [sexo, setSexo] = useState(() => searchParams.get("sexo") ?? "");
+  const [genero, setGenero] = useState(() => searchParams.get("genero") ?? "");
   const [page, setPage] = useState(() => {
     const value = Number(searchParams.get("page") ?? "1");
     return Number.isFinite(value) && value > 0 ? value : 1;
@@ -62,7 +62,7 @@ export default function DeportistasPage() {
       setError(null);
       const res = await listDeportistas({
         query: q.trim() || undefined,
-        sexo: sexo || undefined,
+        genero: genero || undefined,
         page: currentPage,
         limit: PAGE_SIZE,
       });
@@ -90,7 +90,7 @@ export default function DeportistasPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, q, sexo]);
+  }, [currentPage, q, genero]);
 
   useEffect(() => {
     void fetchDeportistas();
@@ -99,14 +99,14 @@ export default function DeportistasPage() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (q.trim()) params.set("query", q.trim());
-    if (sexo) params.set("sexo", sexo);
+    if (genero) params.set("genero", genero);
     if (currentPage > 1) params.set("page", String(currentPage));
 
     router.replace(
       params.toString() ? `/deportistas?${params}` : "/deportistas",
       { scroll: false }
     );
-  }, [q, sexo, currentPage, router]);
+  }, [q, genero, currentPage, router]);
 
   // mostrar toast cuando viene status=created desde la creacion
   useEffect(() => {
@@ -223,15 +223,15 @@ export default function DeportistasPage() {
             />
             <select
               className="form-select w-full sm:w-40"
-              value={sexo}
+              value={genero}
               onChange={(e) => {
                 setPage(1);
-                setSexo(e.target.value);
+                setGenero(e.target.value);
               }}
             >
               <option value="">Todos</option>
-              <option value="masculino">Masculino</option>
-              <option value="femenino">Femenino</option>
+              <option value="MASCULINO">Masculino</option>
+              <option value="FEMENINO">Femenino</option>
             </select>
             <a
               href="/deportistas/nuevo"

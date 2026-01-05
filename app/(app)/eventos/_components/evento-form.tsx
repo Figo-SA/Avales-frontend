@@ -1,0 +1,764 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Upload, X } from "lucide-react";
+
+import DatePicker from "@/components/forms/DatePicker";
+import { ApiError } from "@/lib/api/client";
+import { createEvento, updateEvento } from "@/lib/api/eventos";
+import { getCatalog } from "@/lib/api/catalog";
+import type { CatalogItem } from "@/types/catalog";
+import type { Evento } from "@/types/evento";
+import {
+  eventoSchema,
+  type CreateEventoPayload,
+  type EventoFormValues,
+} from "@/lib/validation/evento";
+
+const EMPTY_FORM_VALUES: EventoFormValues = {
+  codigo: "",
+  tipoParticipacion: "",
+  tipoEvento: "",
+  nombre: "",
+  lugar: "",
+  genero: undefined as unknown as EventoFormValues["genero"],
+  disciplinaId: undefined as unknown as number,
+  categoriaId: undefined as unknown as number,
+  provincia: "",
+  ciudad: "",
+  pais: "Ecuador",
+  alcance: "",
+  fechaInicio: "",
+  fechaFin: "",
+  numEntrenadoresHombres: 0,
+  numEntrenadoresMujeres: 0,
+  numAtletasHombres: 0,
+  numAtletasMujeres: 0,
+};
+
+const mapEventoToFormValues = (evento: Evento): EventoFormValues => ({
+  codigo: evento.codigo ?? "",
+  tipoParticipacion: evento.tipoParticipacion ?? "",
+  tipoEvento: evento.tipoEvento ?? "",
+  nombre: evento.nombre ?? "",
+  lugar: evento.lugar ?? "",
+  genero: evento.genero ?? (undefined as unknown as EventoFormValues["genero"]),
+  disciplinaId:
+    evento.disciplinaId ??
+    evento.disciplina?.id ??
+    (undefined as unknown as number),
+  categoriaId:
+    evento.categoriaId ??
+    evento.categoria?.id ??
+    (undefined as unknown as number),
+  provincia: evento.provincia ?? "",
+  ciudad: evento.ciudad ?? "",
+  pais: evento.pais ?? "Ecuador",
+  alcance: evento.alcance ?? "",
+  fechaInicio: evento.fechaInicio ?? "",
+  fechaFin: evento.fechaFin ?? "",
+  numEntrenadoresHombres: evento.numEntrenadoresHombres ?? 0,
+  numEntrenadoresMujeres: evento.numEntrenadoresMujeres ?? 0,
+  numAtletasHombres: evento.numAtletasHombres ?? 0,
+  numAtletasMujeres: evento.numAtletasMujeres ?? 0,
+});
+
+type Props = {
+  mode?: "create" | "edit";
+  evento?: Evento;
+  onCreated?: () => Promise<void>;
+  onUpdated?: () => Promise<void>;
+};
+
+export default function EventoForm({
+  mode = "create",
+  evento,
+  onCreated,
+  onUpdated,
+}: Props) {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [categorias, setCategorias] = useState<CatalogItem[]>([]);
+  const [disciplinas, setDisciplinas] = useState<CatalogItem[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [archivo, setArchivo] = useState<File | null>(null);
+  const [archivoPreview, setArchivoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const initialValues = useMemo<EventoFormValues>(() => {
+    if (mode === "edit" && evento) {
+      return mapEventoToFormValues(evento);
+    }
+    return EMPTY_FORM_VALUES;
+  }, [evento, mode]);
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
+    reset,
+    setError,
+  } = useForm<EventoFormValues>({
+    resolver: zodResolver(eventoSchema),
+    defaultValues: initialValues,
+  });
+
+  useEffect(() => {
+    if (mode !== "edit" || !evento || catalogLoading) {
+      return;
+    }
+    reset(initialValues);
+  }, [evento, initialValues, mode, catalogLoading, reset]);
+
+  useEffect(() => {
+    const loadCatalog = async () => {
+      try {
+        setCatalogLoading(true);
+        setCatalogError(null);
+        const res = await getCatalog();
+        const cats = res.data?.categorias ?? [];
+        const discs = res.data?.disciplinas ?? [];
+        setCategorias(cats);
+        setDisciplinas(discs);
+      } catch (err: any) {
+        setCatalogError(
+          err?.message ?? "No se pudieron cargar categorias/disciplinas."
+        );
+        setCategorias([]);
+        setDisciplinas([]);
+      } finally {
+        setCatalogLoading(false);
+      }
+    };
+
+    void loadCatalog();
+  }, []);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = ["image/jpeg", "image/png", "application/pdf"];
+    if (!validTypes.includes(file.type)) {
+      setSubmitError("Solo se permiten archivos JPG, PNG o PDF");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError("El archivo no puede superar 5MB");
+      return;
+    }
+
+    setArchivo(file);
+    setSubmitError(null);
+
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setArchivoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setArchivoPreview(null);
+    }
+  };
+
+  const removeFile = () => {
+    setArchivo(null);
+    setArchivoPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const onSubmit = async (values: EventoFormValues) => {
+    setSubmitError(null);
+
+    const payload: CreateEventoPayload = {
+      codigo: values.codigo.trim(),
+      tipoParticipacion: values.tipoParticipacion.trim(),
+      tipoEvento: values.tipoEvento.trim(),
+      nombre: values.nombre.trim(),
+      lugar: values.lugar.trim(),
+      genero: values.genero,
+      disciplinaId: values.disciplinaId,
+      categoriaId: values.categoriaId,
+      provincia: values.provincia.trim(),
+      ciudad: values.ciudad.trim(),
+      pais: values.pais.trim(),
+      alcance: values.alcance.trim(),
+      fechaInicio: new Date(values.fechaInicio).toISOString(),
+      fechaFin: new Date(values.fechaFin).toISOString(),
+      numEntrenadoresHombres: values.numEntrenadoresHombres,
+      numEntrenadoresMujeres: values.numEntrenadoresMujeres,
+      numAtletasHombres: values.numAtletasHombres,
+      numAtletasMujeres: values.numAtletasMujeres,
+    };
+
+    try {
+      if (mode === "edit") {
+        if (!evento?.id) {
+          throw new Error("No se pudo identificar el evento a editar.");
+        }
+        await updateEvento(evento.id, payload, archivo ?? undefined);
+        if (onUpdated) {
+          await onUpdated();
+        }
+      } else {
+        await createEvento(payload, archivo ?? undefined);
+        reset(EMPTY_FORM_VALUES);
+        removeFile();
+        if (onCreated) {
+          await onCreated();
+        }
+      }
+    } catch (err: unknown) {
+      const fallback =
+        mode === "edit"
+          ? "No se pudo actualizar el evento. Intenta nuevamente."
+          : "No se pudo crear el evento. Intenta nuevamente.";
+      let message = fallback;
+
+      if (err instanceof ApiError) {
+        const problem = err.problem;
+        const detail =
+          problem?.detail ?? problem?.title ?? err.message ?? fallback;
+        if (problem?.field) {
+          const fieldName = problem.field as keyof EventoFormValues;
+          setError(fieldName, { type: "server", message: detail });
+        }
+        message = detail;
+      } else if (err instanceof Error) {
+        message = err.message;
+      }
+
+      setSubmitError(message);
+    }
+  };
+
+  const buttonLabel = isSubmitting
+    ? "Guardando..."
+    : mode === "edit"
+    ? "Guardar cambios"
+    : "Guardar evento";
+
+  return (
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="bg-white dark:bg-gray-800 shadow-sm rounded-xl"
+    >
+      {/* Seccion: Informacion General */}
+      <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-700/60">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+          Informacion del evento
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Datos principales del evento deportivo.
+        </p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="codigo">
+              Codigo
+            </label>
+            <input
+              id="codigo"
+              className="form-input w-full"
+              type="text"
+              placeholder="EVT-2025-001"
+              {...register("codigo")}
+            />
+            {errors.codigo && (
+              <p className="mt-1 text-xs text-red-600">{errors.codigo.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="tipoParticipacion"
+            >
+              Tipo de participacion
+            </label>
+            <input
+              id="tipoParticipacion"
+              className="form-input w-full"
+              type="text"
+              placeholder="Internacional, Nacional..."
+              {...register("tipoParticipacion")}
+            />
+            {errors.tipoParticipacion && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.tipoParticipacion.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="tipoEvento"
+            >
+              Tipo de evento
+            </label>
+            <input
+              id="tipoEvento"
+              className="form-input w-full"
+              type="text"
+              placeholder="Campeonato, Torneo..."
+              {...register("tipoEvento")}
+            />
+            {errors.tipoEvento && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.tipoEvento.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1" htmlFor="nombre">
+            Nombre del evento
+          </label>
+          <input
+            id="nombre"
+            className="form-input w-full"
+            type="text"
+            placeholder="Campeonato Nacional de Atletismo 2025"
+            {...register("nombre")}
+          />
+          {errors.nombre && (
+            <p className="mt-1 text-xs text-red-600">{errors.nombre.message}</p>
+          )}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="genero">
+              Genero
+            </label>
+            <select
+              id="genero"
+              className="form-select w-full"
+              {...register("genero")}
+            >
+              <option value="">Selecciona una opcion</option>
+              <option value="MASCULINO">Masculino</option>
+              <option value="FEMENINO">Femenino</option>
+              <option value="MASCULINO_FEMENINO">Mixto</option>
+            </select>
+            {errors.genero && (
+              <p className="mt-1 text-xs text-red-600">{errors.genero.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="alcance">
+              Alcance
+            </label>
+            <input
+              id="alcance"
+              className="form-input w-full"
+              type="text"
+              placeholder="Nacional, Regional..."
+              {...register("alcance")}
+            />
+            {errors.alcance && (
+              <p className="mt-1 text-xs text-red-600">{errors.alcance.message}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="categoriaId"
+            >
+              Categoria
+            </label>
+            <select
+              id="categoriaId"
+              className="form-select w-full"
+              disabled={catalogLoading || !categorias.length}
+              {...register("categoriaId", {
+                setValueAs: (v) => (v === "" ? undefined : Number(v)),
+              })}
+            >
+              <option value="">Selecciona una opcion</option>
+              {categorias.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.categoriaId && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.categoriaId.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="disciplinaId"
+            >
+              Disciplina
+            </label>
+            <select
+              id="disciplinaId"
+              className="form-select w-full"
+              disabled={catalogLoading || !disciplinas.length}
+              {...register("disciplinaId", {
+                setValueAs: (v) => (v === "" ? undefined : Number(v)),
+              })}
+            >
+              <option value="">Selecciona una opcion</option>
+              {disciplinas.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.disciplinaId && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.disciplinaId.message}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Seccion: Ubicacion */}
+      <div className="px-5 py-4 border-t border-b border-gray-100 dark:border-gray-700/60">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+          Ubicacion
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Lugar y direccion del evento.
+        </p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div>
+          <label className="block text-sm font-medium mb-1" htmlFor="lugar">
+            Lugar / Sede
+          </label>
+          <input
+            id="lugar"
+            className="form-input w-full"
+            type="text"
+            placeholder="Estadio Olimpico Atahualpa"
+            {...register("lugar")}
+          />
+          {errors.lugar && (
+            <p className="mt-1 text-xs text-red-600">{errors.lugar.message}</p>
+          )}
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="pais">
+              Pais
+            </label>
+            <input
+              id="pais"
+              className="form-input w-full"
+              type="text"
+              {...register("pais")}
+            />
+            {errors.pais && (
+              <p className="mt-1 text-xs text-red-600">{errors.pais.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="provincia"
+            >
+              Provincia
+            </label>
+            <input
+              id="provincia"
+              className="form-input w-full"
+              type="text"
+              placeholder="Pichincha"
+              {...register("provincia")}
+            />
+            {errors.provincia && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.provincia.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1" htmlFor="ciudad">
+              Ciudad
+            </label>
+            <input
+              id="ciudad"
+              className="form-input w-full"
+              type="text"
+              placeholder="Quito"
+              {...register("ciudad")}
+            />
+            {errors.ciudad && (
+              <p className="mt-1 text-xs text-red-600">{errors.ciudad.message}</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Seccion: Fechas */}
+      <div className="px-5 py-4 border-t border-b border-gray-100 dark:border-gray-700/60">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+          Fechas
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Periodo de realizacion del evento.
+        </p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <Controller
+            control={control}
+            name="fechaInicio"
+            render={({ field }) => (
+              <div>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="fechaInicio"
+                >
+                  Fecha de inicio
+                </label>
+                <DatePicker
+                  id="fechaInicio"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  mode="single"
+                />
+                {errors.fechaInicio && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.fechaInicio.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+
+          <Controller
+            control={control}
+            name="fechaFin"
+            render={({ field }) => (
+              <div>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  htmlFor="fechaFin"
+                >
+                  Fecha de fin
+                </label>
+                <DatePicker
+                  id="fechaFin"
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  mode="single"
+                />
+                {errors.fechaFin && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {errors.fechaFin.message}
+                  </p>
+                )}
+              </div>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* Seccion: Participantes */}
+      <div className="px-5 py-4 border-t border-b border-gray-100 dark:border-gray-700/60">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+          Participantes
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Numero de entrenadores y atletas por genero.
+        </p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="numEntrenadoresHombres"
+            >
+              Entrenadores hombres
+            </label>
+            <input
+              id="numEntrenadoresHombres"
+              className="form-input w-full"
+              type="number"
+              min="0"
+              {...register("numEntrenadoresHombres", { valueAsNumber: true })}
+            />
+            {errors.numEntrenadoresHombres && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.numEntrenadoresHombres.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="numEntrenadoresMujeres"
+            >
+              Entrenadores mujeres
+            </label>
+            <input
+              id="numEntrenadoresMujeres"
+              className="form-input w-full"
+              type="number"
+              min="0"
+              {...register("numEntrenadoresMujeres", { valueAsNumber: true })}
+            />
+            {errors.numEntrenadoresMujeres && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.numEntrenadoresMujeres.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="numAtletasHombres"
+            >
+              Atletas hombres
+            </label>
+            <input
+              id="numAtletasHombres"
+              className="form-input w-full"
+              type="number"
+              min="0"
+              {...register("numAtletasHombres", { valueAsNumber: true })}
+            />
+            {errors.numAtletasHombres && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.numAtletasHombres.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label
+              className="block text-sm font-medium mb-1"
+              htmlFor="numAtletasMujeres"
+            >
+              Atletas mujeres
+            </label>
+            <input
+              id="numAtletasMujeres"
+              className="form-input w-full"
+              type="number"
+              min="0"
+              {...register("numAtletasMujeres", { valueAsNumber: true })}
+            />
+            {errors.numAtletasMujeres && (
+              <p className="mt-1 text-xs text-red-600">
+                {errors.numAtletasMujeres.message}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Seccion: Archivo */}
+      <div className="px-5 py-4 border-t border-b border-gray-100 dark:border-gray-700/60">
+        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
+          Archivo adjunto
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Imagen o PDF del evento (opcional, max 5MB).
+        </p>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="flex items-center gap-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.pdf"
+            onChange={handleFileChange}
+            className="hidden"
+            id="archivo"
+          />
+          <label
+            htmlFor="archivo"
+            className="btn bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 text-gray-800 dark:text-gray-300 cursor-pointer"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Seleccionar archivo
+          </label>
+          {archivo && (
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <span>{archivo.name}</span>
+              <button
+                type="button"
+                onClick={removeFile}
+                className="text-red-500 hover:text-red-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {archivoPreview && (
+          <div className="mt-2">
+            <img
+              src={archivoPreview}
+              alt="Vista previa"
+              className="max-w-xs rounded-lg border border-gray-200 dark:border-gray-700"
+            />
+          </div>
+        )}
+
+        {mode === "edit" && evento?.archivo && !archivo && (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Archivo actual: {evento.archivo}
+          </p>
+        )}
+      </div>
+
+      {/* Errores y Submit */}
+      <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-700/60">
+        {catalogError && (
+          <p className="text-sm text-red-600 mb-4">{catalogError}</p>
+        )}
+
+        {submitError && (
+          <p className="text-sm text-red-600 mb-4">{submitError}</p>
+        )}
+
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            disabled={isSubmitting || catalogLoading}
+            className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+          >
+            {buttonLabel}
+          </button>
+        </div>
+      </div>
+    </form>
+  );
+}

@@ -1,32 +1,42 @@
 import type { CatalogItem } from "@/types/catalog";
 
+export type EventoGenero = "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO";
+export type EventoEstado = "DISPONIBLE" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
+
 export type Evento = {
   id: number;
   codigo: string;
   nombre: string;
-  tipoParticipacion?: string | null;
-  tipoEvento?: string | null;
-  lugar?: string | null;
-  provincia?: string | null;
-  ciudad?: string | null;
-  pais?: string | null;
-  genero?: string | null;
-  alcance?: string | null;
-  fechaInicio?: string | null;
-  fechaFin?: string | null;
-  numEntrenadoresHombres?: number | null;
-  numEntrenadoresMujeres?: number | null;
-  numAtletasHombres?: number | null;
-  numAtletasMujeres?: number | null;
-  estado?: string | null;
+  tipoParticipacion: string;
+  tipoEvento: string;
+  lugar: string;
+  provincia: string;
+  ciudad: string;
+  pais: string;
+  genero: EventoGenero;
+  alcance: string;
+  fechaInicio: string;
+  fechaFin: string;
+  numEntrenadoresHombres: number;
+  numEntrenadoresMujeres: number;
+  numAtletasHombres: number;
+  numAtletasMujeres: number;
+  estado?: EventoEstado | null;
   archivo?: string | null;
   deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
   disciplina?: CatalogItem | null;
-  disciplinaId?: number;
+  disciplinaId: number;
   categoria?: CatalogItem | null;
-  categoriaId?: number;
+  categoriaId: number;
 };
 
-export type EventoListResponse = Evento[];
+export type EventoListResponse = {
+  data: Evento[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+};

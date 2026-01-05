@@ -4,9 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import AlertBanner from "@/components/ui/alert-banner";
-import EventoTable from "./_components/evento-table";
+import ConfirmModal from "@/components/ui/confirm-modal";
+import EventoCard from "./_components/evento-card";
 import Pagination from "@/components/ui/pagination";
-import { listEventos, type ListEventosOptions } from "@/lib/api/eventos";
+import { listEventos, softDeleteEvento, type ListEventosOptions } from "@/lib/api/eventos";
 import type { Evento } from "@/types/evento";
 
 const PAGE_SIZE = 10;
@@ -37,6 +38,14 @@ export default function EventosPage() {
     limit: PAGE_SIZE,
     total: 0,
   });
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+    description?: string;
+  } | null>(null);
+  const [confirmEvento, setConfirmEvento] = useState<Evento | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const pageSize = pagination.limit || PAGE_SIZE;
   const totalPages = useMemo(
@@ -82,6 +91,7 @@ export default function EventosPage() {
     } catch (err: any) {
       const message = err?.message ?? "No se pudieron cargar los eventos.";
       setError(message);
+      setToast({ variant: "error", message });
     } finally {
       setLoading(false);
     }
@@ -103,10 +113,90 @@ export default function EventosPage() {
     );
   }, [search, estado, currentPage, router]);
 
+  // mostrar toast cuando viene status desde la creacion/edicion
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (!status) return;
+
+    if (status === "created") {
+      setToast({
+        variant: "success",
+        message: "Evento creado correctamente.",
+        description: "El listado se actualiza automaticamente.",
+      });
+    } else if (status === "updated") {
+      setToast({
+        variant: "success",
+        message: "Evento actualizado correctamente.",
+      });
+    } else if (status === "error") {
+      setToast({
+        variant: "error",
+        message: "No se pudo procesar la solicitud.",
+      });
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+    router.replace(
+      params.toString() ? `/eventos?${params}` : "/eventos",
+      { scroll: false }
+    );
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  useEffect(() => {
+    if (confirmOpen) return;
+    const timer = setTimeout(() => setConfirmEvento(null), 180);
+    return () => clearTimeout(timer);
+  }, [confirmOpen]);
+
+  const handleDelete = (evento: Evento) => {
+    setConfirmEvento(evento);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!confirmEvento) return;
+    try {
+      setDeleting(true);
+      await softDeleteEvento(confirmEvento.id);
+      setToast({
+        variant: "success",
+        message: "Evento eliminado correctamente.",
+      });
+      await fetchEventos();
+    } catch (err: any) {
+      setToast({
+        variant: "error",
+        message: err?.message ?? "No se pudo eliminar el evento.",
+      });
+    } finally {
+      setDeleting(false);
+      setConfirmOpen(false);
+    }
+  };
+
   return (
     <>
-      {error && (
+      {toast && (
         <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            description={toast.description}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full drop-shadow-lg">
           <AlertBanner
             variant="error"
             message={error}
@@ -150,20 +240,16 @@ export default function EventosPage() {
                 </option>
               ))}
             </select>
-            <button
-              type="button"
+            <a
+              href="/eventos/nuevo"
               className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
-              disabled={loading}
-              onClick={() => {
-                void fetchEventos();
-              }}
             >
-              Recargar
-            </button>
+              Nuevo evento
+            </a>
           </div>
         </div>
 
-        <EventoTable eventos={eventos} loading={loading} error={error} />
+        <EventoCard eventos={eventos} loading={loading} error={error} onDelete={handleDelete} />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
@@ -177,6 +263,21 @@ export default function EventosPage() {
           />
         </div>
       </div>
+      <ConfirmModal
+        open={confirmOpen}
+        title="Eliminar evento"
+        description={`Seguro que quieres eliminar el evento "${
+          confirmEvento?.nombre ?? confirmEvento?.codigo ?? ""
+        }"?`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        loading={deleting}
+        onConfirm={confirmDelete}
+        onClose={() => {
+          if (deleting) return;
+          setConfirmOpen(false);
+        }}
+      />
     </>
   );
 }
