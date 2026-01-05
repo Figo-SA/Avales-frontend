@@ -7,6 +7,7 @@ export type ListEventosOptions = {
   limit?: number;
   estado?: string;
   search?: string;
+  disciplinaId?: number;
 };
 
 export async function listEventos(options: ListEventosOptions = {}) {
@@ -16,6 +17,7 @@ export async function listEventos(options: ListEventosOptions = {}) {
   if (options.limit) params.set("limit", String(options.limit));
   if (options.estado) params.set("estado", options.estado);
   if (options.search) params.set("search", options.search);
+  if (options.disciplinaId) params.set("disciplinaId", String(options.disciplinaId));
 
   const qs = params.toString();
   const url = qs ? `/events?${qs}` : "/events";

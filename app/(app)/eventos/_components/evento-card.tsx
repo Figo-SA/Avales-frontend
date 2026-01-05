@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Calendar, MapPin, Users, Eye, Pencil, Trash2 } from "lucide-react";
+import { Calendar, MapPin, Users, Eye, Pencil, Trash2, DollarSign } from "lucide-react";
 
 import type { Evento } from "@/types/evento";
+import { calcularTotalEvento } from "@/types/evento";
 
 type Props = {
   eventos: Evento[];
@@ -79,6 +80,14 @@ function getTotalParticipants(evento: Evento) {
     (evento.numEntrenadoresHombres || 0) +
     (evento.numEntrenadoresMujeres || 0)
   );
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("es-EC", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(value);
 }
 
 export default function EventoCard({
@@ -194,6 +203,21 @@ export default function EventoCard({
                 <span>{getTotalParticipants(evento)} participantes</span>
               </div>
             </div>
+
+            {/* Total presupuesto */}
+            {evento.eventoItems && evento.eventoItems.length > 0 && (
+              <div className="pt-3 border-t border-gray-100 dark:border-gray-700/60">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <DollarSign className="w-4 h-4" />
+                    <span>Presupuesto</span>
+                  </div>
+                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(calcularTotalEvento(evento))}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer con acciones */}
