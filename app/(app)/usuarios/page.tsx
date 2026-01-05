@@ -1,4 +1,3 @@
-// app/(admin)/usuarios/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -9,10 +8,10 @@ import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import Pagination from "@/components/ui/pagination";
 import UsuarioTable from "./_components/usuario-table";
-import { deleteUser, listUsers } from "@/lib/api/user";
+import { softDeleteUser, listUsers } from "@/lib/api/user";
 import type { User } from "@/types/user";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 10;
 
 export default function Usuarios() {
   const router = useRouter();
@@ -157,7 +156,7 @@ export default function Usuarios() {
     if (!confirmUser) return;
     try {
       setDeleting(true);
-      await deleteUser(confirmUser.id);
+      await softDeleteUser(confirmUser.id);
       setToast({
         variant: "success",
         message: "Usuario eliminado correctamente.",
@@ -211,7 +210,7 @@ export default function Usuarios() {
               href="/usuarios/nuevo"
               className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
             >
-              Crear usuario
+              Nuevo usuario
             </Link>
           </div>
         </div>

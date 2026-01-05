@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import CreateDeportistaForm from "../_components/create-deportista-form";
+import DeportistaForm from "../_components/deportista-form";
 
 export default function NuevoDeportista() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function NuevoDeportista() {
         </p>
       </div>
 
-      <CreateDeportistaForm onCreated={handleCreated} />
+      <DeportistaForm onCreated={handleCreated} />
     </div>
   );
 }

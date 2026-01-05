@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import CreateUserForm from "../_components/create-user-form";
+import UsuarioForm from "../_components/usuario-form";
 
 export default function NuevoUsuario() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function NuevoUsuario() {
         </p>
       </div>
 
-      <CreateUserForm onCreated={handleCreated} />
+      <UsuarioForm onCreated={handleCreated} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { getUser } from "@/lib/api/user";
-import CreateUserForm from "../../_components/create-user-form";
+import UsuarioForm from "../../_components/usuario-form";
 import { type UpdateUserFormValues } from "@/lib/validation/user";
 import type { Role } from "@/types/user";
 
@@ -86,7 +86,7 @@ export default function EditarUsuario() {
       {error && !loading && <div className="text-sm text-red-600">{error}</div>}
 
       {!loading && !error && initialValues && (
-        <CreateUserForm
+        <UsuarioForm
           mode="edit"
           userId={userId}
           initialValues={initialValues}
