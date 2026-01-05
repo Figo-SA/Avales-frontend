@@ -35,12 +35,14 @@ export default function DropdownProfile({
 
   const handleLogout = async () => {
     try {
-      await logout(); // backend borra cookie
-    } finally {
-      await refreshUser(); // debe dejar user=null
-      router.replace("/signin");
-      router.refresh();
+      await logout();
+    } catch (err) {
+      // Ignorar errores del logout (ej: si ya expiró la sesión)
+      console.error("Error en logout:", err);
     }
+    // Redirigir primero, luego refrescar para limpiar caché
+    router.replace("/signin");
+    router.refresh();
   };
 
   return (
