@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
-import EventoTable from "./_components/evento-table";
+import EventoCard from "./_components/evento-card";
 import Pagination from "@/components/ui/pagination";
 import { listEventos, softDeleteEvento, type ListEventosOptions } from "@/lib/api/eventos";
 import type { Evento } from "@/types/evento";
@@ -249,7 +249,7 @@ export default function EventosPage() {
           </div>
         </div>
 
-        <EventoTable eventos={eventos} loading={loading} error={error} onDelete={handleDelete} />
+        <EventoCard eventos={eventos} loading={loading} error={error} onDelete={handleDelete} />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
