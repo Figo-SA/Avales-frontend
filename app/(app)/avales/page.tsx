@@ -1,3 +1,236 @@
-export function AvalesPage() {
-  return <div>Avales Page</div>;
+"use client";
+
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
+import AlertBanner from "@/components/ui/alert-banner";
+import Pagination from "@/components/ui/pagination";
+import { listAvales, type ListAvalesOptions } from "@/lib/api/avales";
+import type { Aval } from "@/types/aval";
+import { useAuth } from "@/app/providers/auth-provider";
+import AvalListCard from "./_components/aval-list-card";
+
+const PAGE_SIZE = 9;
+
+const STATUS_OPTIONS = [
+  { label: "Todos los estados", value: "" },
+  { label: "Pendiente", value: "PENDIENTE" },
+  { label: "Aprobado", value: "APROBADO" },
+  { label: "Rechazado", value: "RECHAZADO" },
+];
+
+export default function AvalesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAuth();
+
+  const [avales, setAvales] = useState<Aval[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
+  const [estado, setEstado] = useState(() => searchParams.get("estado") ?? "");
+  const [page, setPage] = useState(() => {
+    const value = Number(searchParams.get("page") ?? "1");
+    return Number.isFinite(value) && value > 0 ? value : 1;
+  });
+  const [pagination, setPagination] = useState({
+    page,
+    limit: PAGE_SIZE,
+    total: 0,
+  });
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+    description?: string;
+  } | null>(null);
+
+  const pageSize = pagination.limit || PAGE_SIZE;
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil((pagination.total || 0) / pageSize)),
+    [pagination.total, pageSize]
+  );
+  const currentPage = Math.min(page, totalPages);
+  const showing = avales.length;
+
+  useEffect(() => {
+    if (page === currentPage) return;
+    setPage(currentPage);
+  }, [page, currentPage]);
+
+  const fetchAvales = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const options: ListAvalesOptions = {
+        page: currentPage,
+        limit: PAGE_SIZE,
+        estado: estado || undefined,
+        search: search.trim() || undefined,
+      };
+
+      const res = await listAvales(options);
+      const items = res.data ?? [];
+      const meta = res.meta;
+      setAvales(items);
+      setPagination({
+        page:
+          typeof meta?.page === "number" && meta.page > 0
+            ? meta.page
+            : currentPage,
+        limit:
+          typeof meta?.limit === "number" && meta.limit > 0
+            ? meta.limit
+            : PAGE_SIZE,
+        total:
+          typeof meta?.total === "number" && meta.total >= 0
+            ? meta.total
+            : items.length,
+      });
+    } catch (err: any) {
+      const message = err?.message ?? "No se pudieron cargar los avales.";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, estado, search]);
+
+  useEffect(() => {
+    void fetchAvales();
+  }, [fetchAvales]);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (estado) params.set("estado", estado);
+    if (currentPage > 1) params.set("page", String(currentPage));
+
+    router.replace(
+      params.toString() ? `/avales?${params}` : "/avales",
+      { scroll: false }
+    );
+  }, [search, estado, currentPage, router]);
+
+  // Mostrar toast cuando viene status desde la creación
+  useEffect(() => {
+    const status = searchParams.get("status");
+    if (!status) return;
+
+    if (status === "created") {
+      setToast({
+        variant: "success",
+        message: "Aval solicitado correctamente.",
+        description: "Tu solicitud está pendiente de aprobación.",
+      });
+    } else if (status === "cancelled") {
+      setToast({
+        variant: "success",
+        message: "Aval cancelado correctamente.",
+      });
+    } else if (status === "error") {
+      setToast({
+        variant: "error",
+        message: "No se pudo procesar la solicitud.",
+      });
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("status");
+    router.replace(
+      params.toString() ? `/avales?${params}` : "/avales",
+      { scroll: false }
+    );
+  }, [searchParams, router]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  return (
+    <>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 flex flex-col gap-3 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            description={toast.description}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
+
+      {error && !loading && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant="error"
+            message={error}
+            onClose={() => setError(null)}
+          />
+        </div>
+      )}
+
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto space-y-6">
+        <div className="sm:flex sm:justify-between sm:items-center gap-4">
+          <div className="mb-4 sm:mb-0">
+            <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
+              Mis Avales
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Gestiona tus solicitudes de avales para eventos deportivos.
+            </p>
+          </div>
+
+          <div className="grid grid-flow-row sm:grid-flow-col sm:auto-cols-max sm:justify-end gap-2 w-full sm:w-auto">
+            <input
+              className="form-input w-full sm:w-64"
+              placeholder="Buscar por evento o código"
+              value={search}
+              onChange={(e) => {
+                setPage(1);
+                setSearch(e.target.value);
+              }}
+            />
+            <select
+              className="form-select w-full sm:w-48"
+              value={estado}
+              onChange={(e) => {
+                setPage(1);
+                setEstado(e.target.value);
+              }}
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <Link
+              href="/avales/nuevo"
+              className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Crear aval
+            </Link>
+          </div>
+        </div>
+
+        <AvalListCard avales={avales} loading={loading} error={error} />
+
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
+          <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
+            Página {currentPage} de {totalPages} (mostrando {showing} de{" "}
+            {pagination.total})
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </div>
+      </div>
+    </>
+  );
 }

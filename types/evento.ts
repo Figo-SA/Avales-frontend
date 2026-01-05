@@ -3,6 +3,29 @@ import type { CatalogItem } from "@/types/catalog";
 export type EventoGenero = "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO";
 export type EventoEstado = "DISPONIBLE" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
 
+export type EventoItemActividad = {
+  id: number;
+  nombre: string;
+  numero: number;
+};
+
+export type EventoItemDetalle = {
+  id: number;
+  nombre: string;
+  numero: number;
+  descripcion: string;
+  actividad?: EventoItemActividad;
+};
+
+export type EventoItem = {
+  id: number;
+  mes: number;
+  presupuesto: string;
+  item: EventoItemDetalle;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Evento = {
   id: number;
   codigo: string;
@@ -30,13 +53,15 @@ export type Evento = {
   disciplinaId: number;
   categoria?: CatalogItem | null;
   categoriaId: number;
+  eventoItems?: EventoItem[];
 };
 
-export type EventoListResponse = {
-  data: Evento[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-  };
-};
+export type EventoListResponse = Evento[];
+
+export function calcularTotalEvento(evento: Evento): number {
+  if (!evento.eventoItems || evento.eventoItems.length === 0) return 0;
+  return evento.eventoItems.reduce((sum, item) => {
+    const valor = parseFloat(item.presupuesto) || 0;
+    return sum + valor;
+  }, 0);
+}

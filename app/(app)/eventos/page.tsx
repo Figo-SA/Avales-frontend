@@ -10,7 +10,7 @@ import Pagination from "@/components/ui/pagination";
 import { listEventos, softDeleteEvento, type ListEventosOptions } from "@/lib/api/eventos";
 import type { Evento } from "@/types/evento";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 9;
 
 const STATUS_OPTIONS = [
   { label: "Todos los estados", value: "" },

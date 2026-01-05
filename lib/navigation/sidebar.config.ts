@@ -82,7 +82,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     href: "/avales",
     segment: "avales",
     icon: "avales",
-    roles: ["SUPER_ADMIN", "ADMIN"],
+    roles: ["SUPER_ADMIN", "ADMIN", "ENTRENADOR"],
   },
   {
     type: "link",
@@ -90,6 +90,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     href: "/eventos",
     segment: "eventos",
     icon: "eventos",
-    roles: ["SUPER_ADMIN", "ADMIN", "ENTRENADOR"],
+    roles: ["SUPER_ADMIN", "ADMIN"],
   },
 ];
