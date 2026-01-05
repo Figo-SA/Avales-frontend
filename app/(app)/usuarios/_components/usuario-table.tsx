@@ -59,7 +59,7 @@ export default function UsuarioTable({
                   <div className="font-semibold text-left">Roles</div>
                 </th>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
-                  <div className="font-semibold text-left">Actions</div>
+                  <div className="font-semibold text-left">Acciones</div>
                 </th>
               </tr>
             </thead>
@@ -93,7 +93,7 @@ export default function UsuarioTable({
                     className="px-2 first:pl-5 last:pr-5 py-4 whitespace-nowrap text-center text-gray-500 dark:text-gray-400"
                     colSpan={8}
                   >
-                    No hay usuarios disponibles.
+                    No hay usuarios para mostrar.
                   </td>
                 </tr>
               )}

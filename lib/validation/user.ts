@@ -62,3 +62,6 @@ export const updateUserSchema = baseUserSchema.extend({
 export type CreateUserFormValues = z.infer<typeof createUserSchema>;
 export type UpdateUserFormValues = z.infer<typeof updateUserSchema>;
 export type UserFormValues = UpdateUserFormValues;
+
+export type CreateUserPayload = CreateUserFormValues;
+export type UpdateUserPayload = Partial<CreateUserPayload>;

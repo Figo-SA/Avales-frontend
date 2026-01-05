@@ -1,0 +1,87 @@
+/**
+ * Constantes globales de la aplicación.
+ * Centraliza valores que se usan en múltiples lugares.
+ */
+
+/** Número de items por página en listados */
+export const DEFAULT_PAGE_SIZE = 10;
+
+/** Duración del toast en milisegundos antes de ocultarse */
+export const TOAST_DURATION = 4000;
+
+/** Delay para limpiar item de confirmación después de cerrar modal */
+export const CONFIRM_CLEANUP_DELAY = 180;
+
+/** Roles disponibles en el sistema */
+export const ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "SECRETARIA",
+  "DTM",
+  "DTM_EIDE",
+  "ENTRENADOR",
+  "USUARIO",
+  "DEPORTISTA",
+  "PDA",
+  "FINANCIERO",
+] as const;
+
+export type Role = (typeof ROLES)[number];
+
+/** Opciones de género para formularios */
+export const GENERO_OPTIONS = [
+  { value: "masculino", label: "Masculino" },
+  { value: "femenino", label: "Femenino" },
+  { value: "otro", label: "Otro" },
+] as const;
+
+/** Estados de eventos */
+export const EVENTO_ESTADOS = [
+  "DISPONIBLE",
+  "SOLICITADO",
+  "RECHAZADO",
+  "ACEPTADO",
+] as const;
+
+export type EventoEstado = (typeof EVENTO_ESTADOS)[number];
+
+/** Estilos CSS para badges de estado de eventos */
+export const EVENTO_STATUS_STYLES: Record<EventoEstado, string> = {
+  DISPONIBLE:
+    "bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-200",
+  SOLICITADO:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-200",
+  RECHAZADO:
+    "bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-200",
+  ACEPTADO: "bg-sky-100 text-sky-800 dark:bg-sky-900/60 dark:text-sky-200",
+};
+
+/** Estilo por defecto para estados desconocidos */
+export const DEFAULT_STATUS_STYLE =
+  "bg-gray-100 text-gray-800 dark:bg-gray-800/50 dark:text-gray-200";
+
+/**
+ * Obtiene las clases CSS para un estado de evento.
+ * @param status - Estado del evento
+ * @returns Clases CSS correspondientes
+ */
+export function getEventoStatusClasses(status?: string | null): string {
+  if (!status) return DEFAULT_STATUS_STYLE;
+  const upperStatus = status.toUpperCase() as EventoEstado;
+  return EVENTO_STATUS_STYLES[upperStatus] ?? DEFAULT_STATUS_STYLE;
+}
+
+/** Valores de query params para status de acciones */
+export const STATUS_PARAMS = {
+  CREATED: "created",
+  UPDATED: "updated",
+  ERROR: "error",
+} as const;
+
+/** Mensajes de toast por status */
+export const TOAST_MESSAGES = {
+  created: (entity: string) => `${entity} creado correctamente.`,
+  updated: (entity: string) => `${entity} actualizado correctamente.`,
+  deleted: (entity: string) => `${entity} eliminado correctamente.`,
+  error: "No se pudo procesar la solicitud.",
+} as const;

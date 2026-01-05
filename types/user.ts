@@ -1,6 +1,17 @@
 import type { CatalogItem } from "@/types/catalog";
 
-// app/types/user.ts (por ejemplo)
+export type Role =
+  | "SUPER_ADMIN"
+  | "ADMIN"
+  | "SECRETARIA"
+  | "DTM"
+  | "DTM_EIDE"
+  | "ENTRENADOR"
+  | "USUARIO"
+  | "DEPORTISTA"
+  | "PDA"
+  | "FINANCIERO";
+
 export type User = {
   id: number;
   email: string;
@@ -8,13 +19,16 @@ export type User = {
   apellido: string;
   cedula: string;
   categoria?: CatalogItem;
+  categoriaId?: number;
   disciplina?: CatalogItem;
-  rolIds?: number[];
+  disciplinaId?: number;
   roles?: Role[];
   pushToken?: string;
   createdAt?: string;
   updatedAt?: string;
 };
+
+export type UserListResponse = User[];
 
 export type AuthContextType = {
   user: User | null;
@@ -22,16 +36,3 @@ export type AuthContextType = {
   error: string | null;
   refreshUser: () => Promise<void>;
 };
-
-export type Role =
-  | "SUPER_ADMIN"
-  | "ADMIN"
-  | "SECRETARIA"
-  | "DTM"
-  | "DTM_EIDE"
-  | "USUARIO"
-  | "DEPORTISTA"
-  | "PDA"
-  | "FINANCIERO"
-  | "ENTRENADOR";
-export type UserListResponse = User[];

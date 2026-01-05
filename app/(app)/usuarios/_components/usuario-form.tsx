@@ -47,14 +47,14 @@ type Props = {
   onUpdated?: () => Promise<void>;
 };
 
-export default function CreateUserForm({
+export default function UsuarioForm({
   mode = "create",
   userId,
   initialValues,
   onCreated,
   onUpdated,
 }: Props) {
-  const [submitMsg, setSubmitMsg] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [categorias, setCategorias] = useState<CatalogItem[]>([]);
   const [disciplinas, setDisciplinas] = useState<CatalogItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
@@ -126,7 +126,7 @@ export default function CreateUserForm({
   }, []);
 
   const onSubmit = async (values: UserFormValues) => {
-    setSubmitMsg(null);
+    setSubmitError(null);
 
     try {
       if (mode === "edit") {
@@ -144,7 +144,6 @@ export default function CreateUserForm({
         if (onUpdated) {
           await onUpdated();
         }
-        setSubmitMsg("Usuario actualizado correctamente.");
       } else {
         const cleanedForCreate: CreateUserFormValues = {
           ...values,
@@ -152,9 +151,6 @@ export default function CreateUserForm({
         } as CreateUserFormValues;
 
         await createUser(cleanedForCreate);
-        if (onCreated) {
-          await onCreated();
-        }
         reset({
           nombre: "",
           apellido: "",
@@ -165,7 +161,9 @@ export default function CreateUserForm({
           disciplinaId: undefined,
           roles: defaultRoleSelection,
         });
-        setSubmitMsg("Usuario creado correctamente.");
+        if (onCreated) {
+          await onCreated();
+        }
       }
     } catch (err: unknown) {
       const fallback = `No se pudo ${
@@ -186,7 +184,7 @@ export default function CreateUserForm({
         message = err.message;
       }
 
-      setSubmitMsg(message);
+      setSubmitError(message);
     }
   };
 
@@ -386,9 +384,7 @@ export default function CreateUserForm({
 
       {catalogError && <p className="text-sm text-red-600">{catalogError}</p>}
 
-      {submitMsg && (
-        <p className="text-sm text-gray-600 dark:text-gray-300">{submitMsg}</p>
-      )}
+      {submitError && <p className="text-sm text-red-600">{submitError}</p>}
 
       <div className="flex justify-end pt-2 border-t border-gray-200 dark:border-gray-700/60">
         <button
@@ -400,7 +396,7 @@ export default function CreateUserForm({
             ? "Guardando..."
             : mode === "edit"
             ? "Guardar cambios"
-            : "Guardar"}
+            : "Guardar usuario"}
         </button>
       </div>
     </form>

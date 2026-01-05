@@ -6,20 +6,6 @@ import type {
   UpdateUserFormValues,
 } from "@/lib/validation/user";
 
-export async function getUser(userId: number) {
-  return apiFetch<User>(`/users/${userId}`, { method: "GET" });
-}
-
-export async function updateUser(
-  userId: number,
-  values: UpdateUserFormValues | ProfileFormValues
-) {
-  return apiFetch<User>(`/users/${userId}`, {
-    method: "PATCH",
-    body: JSON.stringify(values),
-  });
-}
-
 export type ListUsersOptions = {
   query?: string;
   page?: number;
@@ -39,13 +25,35 @@ export async function listUsers(options: ListUsersOptions = {}) {
   return apiFetch<UserListResponse>(url, { method: "GET" });
 }
 
+export async function getUser(id: number) {
+  return apiFetch<User>(`/users/${id}`, { method: "GET" });
+}
+
 export async function createUser(values: CreateUserFormValues) {
-  return apiFetch<User>("/users/create", {
+  return apiFetch<User>("/users", {
     method: "POST",
     body: JSON.stringify(values),
   });
 }
 
-export async function deleteUser(userId: number) {
-  return apiFetch(`/users/${userId}`, { method: "DELETE" });
+export async function updateUser(
+  id: number,
+  values: UpdateUserFormValues | ProfileFormValues
+) {
+  return apiFetch<User>(`/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(values),
+  });
+}
+
+export async function softDeleteUser(id: number) {
+  return apiFetch<void>(`/users/${id}`, { method: "DELETE" });
+}
+
+export async function restoreUser(id: number) {
+  return apiFetch<User>(`/users/${id}/recuperar`, { method: "POST" });
+}
+
+export async function hardDeleteUser(id: number) {
+  return apiFetch<void>(`/users/${id}/definitivo`, { method: "DELETE" });
 }

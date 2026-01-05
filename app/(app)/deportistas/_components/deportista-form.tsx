@@ -58,7 +58,7 @@ type Props = {
   onUpdated?: () => Promise<void>;
 };
 
-export default function CreateDeportistaForm({
+export default function DeportistaForm({
   mode = "create",
   deportista,
   onCreated,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 import { getDeportista } from "@/lib/api/deportistas";
-import CreateDeportistaForm from "../../_components/create-deportista-form";
+import DeportistaForm from "../../_components/deportista-form";
 import type { Deportista } from "@/types/deportista";
 
 export default function EditarDeportista() {
@@ -67,7 +67,7 @@ export default function EditarDeportista() {
       {error && !loading && <div className="text-sm text-red-600">{error}</div>}
 
       {!loading && !error && deportista && (
-        <CreateDeportistaForm
+        <DeportistaForm
           mode="edit"
           deportista={deportista}
           onUpdated={handleUpdated}
