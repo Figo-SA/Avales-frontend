@@ -67,7 +67,6 @@ export async function apiFetch<T>(
           ? (payload as { message?: string }).message
           : undefined
         : undefined) ?? `Error (${res.status})`;
-    console.log(payload);
     const msg = problem?.detail ?? problem?.title ?? fallbackMessage;
     throw new ApiError(msg, res.status, problem);
   }

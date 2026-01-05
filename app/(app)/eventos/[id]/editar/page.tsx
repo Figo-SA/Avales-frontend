@@ -1,0 +1,82 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+import EventoForm from "../../_components/evento-form";
+import { getEvento } from "@/lib/api/eventos";
+import type { Evento } from "@/types/evento";
+
+export default function EditarEventoPage() {
+  const router = useRouter();
+  const params = useParams();
+  const id = Number(params.id);
+
+  const [evento, setEvento] = useState<Evento | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadEvento = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getEvento(id);
+        setEvento(res.data);
+      } catch (err: any) {
+        setError(err?.message ?? "No se pudo cargar el evento.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      void loadEvento();
+    }
+  }, [id]);
+
+  const handleUpdated = async () => {
+    router.push("/eventos?status=updated");
+  };
+
+  if (loading) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+        <p className="text-gray-500 dark:text-gray-400">Cargando evento...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (!evento) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+        <p className="text-gray-500 dark:text-gray-400">
+          No se encontro el evento.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[96rem] mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
+          Editar evento
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Modifica los datos del evento {evento.nombre}.
+        </p>
+      </div>
+
+      <EventoForm mode="edit" evento={evento} onUpdated={handleUpdated} />
+    </div>
+  );
+}

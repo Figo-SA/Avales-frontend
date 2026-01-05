@@ -21,21 +21,10 @@ export default function UsuarioTable({
   const showEmpty = !loading && !error && users.length === 0;
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl relative">
-      <header className="px-5 py-4">
-        <h2 className="font-semibold text-gray-800 dark:text-gray-100">
-          Usuarios{" "}
-          <span className="text-gray-400 dark:text-gray-500 font-medium">
-            {users.length}
-          </span>
-        </h2>
-      </header>
-      <div>
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="table-auto w-full dark:text-gray-300">
-            {/* Table header */}
-            <thead className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-t border-b border-gray-100 dark:border-gray-700/60">
+    <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl relative overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="table-auto w-full dark:text-gray-300">
+          <thead className="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/20 border-b border-gray-100 dark:border-gray-700/60">
               <tr>
                 <th className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
                   <div className="font-semibold text-left">Nombre</div>
@@ -102,37 +91,37 @@ export default function UsuarioTable({
                 !error &&
                 users.map((user) => (
                   <tr key={user.id}>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="font-semibold text-gray-800 dark:text-gray-100">
                         {user.nombre || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {user.apellido || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {user.email}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {user.cedula || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {user.categoria?.nombre ?? "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {user.disciplina?.nombre ?? "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
                         {(user.roles && user.roles.length > 0
                           ? user.roles
@@ -142,7 +131,7 @@ export default function UsuarioTable({
                           .join(", ") || "-"}
                       </div>
                     </td>
-                    <td className="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                    <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         <Link
                           href={`/settings/profile?id=${user.id}`}
@@ -176,8 +165,7 @@ export default function UsuarioTable({
                   </tr>
                 ))}
             </tbody>
-          </table>
-        </div>
+        </table>
       </div>
     </div>
   );

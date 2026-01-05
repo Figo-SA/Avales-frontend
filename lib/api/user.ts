@@ -30,7 +30,7 @@ export async function getUser(id: number) {
 }
 
 export async function createUser(values: CreateUserFormValues) {
-  return apiFetch<User>("/users", {
+  return apiFetch<User>("/users/create", {
     method: "POST",
     body: JSON.stringify(values),
   });
@@ -47,13 +47,27 @@ export async function updateUser(
 }
 
 export async function softDeleteUser(id: number) {
-  return apiFetch<void>(`/users/${id}`, { method: "DELETE" });
+  return apiFetch<{ id: number }>(`/users/${id}`, { method: "DELETE" });
 }
 
 export async function restoreUser(id: number) {
-  return apiFetch<User>(`/users/${id}/recuperar`, { method: "POST" });
+  return apiFetch<User>(`/users/${id}/restore`, { method: "POST" });
 }
 
-export async function hardDeleteUser(id: number) {
-  return apiFetch<void>(`/users/${id}/definitivo`, { method: "DELETE" });
+export async function listDeletedUsers() {
+  return apiFetch<User[]>("/users/deleted", { method: "GET" });
+}
+
+export async function updateProfile(values: ProfileFormValues) {
+  return apiFetch<User>("/users/profile", {
+    method: "PATCH",
+    body: JSON.stringify(values),
+  });
+}
+
+export async function updatePushToken(pushToken: string) {
+  return apiFetch<User>("/users/me/push-token", {
+    method: "PATCH",
+    body: JSON.stringify({ pushToken }),
+  });
 }

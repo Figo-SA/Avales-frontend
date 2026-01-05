@@ -3,19 +3,22 @@ import type { Deportista, DeportistaListResponse } from "@/types/deportista";
 import type { CreateDeportistaPayload } from "@/lib/validation/deportista";
 
 export type ListDeportistasOptions = {
-  sexo?: string;
+  genero?: string;
   query?: string;
   page?: number;
   limit?: number;
+  soloAfiliados?: boolean;
 };
 
 export async function listDeportistas(options: ListDeportistasOptions = {}) {
   const params = new URLSearchParams();
 
-  if (options.sexo) params.set("sexo", options.sexo);
+  if (options.genero) params.set("genero", options.genero);
   if (options.query) params.set("query", options.query);
   if (options.page) params.set("page", String(options.page));
   if (options.limit) params.set("limit", String(options.limit));
+  if (options.soloAfiliados !== undefined)
+    params.set("soloAfiliados", String(options.soloAfiliados));
 
   const qs = params.toString();
   const url = qs ? `/athletes?${qs}` : "/athletes";
@@ -51,13 +54,19 @@ export async function softDeleteDeportista(id: number) {
 }
 
 export async function restoreDeportista(id: number) {
-  return apiFetch<Deportista>(`/athletes/${id}/recuperar`, {
+  return apiFetch<Deportista>(`/athletes/${id}/restore`, {
     method: "POST",
   });
 }
 
 export async function hardDeleteDeportista(id: number) {
-  return apiFetch<void>(`/athletes/${id}/definitivo`, {
+  return apiFetch<void>(`/athletes/${id}/permanent`, {
     method: "DELETE",
+  });
+}
+
+export async function getDeportistaByCedula(cedula: string) {
+  return apiFetch<Deportista>(`/athletes/search/cedula?cedula=${encodeURIComponent(cedula)}`, {
+    method: "GET",
   });
 }
