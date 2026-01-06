@@ -12,12 +12,17 @@ type Props = {
 };
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; icon: typeof Clock }> = {
-  PENDIENTE: {
+  DISPONIBLE: {
+    bg: "bg-blue-100 dark:bg-blue-900/60",
+    text: "text-blue-800 dark:text-blue-200",
+    icon: AlertCircle,
+  },
+  SOLICITADO: {
     bg: "bg-amber-100 dark:bg-amber-900/60",
     text: "text-amber-800 dark:text-amber-200",
     icon: Clock,
   },
-  APROBADO: {
+  ACEPTADO: {
     bg: "bg-green-100 dark:bg-green-900/60",
     text: "text-green-800 dark:text-green-200",
     icon: CheckCircle,
@@ -82,7 +87,7 @@ function formatDateRange(inicio?: string | null, fin?: string | null) {
 }
 
 function formatLocation(evento: Aval["evento"]) {
-  const parts = [evento.ciudad, evento.provincia, evento.pais].filter(Boolean);
+  const parts = [evento.ciudad, evento.pais].filter(Boolean);
   return parts.length ? parts.join(", ") : "-";
 }
 
@@ -149,9 +154,9 @@ export default function AvalListCard({ avales, loading, error }: Props) {
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
                   {aval.evento?.nombre || "Sin evento"}
                 </h3>
-                {aval.codigo && (
+                {aval.evento?.codigo && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    Código: {aval.codigo}
+                    Código: {aval.evento.codigo}
                   </p>
                 )}
               </div>
@@ -159,20 +164,6 @@ export default function AvalListCard({ avales, loading, error }: Props) {
 
             {/* Info del evento */}
             <div className="px-5 pb-4 flex-1 space-y-3">
-              {/* Tipo y disciplina del evento */}
-              <div className="flex flex-wrap gap-2">
-                {aval.evento?.tipoEvento && (
-                  <span className="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                    {aval.evento.tipoEvento}
-                  </span>
-                )}
-                {aval.evento?.disciplina?.nombre && (
-                  <span className="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/30 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
-                    {aval.evento.disciplina.nombre}
-                  </span>
-                )}
-              </div>
-
               {/* Fechas del evento */}
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-2">
@@ -189,15 +180,14 @@ export default function AvalListCard({ avales, loading, error }: Props) {
                 </div>
               </div>
 
-              {/* Fecha de solicitud */}
+              {/* Fecha de creación */}
               <div className="pt-3 border-t border-gray-100 dark:border-gray-700/60">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Solicitado el {formatDate(aval.fechaSolicitud)}
+                  Creado el {formatDate(aval.createdAt)}
                 </p>
-                {aval.fechaRespuesta && (
+                {aval.updatedAt && aval.createdAt !== aval.updatedAt && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {aval.estado === "APROBADO" ? "Aprobado" : "Respondido"} el{" "}
-                    {formatDate(aval.fechaRespuesta)}
+                    Actualizado el {formatDate(aval.updatedAt)}
                   </p>
                 )}
               </div>

@@ -16,8 +16,9 @@ const PAGE_SIZE = 9;
 
 const STATUS_OPTIONS = [
   { label: "Todos los estados", value: "" },
-  { label: "Pendiente", value: "PENDIENTE" },
-  { label: "Aprobado", value: "APROBADO" },
+  { label: "Disponible", value: "DISPONIBLE" },
+  { label: "Solicitado", value: "SOLICITADO" },
+  { label: "Aceptado", value: "ACEPTADO" },
   { label: "Rechazado", value: "RECHAZADO" },
 ];
 
@@ -54,6 +55,8 @@ export default function AvalesPage() {
   const currentPage = Math.min(page, totalPages);
   const showing = avales.length;
 
+  const hasDisciplina = user?.disciplinaId != null;
+
   useEffect(() => {
     if (page === currentPage) return;
     setPage(currentPage);
@@ -66,26 +69,26 @@ export default function AvalesPage() {
       const options: ListAvalesOptions = {
         page: currentPage,
         limit: PAGE_SIZE,
-        estado: estado || undefined,
+        estado: estado ? (estado as any) : undefined,
         search: search.trim() || undefined,
       };
 
       const res = await listAvales(options);
-      const items = res.data ?? [];
-      const meta = res.meta;
+      const items = res.data?.items ?? [];
+      const pagination = res.data?.pagination;
       setAvales(items);
       setPagination({
         page:
-          typeof meta?.page === "number" && meta.page > 0
-            ? meta.page
+          typeof pagination?.page === "number" && pagination.page > 0
+            ? pagination.page
             : currentPage,
         limit:
-          typeof meta?.limit === "number" && meta.limit > 0
-            ? meta.limit
+          typeof pagination?.limit === "number" && pagination.limit > 0
+            ? pagination.limit
             : PAGE_SIZE,
         total:
-          typeof meta?.total === "number" && meta.total >= 0
-            ? meta.total
+          typeof pagination?.total === "number" && pagination.total >= 0
+            ? pagination.total
             : items.length,
       });
     } catch (err: any) {
@@ -207,15 +210,54 @@ export default function AvalesPage() {
                 </option>
               ))}
             </select>
-            <Link
-              href="/avales/nuevo"
-              className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Crear aval
-            </Link>
+            {hasDisciplina ? (
+              <Link
+                href="/avales/nuevo"
+                className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Crear aval
+              </Link>
+            ) : (
+              <button
+                disabled
+                className="btn bg-gray-400 text-gray-100 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
+                title="Debes tener una disciplina asignada para crear avales"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Crear aval
+              </button>
+            )}
           </div>
         </div>
+
+        {!hasDisciplina && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg
+                  className="w-5 h-5 text-amber-600 dark:text-amber-400"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  Disciplina requerida
+                </h3>
+                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                  No tienes una disciplina asignada. Para poder crear avales, debes tener una disciplina asociada a tu cuenta. Por favor, contacta con el administrador para que te asigne una disciplina.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <AvalListCard avales={avales} loading={loading} error={error} />
 

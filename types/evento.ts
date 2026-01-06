@@ -56,7 +56,14 @@ export type Evento = {
   eventoItems?: EventoItem[];
 };
 
-export type EventoListResponse = Evento[];
+export type EventoListResponse = {
+  items: Evento[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+};
 
 export function calcularTotalEvento(evento: Evento): number {
   if (!evento.eventoItems || evento.eventoItems.length === 0) return 0;
