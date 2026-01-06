@@ -123,12 +123,9 @@ export default function UsuarioTable({
                     </td>
                     <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">
                       <div className="text-gray-700 dark:text-gray-300">
-                        {(user.roles && user.roles.length > 0
-                          ? user.roles
-                          : user.rolIds ?? []
-                        )
-                          .map((r) => String(r))
-                          .join(", ") || "-"}
+                        {user.roles && user.roles.length > 0
+                          ? user.roles.join(", ")
+                          : "-"}
                       </div>
                     </td>
                     <td className="px-2 first:pl-5 last:pr-5 py-2 whitespace-nowrap">

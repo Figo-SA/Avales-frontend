@@ -47,8 +47,8 @@ export default function EditarUsuario() {
           email: u.email ?? "",
           password: "",
           cedula: u.cedula ?? "",
-          categoriaId: u.categoriaId ?? u.categoria?.id,
-          disciplinaId: u.disciplinaId ?? u.disciplina?.id,
+          categoriaId: u.categoriaId ?? u.categoria?.id ?? 0,
+          disciplinaId: u.disciplinaId ?? u.disciplina?.id ?? 0,
           roles: rolesFromUser,
         });
       } catch (err: any) {

@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(pnpm lint:*)",
-      "Bash(del \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(app\\)\\\\avales\\\\_components\\\\aval-card.tsx\")"
+      "Bash(del \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(app\\)\\\\avales\\\\_components\\\\aval-card.tsx\")",
+      "Bash(pnpm build:*)"
     ]
   }
 }
