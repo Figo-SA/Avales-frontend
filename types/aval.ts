@@ -1,28 +1,153 @@
-import type { Evento } from "@/types/evento";
 import type { User } from "@/types/user";
 
-export type AvalEstado = "PENDIENTE" | "APROBADO" | "RECHAZADO";
+export type Estado = "DISPONIBLE" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
+
+export type EtapaFlujo =
+  | "SOLICITUD"
+  | "REVISION_DTM"
+  | "PDA"
+  | "CONTROL_PREVIO"
+  | "SECRETARIA"
+  | "FINANCIERO";
+
+export type EventoSimple = {
+  id: number;
+  codigo: string;
+  nombre: string;
+  fechaInicio: string;
+  fechaFin: string;
+  ciudad: string;
+  pais: string;
+};
+
+export type AvalObjetivo = {
+  id: number;
+  orden: number;
+  descripcion: string;
+};
+
+export type AvalCriterio = {
+  id: number;
+  orden: number;
+  descripcion: string;
+};
+
+export type RubroPresupuestario = {
+  id: number;
+  rubroId: number;
+  cantidadDias: string;
+  valorUnitario?: number | null;
+};
+
+export type DeportistaAval = {
+  id: number;
+  deportistaId: number;
+  rol: string;
+};
+
+export type EntrenadorAval = {
+  id: number;
+  entrenadorId: number;
+  rol: string;
+  esPrincipal?: boolean;
+};
+
+export type AvalTecnico = {
+  id: number;
+  descripcion?: string | null;
+  archivo?: string | null;
+  fechaHoraSalida: string;
+  fechaHoraRetorno: string;
+  transporteSalida: string;
+  transporteRetorno: string;
+  entrenadores: number;
+  atletas: number;
+  observaciones?: string | null;
+  objetivos: AvalObjetivo[];
+  criterios: AvalCriterio[];
+  requerimientos: RubroPresupuestario[];
+  deportistasAval: DeportistaAval[];
+};
+
+export type UsuarioSimple = {
+  id: number;
+  nombre: string;
+  apellido: string;
+  email: string;
+};
+
+export type Historial = {
+  id: number;
+  estado: Estado;
+  etapa: EtapaFlujo;
+  comentario?: string | null;
+  usuario: UsuarioSimple;
+  createdAt: string;
+};
 
 export type Aval = {
   id: number;
-  codigo: string;
-  estado: AvalEstado;
-  observaciones?: string | null;
-  fechaSolicitud: string;
-  fechaRespuesta?: string | null;
-  evento: Evento;
-  eventoId: number;
-  solicitante: User;
-  solicitanteId: number;
-  aprobadoPor?: User | null;
-  aprobadoPorId?: number | null;
-  createdAt?: string;
-  updatedAt?: string;
+  descripcion?: string | null;
+  estado: Estado;
+  comentario?: string | null;
+  dtmUrl?: string | null;
+  pdaUrl?: string | null;
+  solicitudUrl?: string | null;
+  aval?: string | null;
+  evento: EventoSimple;
+  avalTecnico?: AvalTecnico;
+  entrenadores: EntrenadorAval[];
+  historial: Historial[];
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type AvalListResponse = Aval[];
+export type AvalListResponse = {
+  items: Aval[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+  };
+};
+
+export type ObjetivoDto = {
+  orden: number;
+  descripcion: string;
+};
+
+export type CriterioDto = {
+  orden: number;
+  descripcion: string;
+};
+
+export type RubroPresupuestarioDto = {
+  rubroId: number;
+  cantidadDias: string;
+  valorUnitario?: number;
+};
+
+export type DeportistaAvalDto = {
+  deportistaId: number;
+  rol: string;
+};
+
+export type EntrenadorAvalDto = {
+  entrenadorId: number;
+  rol: string;
+  esPrincipal?: boolean;
+};
 
 export type CreateAvalPayload = {
   eventoId: number;
+  fechaHoraSalida: string;
+  fechaHoraRetorno: string;
+  transporteSalida: string;
+  transporteRetorno: string;
+  objetivos: ObjetivoDto[];
+  criterios: CriterioDto[];
+  rubros: RubroPresupuestarioDto[];
+  deportistas: DeportistaAvalDto[];
+  entrenadores: EntrenadorAvalDto[];
   observaciones?: string;
 };
