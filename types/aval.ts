@@ -102,14 +102,8 @@ export type Aval = {
   updatedAt: string;
 };
 
-export type AvalListResponse = {
-  items: Aval[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-  };
-};
+// La API devuelve el array directamente en data, y la paginación en meta
+export type AvalListResponse = Aval[];
 
 export type ObjetivoDto = {
   orden: number;

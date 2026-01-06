@@ -56,14 +56,8 @@ export type Evento = {
   eventoItems?: EventoItem[];
 };
 
-export type EventoListResponse = {
-  items: Evento[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-  };
-};
+// La API devuelve el array directamente en data, y la paginación en meta
+export type EventoListResponse = Evento[];
 
 export function calcularTotalEvento(evento: Evento): number {
   if (!evento.eventoItems || evento.eventoItems.length === 0) return 0;

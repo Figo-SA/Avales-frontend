@@ -17,7 +17,10 @@ import { listEventos, type ListEventosOptions } from "@/lib/api/eventos";
 import { createAval } from "@/lib/api/avales";
 import type { Evento } from "@/types/evento";
 import { useAuth } from "@/app/providers/auth-provider";
-import { formatDateRange, formatLocationWithProvince } from "@/lib/utils/formatters";
+import {
+  formatDateRange,
+  formatLocationWithProvince,
+} from "@/lib/utils/formatters";
 
 const PAGE_SIZE = 12;
 
@@ -59,8 +62,12 @@ export default function NuevoAvalPage() {
 
       // El backend filtra automáticamente por disciplina según el usuario autenticado
       const res = await listEventos(options);
-      setEventos(res.data?.items ?? []);
+
+      // La API devuelve el array directamente en data, no en data.items
+      const items = res.data ?? [];
+      setEventos(items);
     } catch (err: any) {
+      console.error("Error al cargar eventos:", err);
       setError(err?.message ?? "No se pudieron cargar los eventos.");
     } finally {
       setLoading(false);
@@ -144,7 +151,8 @@ export default function NuevoAvalPage() {
                 />
               </svg>
               <div>
-                Solo puedes ver eventos de tu disciplina: <strong>{user.disciplina.nombre}</strong>
+                Solo puedes ver eventos de tu disciplina:{" "}
+                <strong>{user.disciplina.nombre}</strong>
               </div>
             </div>
           </div>
@@ -248,11 +256,15 @@ export default function NuevoAvalPage() {
                   <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>{formatDateRange(evento.fechaInicio, evento.fechaFin)}</span>
+                      <span>
+                        {formatDateRange(evento.fechaInicio, evento.fechaFin)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span className="truncate">{formatLocationWithProvince(evento)}</span>
+                      <span className="truncate">
+                        {formatLocationWithProvince(evento)}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-gray-400 shrink-0" />
