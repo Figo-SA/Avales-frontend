@@ -16,7 +16,7 @@ export const eventoSchema = z.object({
     .max(200, "Nombre: maximo 200 caracteres"),
   lugar: z.string().min(1, "Lugar requerido").max(200),
   genero: z.enum(["MASCULINO", "FEMENINO", "MASCULINO_FEMENINO"], {
-    errorMap: () => ({ message: "Selecciona genero" }),
+    message: "Selecciona genero",
   }),
   disciplinaId: z.number().int().positive("Selecciona una disciplina"),
   categoriaId: z.number().int().positive("Selecciona una categoria"),

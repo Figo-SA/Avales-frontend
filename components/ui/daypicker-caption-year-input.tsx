@@ -3,6 +3,7 @@
 import * as React from "react";
 import { MonthCaptionProps, useNavigation } from "react-day-picker";
 import { es } from "date-fns/locale";
+import type { Month } from "date-fns";
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -27,7 +28,7 @@ export function CaptionYearInput(props: MonthCaptionProps) {
   }, [currentYear]);
 
   const monthLabel =
-    es.localize?.month(month, { width: "wide" }) ?? String(month + 1);
+    es.localize?.month(month as Month, { width: "wide" }) ?? String(month + 1);
 
   const commitYear = () => {
     const parsed = Number(yearText);
