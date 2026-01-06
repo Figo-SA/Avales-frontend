@@ -17,38 +17,9 @@ import { listEventos, type ListEventosOptions } from "@/lib/api/eventos";
 import { createAval } from "@/lib/api/avales";
 import type { Evento } from "@/types/evento";
 import { useAuth } from "@/app/providers/auth-provider";
+import { formatDateRange, formatLocationWithProvince } from "@/lib/utils/formatters";
 
 const PAGE_SIZE = 12;
-
-function formatDateRange(inicio?: string | null, fin?: string | null) {
-  if (!inicio) return "-";
-  const startDate = new Date(inicio);
-  const endDate = fin ? new Date(fin) : null;
-
-  if (Number.isNaN(startDate.getTime())) return "-";
-
-  const startStr = startDate.toLocaleDateString("es-EC", {
-    day: "numeric",
-    month: "short",
-  });
-
-  if (!endDate || Number.isNaN(endDate.getTime())) {
-    return `${startStr}, ${startDate.getFullYear()}`;
-  }
-
-  const endStr = endDate.toLocaleDateString("es-EC", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  return `${startStr} - ${endStr}`;
-}
-
-function formatLocation(evento: Evento) {
-  const parts = [evento.ciudad, evento.provincia].filter(Boolean);
-  return parts.length ? parts.join(", ") : "-";
-}
 
 function getTotalParticipants(evento: Evento) {
   return (
@@ -162,7 +133,7 @@ export default function NuevoAvalPage() {
           <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg px-4 py-3 text-sm text-indigo-700 dark:text-indigo-300">
             <div className="flex items-start gap-2">
               <svg
-                className="w-5 h-5 flex-shrink-0 mt-0.5"
+                className="w-5 h-5 shrink-0 mt-0.5"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -249,7 +220,7 @@ export default function NuevoAvalPage() {
 
                     {/* Indicador de selección */}
                     <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
                         isSelected
                           ? "bg-indigo-500 border-indigo-500 text-white"
                           : "border-gray-300 dark:border-gray-600"
@@ -276,15 +247,15 @@ export default function NuevoAvalPage() {
                   {/* Info */}
                   <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
                       <span>{formatDateRange(evento.fechaInicio, evento.fechaFin)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{formatLocation(evento)}</span>
+                      <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="truncate">{formatLocationWithProvince(evento)}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <Users className="w-4 h-4 text-gray-400 shrink-0" />
                       <span>{getTotalParticipants(evento)} participantes</span>
                     </div>
                   </div>

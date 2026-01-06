@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Calendar, MapPin, Eye, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
 import type { Aval } from "@/types/aval";
+import { getAvalStatusClasses } from "@/lib/constants";
+import { formatDate, formatDateRange, formatLocation } from "@/lib/utils/formatters";
 
 type Props = {
   avales: Aval[];
@@ -11,84 +13,16 @@ type Props = {
   error?: string | null;
 };
 
-const STATUS_STYLES: Record<string, { bg: string; text: string; icon: typeof Clock }> = {
-  DISPONIBLE: {
-    bg: "bg-blue-100 dark:bg-blue-900/60",
-    text: "text-blue-800 dark:text-blue-200",
-    icon: AlertCircle,
-  },
-  SOLICITADO: {
-    bg: "bg-amber-100 dark:bg-amber-900/60",
-    text: "text-amber-800 dark:text-amber-200",
-    icon: Clock,
-  },
-  ACEPTADO: {
-    bg: "bg-green-100 dark:bg-green-900/60",
-    text: "text-green-800 dark:text-green-200",
-    icon: CheckCircle,
-  },
-  RECHAZADO: {
-    bg: "bg-rose-100 dark:bg-rose-900/60",
-    text: "text-rose-800 dark:text-rose-200",
-    icon: XCircle,
-  },
+const STATUS_ICONS: Record<string, typeof Clock> = {
+  DISPONIBLE: AlertCircle,
+  SOLICITADO: Clock,
+  ACEPTADO: CheckCircle,
+  RECHAZADO: XCircle,
 };
 
-function getStatusStyles(status?: string | null) {
-  if (!status)
-    return {
-      bg: "bg-gray-100 dark:bg-gray-800/50",
-      text: "text-gray-800 dark:text-gray-200",
-      icon: AlertCircle,
-    };
-  return (
-    STATUS_STYLES[status.toUpperCase()] ?? {
-      bg: "bg-gray-100 dark:bg-gray-800/50",
-      text: "text-gray-800 dark:text-gray-200",
-      icon: AlertCircle,
-    }
-  );
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString("es-EC", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function formatDateRange(inicio?: string | null, fin?: string | null) {
-  if (!inicio) return "-";
-  const startDate = new Date(inicio);
-  const endDate = fin ? new Date(fin) : null;
-
-  if (Number.isNaN(startDate.getTime())) return "-";
-
-  const startStr = startDate.toLocaleDateString("es-EC", {
-    day: "numeric",
-    month: "short",
-  });
-
-  if (!endDate || Number.isNaN(endDate.getTime())) {
-    return `${startStr}, ${startDate.getFullYear()}`;
-  }
-
-  const endStr = endDate.toLocaleDateString("es-EC", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
-  return `${startStr} - ${endStr}`;
-}
-
-function formatLocation(evento: Aval["evento"]) {
-  const parts = [evento.ciudad, evento.pais].filter(Boolean);
-  return parts.length ? parts.join(", ") : "-";
+function getStatusIcon(status?: string | null) {
+  if (!status) return AlertCircle;
+  return STATUS_ICONS[status.toUpperCase()] ?? AlertCircle;
 }
 
 export default function AvalListCard({ avales, loading, error }: Props) {
@@ -132,8 +66,8 @@ export default function AvalListCard({ avales, loading, error }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {avales.map((aval) => {
-        const statusStyles = getStatusStyles(aval.estado);
-        const StatusIcon = statusStyles.icon;
+        const statusStyles = getAvalStatusClasses(aval.estado);
+        const StatusIcon = getStatusIcon(aval.estado);
 
         return (
           <div
@@ -167,15 +101,15 @@ export default function AvalListCard({ avales, loading, error }: Props) {
               {/* Fechas del evento */}
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                  <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" />
                   <span>
                     {formatDateRange(aval.evento?.fechaInicio, aval.evento?.fechaFin)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+                  <MapPin className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" />
                   <span className="truncate">
-                    {aval.evento ? formatLocation(aval.evento) : "-"}
+                    {formatLocation(aval.evento)}
                   </span>
                 </div>
               </div>
