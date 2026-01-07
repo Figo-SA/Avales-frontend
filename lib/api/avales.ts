@@ -45,6 +45,17 @@ export async function getAvalHistorial(id: number) {
   return apiFetch<Historial[]>(`/avales/${id}/historial`, { method: "GET" });
 }
 
+export async function uploadConvocatoria(eventoId: number, convocatoria: File) {
+  const formData = new FormData();
+  formData.append("eventoId", String(eventoId));
+  formData.append("convocatoria", convocatoria);
+
+  return apiFetch<Aval>("/avales/convocatoria", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function createAval(payload: CreateAvalPayload, solicitud?: File) {
   const formData = new FormData();
 
@@ -70,7 +81,6 @@ export async function createAval(payload: CreateAvalPayload, solicitud?: File) {
   return apiFetch<Aval>("/avales", {
     method: "POST",
     body: formData,
-    headers: {}, // Let browser set Content-Type with boundary
   });
 }
 
@@ -81,7 +91,6 @@ export async function uploadAvalArchivo(id: number, archivo: File) {
   return apiFetch<Aval>(`/avales/${id}/archivo`, {
     method: "PATCH",
     body: formData,
-    headers: {}, // Let browser set Content-Type with boundary
   });
 }
 

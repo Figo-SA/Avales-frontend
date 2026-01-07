@@ -1,11 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Calendar, MapPin, Eye, Clock, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Eye,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  FileEdit,
+} from "lucide-react";
 
 import type { Aval } from "@/types/aval";
 import { getAvalStatusClasses } from "@/lib/constants";
-import { formatDate, formatDateRange, formatLocation } from "@/lib/utils/formatters";
+import {
+  formatDate,
+  formatDateRange,
+  formatLocation,
+} from "@/lib/utils/formatters";
 
 type Props = {
   avales: Aval[];
@@ -15,6 +28,7 @@ type Props = {
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
   DISPONIBLE: AlertCircle,
+  BORRADOR: FileEdit,
   SOLICITADO: Clock,
   ACEPTADO: CheckCircle,
   RECHAZADO: XCircle,
@@ -58,7 +72,9 @@ export default function AvalListCard({ avales, loading, error }: Props) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center text-gray-500 dark:text-gray-400">
         <p className="mb-2">No tienes avales registrados.</p>
-        <p className="text-sm">Haz clic en "Crear aval" para solicitar uno nuevo.</p>
+        <p className="text-sm">
+          Haz clic en "Crear aval" para solicitar uno nuevo.
+        </p>
       </div>
     );
   }
@@ -98,12 +114,33 @@ export default function AvalListCard({ avales, loading, error }: Props) {
 
             {/* Info del evento */}
             <div className="px-5 pb-4 flex-1 space-y-3">
+              {/* Alerta de BORRADOR */}
+              {aval.estado === "BORRADOR" && (
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                        Aval incompleto
+                      </p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                        La convocatoria fue subida. Completa el aval técnico
+                        para solicitar aprobación.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Fechas del evento */}
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-400 dark:text-gray-500 shrink-0" />
                   <span>
-                    {formatDateRange(aval.evento?.fechaInicio, aval.evento?.fechaFin)}
+                    {formatDateRange(
+                      aval.evento?.fechaInicio,
+                      aval.evento?.fechaFin
+                    )}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -128,14 +165,33 @@ export default function AvalListCard({ avales, loading, error }: Props) {
             </div>
 
             {/* Footer con acción */}
-            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-end">
-              <Link
-                href={`/avales/${aval.id}`}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
-              >
-                <Eye className="w-4 h-4" />
-                Ver detalle
-              </Link>
+            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-end gap-2">
+              {aval.estado === "BORRADOR" ? (
+                <>
+                  <Link
+                    href={`/avales/${aval.id}`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver detalle
+                  </Link>
+                  <Link
+                    href={`/avales/${aval.id}/crear-solicitud`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                  >
+                    <FileEdit className="w-4 h-4" />
+                    Editar solicitud
+                  </Link>
+                </>
+              ) : (
+                <Link
+                  href={`/avales/${aval.id}`}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
+                >
+                  <Eye className="w-4 h-4" />
+                  Ver detalle
+                </Link>
+              )}
             </div>
           </div>
         );

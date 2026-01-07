@@ -1,6 +1,6 @@
 import type { User } from "@/types/user";
 
-export type Estado = "DISPONIBLE" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
+export type Estado = "DISPONIBLE" | "BORRADOR" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
 
 export type EtapaFlujo =
   | "SOLICITUD"
@@ -90,6 +90,7 @@ export type Aval = {
   descripcion?: string | null;
   estado: Estado;
   comentario?: string | null;
+  convocatoriaUrl?: string | null;
   dtmUrl?: string | null;
   pdaUrl?: string | null;
   solicitudUrl?: string | null;

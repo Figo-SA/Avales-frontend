@@ -89,6 +89,7 @@ export const TOAST_MESSAGES = {
 /** Estados de avales */
 export const AVAL_ESTADOS = [
   "DISPONIBLE",
+  "BORRADOR",
   "SOLICITADO",
   "RECHAZADO",
   "ACEPTADO",
@@ -104,6 +105,10 @@ export const AVAL_STATUS_STYLES: Record<
   DISPONIBLE: {
     bg: "bg-blue-100 dark:bg-blue-900/60",
     text: "text-blue-800 dark:text-blue-200",
+  },
+  BORRADOR: {
+    bg: "bg-orange-100 dark:bg-orange-900/60",
+    text: "text-orange-800 dark:text-orange-200",
   },
   SOLICITADO: {
     bg: "bg-amber-100 dark:bg-amber-900/60",

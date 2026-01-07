@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,13 +8,13 @@ import {
   Calendar,
   MapPin,
   Users,
-  Check,
   Search,
 } from "lucide-react";
 
 import AlertBanner from "@/components/ui/alert-banner";
+import UploadModal from "@/components/ui/upload-modal";
 import { listEventos, type ListEventosOptions } from "@/lib/api/eventos";
-import { createAval } from "@/lib/api/avales";
+import { uploadConvocatoria } from "@/lib/api/avales";
 import type { Evento } from "@/types/evento";
 import { useAuth } from "@/app/providers/auth-provider";
 import {
@@ -37,12 +37,17 @@ export default function NuevoAvalPage() {
   const router = useRouter();
   const { user } = useAuth();
 
+  // Event selection
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedEvento, setSelectedEvento] = useState<Evento | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+
+  // Upload convocatoria
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+  // Submission
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isEntrenador =
@@ -60,10 +65,7 @@ export default function NuevoAvalPage() {
         search: search.trim() || undefined,
       };
 
-      // El backend filtra automáticamente por disciplina según el usuario autenticado
       const res = await listEventos(options);
-
-      // La API devuelve el array directamente en data, no en data.items
       const items = res.data ?? [];
       setEventos(items);
     } catch (err: any) {
@@ -78,18 +80,23 @@ export default function NuevoAvalPage() {
     void fetchEventos();
   }, [fetchEventos]);
 
-  const handleSubmit = async () => {
-    if (!selectedEvento) return;
+  const handleEventSelect = (evento: Evento) => {
+    setSelectedEvento(evento);
+    setUploadModalOpen(true);
+  };
+
+  const handleUploadConvocatoria = async (file: File) => {
+    if (!selectedEvento) {
+      throw new Error("No se ha seleccionado un evento");
+    }
 
     try {
-      setSubmitting(true);
-      setSubmitError(null);
-      await createAval({ eventoId: selectedEvento.id });
-      router.push("/avales?status=created");
+      const response = await uploadConvocatoria(selectedEvento.id, file);
+      setUploadModalOpen(false);
+      // Redirigir directamente al wizard para crear el aval técnico
+      router.push(`/avales/${response.data.id}/crear-solicitud`);
     } catch (err: any) {
-      setSubmitError(err?.message ?? "No se pudo crear el aval.");
-    } finally {
-      setSubmitting(false);
+      throw new Error(err?.message ?? "Error al subir la convocatoria");
     }
   };
 
@@ -105,7 +112,19 @@ export default function NuevoAvalPage() {
         </div>
       )}
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-5xl mx-auto space-y-6">
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => {
+          setUploadModalOpen(false);
+          setSelectedEvento(null);
+        }}
+        onUpload={handleUploadConvocatoria}
+        title="Subir convocatoria"
+        description="Sube el documento de convocatoria para crear la colección de aval. Luego podrás completar el aval técnico."
+      />
+
+      <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div>
           <Link
@@ -119,7 +138,7 @@ export default function NuevoAvalPage() {
             Crear nuevo aval
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Selecciona un evento disponible para solicitar tu aval.
+            Selecciona un evento disponible y sube la convocatoria.
           </p>
         </div>
 
@@ -190,114 +209,71 @@ export default function NuevoAvalPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {eventos.map((evento) => {
-              const isSelected = selectedEvento?.id === evento.id;
-
-              return (
-                <button
-                  key={evento.id}
-                  type="button"
-                  onClick={() => setSelectedEvento(isSelected ? null : evento)}
-                  className={`text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 transition-all border-2 ${
-                    isSelected
-                      ? "border-indigo-500 dark:border-indigo-400 ring-2 ring-indigo-500/20"
-                      : "border-transparent hover:border-gray-200 dark:hover:border-gray-700"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-200">
-                          Disponible
+            {eventos.map((evento) => (
+              <button
+                key={evento.id}
+                type="button"
+                onClick={() => handleEventSelect(evento)}
+                className="text-left bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5 transition-all border-2 border-transparent hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-200">
+                        Disponible
+                      </span>
+                      {evento.alcance && (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                          {evento.alcance}
                         </span>
-                        {evento.alcance && (
-                          <span className="text-xs text-gray-400 dark:text-gray-500">
-                            {evento.alcance}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                        {evento.nombre || "Sin nombre"}
-                      </h3>
-                      {evento.codigo && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          {evento.codigo}
-                        </p>
                       )}
                     </div>
-
-                    {/* Indicador de selección */}
-                    <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected
-                          ? "bg-indigo-500 border-indigo-500 text-white"
-                          : "border-gray-300 dark:border-gray-600"
-                      }`}
-                    >
-                      {isSelected && <Check className="w-4 h-4" />}
-                    </div>
-                  </div>
-
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {evento.tipoEvento && (
-                      <span className="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                        {evento.tipoEvento}
-                      </span>
-                    )}
-                    {evento.disciplina?.nombre && (
-                      <span className="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/30 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
-                        {evento.disciplina.nombre}
-                      </span>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      {evento.nombre || "Sin nombre"}
+                    </h3>
+                    {evento.codigo && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {evento.codigo}
+                      </p>
                     )}
                   </div>
+                </div>
 
-                  {/* Info */}
-                  <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>
-                        {formatDateRange(evento.fechaInicio, evento.fechaFin)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span className="truncate">
-                        {formatLocationWithProvince(evento)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Users className="w-4 h-4 text-gray-400 shrink-0" />
-                      <span>{getTotalParticipants(evento)} participantes</span>
-                    </div>
+                {/* Tags */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {evento.tipoEvento && (
+                    <span className="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                      {evento.tipoEvento}
+                    </span>
+                  )}
+                  {evento.disciplina?.nombre && (
+                    <span className="inline-flex items-center rounded-md bg-purple-50 dark:bg-purple-900/30 px-2 py-1 text-xs font-medium text-purple-700 dark:text-purple-300">
+                      {evento.disciplina.nombre}
+                    </span>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="mt-3 space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span>
+                      {formatDateRange(evento.fechaInicio, evento.fechaFin)}
+                    </span>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Footer con botón de crear */}
-        {selectedEvento && (
-          <div className="sticky bottom-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-4 mt-6">
-            <div className="flex items-center justify-between gap-4 max-w-5xl mx-auto">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Evento seleccionado:
-                </p>
-                <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {selectedEvento.nombre}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="btn bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {submitting ? "Solicitando..." : "Solicitar aval"}
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span className="truncate">
+                      {formatLocationWithProvince(evento)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-gray-400 shrink-0" />
+                    <span>{getTotalParticipants(evento)} participantes</span>
+                  </div>
+                </div>
               </button>
-            </div>
+            ))}
           </div>
         )}
       </div>

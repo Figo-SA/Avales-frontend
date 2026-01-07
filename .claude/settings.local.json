@@ -3,7 +3,10 @@
     "allow": [
       "Bash(pnpm lint:*)",
       "Bash(del \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(app\\)\\\\avales\\\\_components\\\\aval-card.tsx\")",
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(move \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(app\\)\\\\avales\\\\[id]\\\\crear-solicitud\\\\page.tsx\" \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(fullscreen\\)\\\\avales\\\\[id]\\\\crear-solicitud\\\\page.tsx\")",
+      "Bash(ls:*)",
+      "Bash(pnpm lint:fix:*)"
     ]
   }
 }
