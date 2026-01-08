@@ -3,13 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Calendar,
-  MapPin,
-  Users,
-  Search,
-} from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Search } from "lucide-react";
 
 import AlertBanner from "@/components/ui/alert-banner";
 import UploadModal from "@/components/ui/upload-modal";
@@ -91,12 +85,37 @@ export default function NuevoAvalPage() {
     }
 
     try {
+      console.log("Iniciando upload de convocatoria...", {
+        eventoId: selectedEvento.id,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+
       const response = await uploadConvocatoria(selectedEvento.id, file);
+
+      console.log("Upload exitoso:", response);
+
       setUploadModalOpen(false);
+      setSelectedEvento(null);
+
       // Redirigir directamente al wizard para crear el aval técnico
       router.push(`/avales/${response.data.id}/crear-solicitud`);
     } catch (err: any) {
-      throw new Error(err?.message ?? "Error al subir la convocatoria");
+      console.error("Error al subir convocatoria:", err);
+
+      // Mejorar el mensaje de error
+      let errorMessage = "Error al subir la convocatoria";
+
+      if (err?.problem?.detail) {
+        errorMessage = err.problem.detail;
+      } else if (err?.problem?.title) {
+        errorMessage = err.problem.title;
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+
+      throw new Error(errorMessage);
     }
   };
 

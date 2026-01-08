@@ -6,7 +6,7 @@ import {
   listDeportistas,
   type ListDeportistasOptions,
 } from "@/lib/api/deportistas";
-import { listUsers, type ListUsersOptions } from "@/lib/api/user";
+import { listEntrenadores, type ListEntrenadoresOptions } from "@/lib/api/user";
 import type { Deportista } from "@/types/deportista";
 import type { User } from "@/types/user";
 import type { Aval } from "@/types/aval";
@@ -151,23 +151,26 @@ export default function Step01Deportistas({
 
   // Fetch entrenadores hombres
   const fetchEntrenadoresHombres = useCallback(async () => {
-    if (!searchEntrenadoresHombres.trim()) {
-      setEntrenadoresHombres([]);
-      return;
-    }
-
     try {
       setLoadingEntrenadoresHombres(true);
-      const options: ListUsersOptions = {
-        query: searchEntrenadoresHombres.trim(),
-        limit: 20,
-        rol: "ENTRENADOR",
-        sexo: "Masculino",
+      const options: ListEntrenadoresOptions = {
+        limit: 50,
+        genero: "MASCULINO",
       };
 
-      const res = await listUsers(options);
+      const res = await listEntrenadores(options);
       const items = res.data ?? [];
-      setEntrenadoresHombres(items);
+
+      // Filter by search if there's a search term
+      const filtered = searchEntrenadoresHombres.trim()
+        ? items.filter((e) =>
+            `${e.nombre} ${e.apellido} ${e.cedula}`
+              .toLowerCase()
+              .includes(searchEntrenadoresHombres.toLowerCase())
+          )
+        : items;
+
+      setEntrenadoresHombres(filtered);
     } catch (err: any) {
       console.error("Error al cargar entrenadores hombres:", err);
     } finally {
@@ -177,23 +180,26 @@ export default function Step01Deportistas({
 
   // Fetch entrenadores mujeres
   const fetchEntrenadoresMujeres = useCallback(async () => {
-    if (!searchEntrenadoresMujeres.trim()) {
-      setEntrenadoresMujeres([]);
-      return;
-    }
-
     try {
       setLoadingEntrenadoresMujeres(true);
-      const options: ListUsersOptions = {
-        query: searchEntrenadoresMujeres.trim(),
-        limit: 20,
-        rol: "ENTRENADOR",
-        sexo: "Femenino",
+      const options: ListEntrenadoresOptions = {
+        limit: 50,
+        genero: "FEMENINO",
       };
 
-      const res = await listUsers(options);
+      const res = await listEntrenadores(options);
       const items = res.data ?? [];
-      setEntrenadoresMujeres(items);
+
+      // Filter by search if there's a search term
+      const filtered = searchEntrenadoresMujeres.trim()
+        ? items.filter((e) =>
+            `${e.nombre} ${e.apellido} ${e.cedula}`
+              .toLowerCase()
+              .includes(searchEntrenadoresMujeres.toLowerCase())
+          )
+        : items;
+
+      setEntrenadoresMujeres(filtered);
     } catch (err: any) {
       console.error("Error al cargar entrenadores mujeres:", err);
     } finally {
@@ -216,18 +222,20 @@ export default function Step01Deportistas({
   }, [fetchDeportistasMujeres]);
 
   useEffect(() => {
+    if (!showSearchEntrenadoresHombres) return;
     const timer = setTimeout(() => {
       void fetchEntrenadoresHombres();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchEntrenadoresHombres]);
+  }, [fetchEntrenadoresHombres, showSearchEntrenadoresHombres]);
 
   useEffect(() => {
+    if (!showSearchEntrenadoresMujeres) return;
     const timer = setTimeout(() => {
       void fetchEntrenadoresMujeres();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchEntrenadoresMujeres]);
+  }, [fetchEntrenadoresMujeres, showSearchEntrenadoresMujeres]);
 
   // Handlers for deportistas hombres
   const handleAddDeportistaHombre = (deportista: Deportista) => {
@@ -446,10 +454,15 @@ export default function Step01Deportistas({
           <button
             type="button"
             onClick={() => setShowSearch(true)}
-            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition"
+            disabled={selected.length >= required}
+            className={`w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium p-4 rounded-lg border-2 border-dashed transition ${
+              selected.length >= required
+                ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+                : "text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
+            }`}
           >
             <Plus className="w-5 h-5" />
-            {addButtonText}
+            {selected.length >= required ? "Límite alcanzado" : addButtonText}
           </button>
         ) : (
           <div className="relative">
@@ -490,15 +503,19 @@ export default function Step01Deportistas({
                     const alreadySelected = selected.some(
                       (d) => d.id === deportista.id
                     );
+                    const limitReached = selected.length >= required;
+                    const isDisabled = alreadySelected || limitReached;
 
                     return (
                       <button
                         key={deportista.id}
                         type="button"
                         onClick={() => handleAdd(deportista)}
-                        disabled={alreadySelected}
-                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                          alreadySelected ? "opacity-50 cursor-not-allowed" : ""
+                        disabled={isDisabled}
+                        className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                          isDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -635,10 +652,15 @@ export default function Step01Deportistas({
           <button
             type="button"
             onClick={() => setShowSearch(true)}
-            className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition"
+            disabled={selected.length >= required}
+            className={`w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium p-4 rounded-lg border-2 border-dashed transition ${
+              selected.length >= required
+                ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
+                : "text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
+            }`}
           >
             <Plus className="w-5 h-5" />
-            {addButtonText}
+            {selected.length >= required ? "Límite alcanzado" : addButtonText}
           </button>
         ) : (
           <div className="relative">
@@ -663,12 +685,12 @@ export default function Step01Deportistas({
               <X className="w-5 h-5" />
             </button>
 
-            {(loading || search.trim() !== "") && (
+            {showSearch && (
               <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 {loading ? (
                   <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                     <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    Buscando...
+                    Cargando entrenadores...
                   </div>
                 ) : entrenadores.length === 0 ? (
                   <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
@@ -679,15 +701,19 @@ export default function Step01Deportistas({
                     const alreadySelected = selected.some(
                       (e) => e.id === entrenador.id
                     );
+                    const limitReached = selected.length >= required;
+                    const isDisabled = alreadySelected || limitReached;
 
                     return (
                       <button
                         key={entrenador.id}
                         type="button"
                         onClick={() => handleAdd(entrenador)}
-                        disabled={alreadySelected}
-                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                          alreadySelected ? "opacity-50 cursor-not-allowed" : ""
+                        disabled={isDisabled}
+                        className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                          isDisabled
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
                         }`}
                       >
                         <div className="flex items-center justify-between">

@@ -28,6 +28,10 @@ const baseUserSchema = z.object({
   cedula: z
     .string()
     .regex(/^\d{10}$/, "Cedula invalida: deben ser 10 digitos"),
+  genero: z
+    .enum(["MASCULINO", "FEMENINO", "MASCULINO_FEMENINO"])
+    .optional()
+    .or(z.literal("")),
   categoriaId: z.number().int().positive("Selecciona una categoria"),
   disciplinaId: z.number().int().positive("Selecciona una disciplina"),
   roles: rolesSchema,

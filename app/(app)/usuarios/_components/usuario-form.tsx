@@ -80,6 +80,7 @@ export default function UsuarioForm({
       email: initialValues?.email ?? "",
       password: "",
       cedula: initialValues?.cedula ?? "",
+      genero: initialValues?.genero ?? "",
       categoriaId: initialValues?.categoriaId,
       disciplinaId: initialValues?.disciplinaId,
       roles: initialValues?.roles ?? defaultRoleSelection,
@@ -157,6 +158,7 @@ export default function UsuarioForm({
           email: "",
           password: "",
           cedula: "",
+          genero: "",
           categoriaId: undefined,
           disciplinaId: undefined,
           roles: defaultRoleSelection,
@@ -280,6 +282,25 @@ export default function UsuarioForm({
           />
           {errors.cedula && (
             <p className="mt-1 text-xs text-red-600">{errors.cedula.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1" htmlFor="genero">
+            Género
+          </label>
+          <select
+            id="genero"
+            className="form-select w-full"
+            {...register("genero")}
+          >
+            <option value="">Selecciona una opción</option>
+            <option value="MASCULINO">Masculino</option>
+            <option value="FEMENINO">Femenino</option>
+            <option value="MASCULINO_FEMENINO">Masculino/Femenino</option>
+          </select>
+          {errors.genero && (
+            <p className="mt-1 text-xs text-red-600">{errors.genero.message}</p>
           )}
         </div>
 
