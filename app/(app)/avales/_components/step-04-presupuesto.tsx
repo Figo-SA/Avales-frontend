@@ -16,9 +16,9 @@ type FormData = {
   objetivos: string[];
   criterios: string[];
   rubros: Array<{
-    rubro: string;
-    monto: number;
-    observaciones?: string;
+    rubroId: number;
+    cantidadDias: string;
+    valorUnitario?: number;
   }>;
   observaciones?: string;
 };
@@ -31,15 +31,15 @@ type Step04PresupuestoProps = {
 };
 
 type RubroForm = {
-  rubro: string;
-  monto: string;
-  observaciones: string;
+  rubroId: string;
+  cantidadDias: string;
+  valorUnitario: string;
 };
 
 const INITIAL_RUBRO_FORM: RubroForm = {
-  rubro: "",
-  monto: "",
-  observaciones: "",
+  rubroId: "",
+  cantidadDias: "",
+  valorUnitario: "",
 };
 
 export default function Step04Presupuesto({
@@ -49,32 +49,45 @@ export default function Step04Presupuesto({
 }: Step04PresupuestoProps) {
   const router = useRouter();
   const [rubros, setRubros] = useState(formData.rubros || []);
-  const [observaciones, setObservaciones] = useState(formData.observaciones || "");
+  const [observaciones, setObservaciones] = useState(
+    formData.observaciones || ""
+  );
   const [rubroForm, setRubroForm] = useState<RubroForm>(INITIAL_RUBRO_FORM);
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const handleAddRubro = () => {
-    const trimmedRubro = rubroForm.rubro.trim();
-    const parsedMonto = parseFloat(rubroForm.monto);
+    const parsedRubroId = parseInt(rubroForm.rubroId);
+    const trimmedCantidadDias = rubroForm.cantidadDias.trim();
+    const parsedValorUnitario = rubroForm.valorUnitario
+      ? parseFloat(rubroForm.valorUnitario)
+      : undefined;
 
-    if (!trimmedRubro) {
-      setError("El nombre del rubro es requerido");
+    if (!rubroForm.rubroId || isNaN(parsedRubroId)) {
+      setError("Debes seleccionar un rubro");
       return;
     }
 
-    if (!rubroForm.monto || isNaN(parsedMonto) || parsedMonto <= 0) {
-      setError("El monto debe ser un número mayor a 0");
+    if (!trimmedCantidadDias) {
+      setError("La cantidad de días es requerida");
+      return;
+    }
+
+    if (
+      rubroForm.valorUnitario &&
+      (isNaN(parsedValorUnitario!) || parsedValorUnitario! <= 0)
+    ) {
+      setError("El valor unitario debe ser un número mayor a 0");
       return;
     }
 
     setRubros([
       ...rubros,
       {
-        rubro: trimmedRubro,
-        monto: parsedMonto,
-        observaciones: rubroForm.observaciones.trim() || undefined,
+        rubroId: parsedRubroId,
+        cantidadDias: trimmedCantidadDias,
+        valorUnitario: parsedValorUnitario,
       },
     ]);
 
@@ -88,7 +101,11 @@ export default function Step04Presupuesto({
   };
 
   const getTotalPresupuesto = () => {
-    return rubros.reduce((sum, rubro) => sum + rubro.monto, 0);
+    return rubros.reduce((sum, rubro) => {
+      const dias = parseFloat(rubro.cantidadDias) || 0;
+      const valorUnitario = rubro.valorUnitario || 0;
+      return sum + dias * valorUnitario;
+    }, 0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -105,16 +122,29 @@ export default function Step04Presupuesto({
 
       // Preparar el payload según la estructura esperada por la API
       const payload = {
-        eventoId: avalId,
+        coleccionAvalId: avalId,
         fechaHoraSalida: formData.fechaHoraSalida,
         fechaHoraRetorno: formData.fechaHoraRetorno,
         transporteSalida: formData.transporteSalida,
         transporteRetorno: formData.transporteRetorno,
-        objetivos: formData.objetivos,
-        criterios: formData.criterios,
+        objetivos: formData.objetivos.map((obj, index) => ({
+          orden: index + 1,
+          descripcion: obj,
+        })),
+        criterios: formData.criterios.map((crit, index) => ({
+          orden: index + 1,
+          descripcion: crit,
+        })),
         rubros: rubros,
-        deportistas: formData.deportistas.map((d) => d.id),
-        entrenadores: formData.entrenadores.map((e) => e.id),
+        deportistas: formData.deportistas.map((d) => ({
+          deportistaId: d.id,
+          rol: "DEPORTISTA",
+        })),
+        entrenadores: formData.entrenadores.map((e) => ({
+          entrenadorId: e.id,
+          rol: "ENTRENADOR",
+          esPrincipal: false,
+        })),
         observaciones: observaciones.trim() || undefined,
       };
 
@@ -159,22 +189,37 @@ export default function Step04Presupuesto({
             <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 p-4 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nombre del rubro
+                  ID del rubro
                 </label>
                 <input
-                  type="text"
-                  value={rubroForm.rubro}
+                  type="number"
+                  value={rubroForm.rubroId}
                   onChange={(e) =>
-                    setRubroForm({ ...rubroForm, rubro: e.target.value })
+                    setRubroForm({ ...rubroForm, rubroId: e.target.value })
                   }
-                  placeholder="Ej: Hospedaje, Alimentación, Transporte..."
+                  placeholder="ID del rubro"
                   className="form-input w-full"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Monto (USD)
+                  Cantidad de días
+                </label>
+                <input
+                  type="text"
+                  value={rubroForm.cantidadDias}
+                  onChange={(e) =>
+                    setRubroForm({ ...rubroForm, cantidadDias: e.target.value })
+                  }
+                  placeholder="Ej: 5"
+                  className="form-input w-full"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Valor unitario (USD) (opcional)
                 </label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -182,29 +227,14 @@ export default function Step04Presupuesto({
                     type="number"
                     step="0.01"
                     min="0"
-                    value={rubroForm.monto}
+                    value={rubroForm.valorUnitario}
                     onChange={(e) =>
-                      setRubroForm({ ...rubroForm, monto: e.target.value })
+                      setRubroForm({ ...rubroForm, valorUnitario: e.target.value })
                     }
                     placeholder="0.00"
                     className="form-input w-full pl-10"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Observaciones (opcional)
-                </label>
-                <textarea
-                  value={rubroForm.observaciones}
-                  onChange={(e) =>
-                    setRubroForm({ ...rubroForm, observaciones: e.target.value })
-                  }
-                  placeholder="Detalles adicionales sobre este rubro..."
-                  rows={2}
-                  className="form-textarea w-full"
-                />
               </div>
 
               <div className="flex gap-2">
@@ -235,7 +265,8 @@ export default function Step04Presupuesto({
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {rubros.length} {rubros.length === 1 ? "rubro agregado" : "rubros agregados"}
+                  {rubros.length}{" "}
+                  {rubros.length === 1 ? "rubro agregado" : "rubros agregados"}
                 </p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   Total: {formatCurrency(getTotalPresupuesto())}
@@ -243,36 +274,43 @@ export default function Step04Presupuesto({
               </div>
 
               <div className="space-y-2">
-                {rubros.map((rubro, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start gap-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="font-semibold text-gray-900 dark:text-gray-100">
-                          {rubro.rubro}
-                        </p>
-                        <p className="font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                          {formatCurrency(rubro.monto)}
-                        </p>
-                      </div>
-                      {rubro.observaciones && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {rubro.observaciones}
-                        </p>
-                      )}
-                    </div>
+                {rubros.map((rubro, index) => {
+                  const dias = parseFloat(rubro.cantidadDias) || 0;
+                  const valorUnitario = rubro.valorUnitario || 0;
+                  const total = dias * valorUnitario;
 
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveRubro(index)}
-                      className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 p-1"
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
                     >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">
+                              Rubro ID: {rubro.rubroId}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {rubro.cantidadDias} días
+                              {valorUnitario > 0 && ` × ${formatCurrency(valorUnitario)}`}
+                            </p>
+                          </div>
+                          <p className="font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
+                            {formatCurrency(total)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveRubro(index)}
+                        className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 p-1"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

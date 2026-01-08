@@ -138,7 +138,7 @@ export type EntrenadorAvalDto = {
 };
 
 export type CreateAvalPayload = {
-  eventoId: number;
+  coleccionAvalId: number;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
   transporteSalida: string;

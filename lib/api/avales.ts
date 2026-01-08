@@ -56,31 +56,10 @@ export async function uploadConvocatoria(eventoId: number, convocatoria: File) {
   });
 }
 
-export async function createAval(payload: CreateAvalPayload, solicitud?: File) {
-  const formData = new FormData();
-
-  formData.append("eventoId", String(payload.eventoId));
-  formData.append("fechaHoraSalida", payload.fechaHoraSalida);
-  formData.append("fechaHoraRetorno", payload.fechaHoraRetorno);
-  formData.append("transporteSalida", payload.transporteSalida);
-  formData.append("transporteRetorno", payload.transporteRetorno);
-  formData.append("objetivos", JSON.stringify(payload.objetivos));
-  formData.append("criterios", JSON.stringify(payload.criterios));
-  formData.append("rubros", JSON.stringify(payload.rubros));
-  formData.append("deportistas", JSON.stringify(payload.deportistas));
-  formData.append("entrenadores", JSON.stringify(payload.entrenadores));
-
-  if (payload.observaciones) {
-    formData.append("observaciones", payload.observaciones);
-  }
-
-  if (solicitud) {
-    formData.append("solicitud", solicitud);
-  }
-
+export async function createAval(payload: CreateAvalPayload) {
   return apiFetch<Aval>("/avales", {
     method: "POST",
-    body: formData,
+    body: JSON.stringify(payload),
   });
 }
 
