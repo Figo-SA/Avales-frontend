@@ -85,12 +85,15 @@ export default function CrearSolicitudPage() {
     loadAval();
   }, [loadAval]);
 
-  const handleStepComplete = useCallback((stepData: Partial<FormData>) => {
-    setFormData((prev) => ({ ...prev, ...stepData }));
-    if (currentStep < 4) {
-      setCurrentStep((prev) => (prev + 1) as WizardStep);
-    }
-  }, [currentStep]);
+  const handleStepComplete = useCallback(
+    (stepData: Partial<FormData>) => {
+      setFormData((prev) => ({ ...prev, ...stepData }));
+      if (currentStep < 4) {
+        setCurrentStep((prev) => (prev + 1) as WizardStep);
+      }
+    },
+    [currentStep]
+  );
 
   const handleBack = useCallback(() => {
     if (currentStep > 1) {
@@ -148,8 +151,18 @@ export default function CrearSolicitudPage() {
                 onClick={handleBack}
                 className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-6"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
                 Volver
               </button>

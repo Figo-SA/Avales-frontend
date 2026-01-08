@@ -11,6 +11,7 @@ export type ListUsersOptions = {
   page?: number;
   limit?: number;
   rol?: string;
+<<<<<<< HEAD
   genero?: string;
 };
 
@@ -18,6 +19,9 @@ export type ListEntrenadoresOptions = {
   page?: number;
   limit?: number;
   genero?: string;
+=======
+  sexo?: string;
+>>>>>>> origin/main
 };
 
 export async function listUsers(options: ListUsersOptions = {}) {
@@ -27,7 +31,11 @@ export async function listUsers(options: ListUsersOptions = {}) {
   if (options.page) params.set("page", String(options.page));
   if (options.limit) params.set("limit", String(options.limit));
   if (options.rol) params.set("rol", options.rol);
+<<<<<<< HEAD
   if (options.genero) params.set("genero", options.genero);
+=======
+  if (options.sexo) params.set("sexo", options.sexo);
+>>>>>>> origin/main
 
   const qs = params.toString();
   const url = qs ? `/users?${qs}` : "/users";

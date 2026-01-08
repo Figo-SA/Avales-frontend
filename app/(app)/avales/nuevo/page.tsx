@@ -3,13 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Calendar,
-  MapPin,
-  Users,
-  Search,
-} from "lucide-react";
+import { ArrowLeft, Calendar, MapPin, Users, Search } from "lucide-react";
 
 import AlertBanner from "@/components/ui/alert-banner";
 import UploadModal from "@/components/ui/upload-modal";
