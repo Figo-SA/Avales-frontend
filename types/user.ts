@@ -12,12 +12,15 @@ export type Role =
   | "PDA"
   | "FINANCIERO";
 
+export type Genero = "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO";
+
 export type User = {
   id: number;
   email: string;
   nombre: string;
   apellido: string;
   cedula: string;
+  genero?: Genero;
   categoria?: CatalogItem;
   categoriaId?: number;
   disciplina?: CatalogItem;

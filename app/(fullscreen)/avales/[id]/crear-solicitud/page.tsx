@@ -137,10 +137,10 @@ export default function CrearSolicitudPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex">
       {/* Left Panel - Form */}
       <div className="w-full lg:w-1/2 bg-white dark:bg-gray-900 flex flex-col">
-        <div className="flex-1 overflow-y-auto">
+        <div className="h-full overflow-y-auto">
           <div className="max-w-xl mx-auto px-6 sm:px-8 py-8">
             {/* Header */}
             <div className="mb-8">
