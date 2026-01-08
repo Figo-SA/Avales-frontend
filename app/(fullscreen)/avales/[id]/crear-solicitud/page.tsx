@@ -182,6 +182,7 @@ export default function CrearSolicitudPage() {
             {currentStep === 1 && (
               <Step01Deportistas
                 formData={formData}
+                aval={aval}
                 onComplete={handleStepComplete}
                 onBack={handleBack}
               />

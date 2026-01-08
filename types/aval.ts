@@ -18,6 +18,10 @@ export type EventoSimple = {
   fechaFin: string;
   ciudad: string;
   pais: string;
+  numEntrenadoresHombres: number;
+  numEntrenadoresMujeres: number;
+  numAtletasHombres: number;
+  numAtletasMujeres: number;
 };
 
 export type AvalObjetivo = {

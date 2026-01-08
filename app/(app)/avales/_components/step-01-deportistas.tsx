@@ -9,6 +9,7 @@ import {
 import { listUsers, type ListUsersOptions } from "@/lib/api/user";
 import type { Deportista } from "@/types/deportista";
 import type { User } from "@/types/user";
+import type { Aval } from "@/types/aval";
 import { formatGenero } from "@/lib/utils/formatters";
 
 type FormData = {
@@ -30,6 +31,7 @@ type FormData = {
 
 type Step01DeportistasProps = {
   formData: FormData;
+  aval: Aval;
   onComplete: (data: Partial<FormData>) => void;
   onBack: () => void;
 };
@@ -39,9 +41,15 @@ type SelectedEntrenador = User;
 
 export default function Step01Deportistas({
   formData,
+  aval,
   onComplete,
   onBack,
 }: Step01DeportistasProps) {
+  const evento = aval.evento;
+  const totalEntrenadoresRequeridos =
+    evento.numEntrenadoresHombres + evento.numEntrenadoresMujeres;
+  const totalDeportistasRequeridos =
+    evento.numAtletasHombres + evento.numAtletasMujeres;
   // State for deportistas search
   const [searchDeportistas, setSearchDeportistas] = useState("");
   const [deportistas, setDeportistas] = useState<Deportista[]>([]);
@@ -166,13 +174,17 @@ export default function Step01Deportistas({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (selectedDeportistas.length === 0) {
-      setError("Debes seleccionar al menos un deportista");
+    if (selectedDeportistas.length !== totalDeportistasRequeridos) {
+      setError(
+        `Debes seleccionar exactamente ${totalDeportistasRequeridos} ${totalDeportistasRequeridos === 1 ? "deportista" : "deportistas"} según los requisitos del evento`
+      );
       return;
     }
 
-    if (selectedEntrenadores.length === 0) {
-      setError("Debes seleccionar al menos un entrenador");
+    if (selectedEntrenadores.length !== totalEntrenadoresRequeridos) {
+      setError(
+        `Debes seleccionar exactamente ${totalEntrenadoresRequeridos} ${totalEntrenadoresRequeridos === 1 ? "entrenador" : "entrenadores"} según los requisitos del evento`
+      );
       return;
     }
 
@@ -204,9 +216,31 @@ export default function Step01Deportistas({
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Deportistas Section */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Deportistas participantes
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Deportistas participantes
+            </label>
+            <span
+              className={`text-sm font-medium ${
+                selectedDeportistas.length === totalDeportistasRequeridos
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : selectedDeportistas.length > totalDeportistasRequeridos
+                    ? "text-rose-600 dark:text-rose-400"
+                    : "text-gray-500 dark:text-gray-400"
+              }`}
+            >
+              {selectedDeportistas.length} / {totalDeportistasRequeridos}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            El evento requiere {totalDeportistasRequeridos}{" "}
+            {totalDeportistasRequeridos === 1 ? "deportista" : "deportistas"}
+            {evento.numAtletasHombres > 0 && evento.numAtletasMujeres > 0
+              ? ` (${evento.numAtletasHombres} ${evento.numAtletasHombres === 1 ? "hombre" : "hombres"}, ${evento.numAtletasMujeres} ${evento.numAtletasMujeres === 1 ? "mujer" : "mujeres"})`
+              : evento.numAtletasHombres > 0
+                ? ` (${evento.numAtletasHombres} ${evento.numAtletasHombres === 1 ? "hombre" : "hombres"})`
+                : ` (${evento.numAtletasMujeres} ${evento.numAtletasMujeres === 1 ? "mujer" : "mujeres"})`}
+          </p>
 
           {!showSearchDeportistas ? (
             <button
@@ -348,9 +382,32 @@ export default function Step01Deportistas({
 
         {/* Entrenadores Section */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Entrenadores participantes
-          </label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Entrenadores participantes
+            </label>
+            <span
+              className={`text-sm font-medium ${
+                selectedEntrenadores.length === totalEntrenadoresRequeridos
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : selectedEntrenadores.length > totalEntrenadoresRequeridos
+                    ? "text-rose-600 dark:text-rose-400"
+                    : "text-gray-500 dark:text-gray-400"
+              }`}
+            >
+              {selectedEntrenadores.length} / {totalEntrenadoresRequeridos}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            El evento requiere {totalEntrenadoresRequeridos}{" "}
+            {totalEntrenadoresRequeridos === 1 ? "entrenador" : "entrenadores"}
+            {evento.numEntrenadoresHombres > 0 &&
+            evento.numEntrenadoresMujeres > 0
+              ? ` (${evento.numEntrenadoresHombres} ${evento.numEntrenadoresHombres === 1 ? "hombre" : "hombres"}, ${evento.numEntrenadoresMujeres} ${evento.numEntrenadoresMujeres === 1 ? "mujer" : "mujeres"})`
+              : evento.numEntrenadoresHombres > 0
+                ? ` (${evento.numEntrenadoresHombres} ${evento.numEntrenadoresHombres === 1 ? "hombre" : "hombres"})`
+                : ` (${evento.numEntrenadoresMujeres} ${evento.numEntrenadoresMujeres === 1 ? "mujer" : "mujeres"})`}
+          </p>
 
           {!showSearchEntrenadores ? (
             <button
