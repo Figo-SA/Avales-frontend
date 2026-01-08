@@ -46,13 +46,20 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
 ): Promise<ApiResponse<T>> {
+  // Si el body es FormData, no establecer Content-Type para que el browser lo haga automáticamente
+  const isFormData = options.body instanceof FormData;
+
   const res = await fetch(`${getApiUrl()}${path}`, {
     ...options,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers ?? {}),
-    },
+    headers: isFormData
+      ? {
+          ...(options.headers ?? {}),
+        }
+      : {
+          "Content-Type": "application/json",
+          ...(options.headers ?? {}),
+        },
   });
   const payload = (await res.json().catch(() => null)) as
     | ApiResponse<T>

@@ -140,3 +140,68 @@ export function formatCurrency(
     currency,
   }).format(value);
 }
+
+/**
+ * Formatea un rango de fechas (inicio - fin).
+ * @param inicio - Fecha de inicio en formato ISO string
+ * @param fin - Fecha de fin en formato ISO string (opcional)
+ * @returns Rango de fechas formateado o "-" si no es válido
+ */
+export function formatDateRange(
+  inicio?: string | null,
+  fin?: string | null
+): string {
+  if (!inicio) return "-";
+  const startDate = new Date(inicio);
+  const endDate = fin ? new Date(fin) : null;
+
+  if (Number.isNaN(startDate.getTime())) return "-";
+
+  const startStr = startDate.toLocaleDateString("es-EC", {
+    day: "numeric",
+    month: "short",
+  });
+
+  if (!endDate || Number.isNaN(endDate.getTime())) {
+    return `${startStr}, ${startDate.getFullYear()}`;
+  }
+
+  const endStr = endDate.toLocaleDateString("es-EC", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  return `${startStr} - ${endStr}`;
+}
+
+/**
+ * Formatea la ubicación de un evento (ciudad, país).
+ * @param location - Objeto con ciudad y país
+ * @returns Ubicación formateada o "-" si no existe
+ */
+export function formatLocation(location?: {
+  ciudad?: string | null;
+  pais?: string | null;
+}): string {
+  if (!location) return "-";
+  const parts = [location.ciudad, location.pais].filter(Boolean);
+  return parts.length ? parts.join(", ") : "-";
+}
+
+/**
+ * Formatea la ubicación de un evento con provincia (ciudad, provincia, país).
+ * @param location - Objeto con ciudad, provincia y país
+ * @returns Ubicación formateada o "-" si no existe
+ */
+export function formatLocationWithProvince(location?: {
+  ciudad?: string | null;
+  provincia?: string | null;
+  pais?: string | null;
+}): string {
+  if (!location) return "-";
+  const parts = [location.ciudad, location.provincia, location.pais].filter(
+    Boolean
+  );
+  return parts.length ? parts.join(", ") : "-";
+}

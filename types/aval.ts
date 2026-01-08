@@ -1,6 +1,6 @@
 import type { User } from "@/types/user";
 
-export type Estado = "DISPONIBLE" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
+export type Estado = "DISPONIBLE" | "BORRADOR" | "SOLICITADO" | "RECHAZADO" | "ACEPTADO";
 
 export type EtapaFlujo =
   | "SOLICITUD"
@@ -18,6 +18,10 @@ export type EventoSimple = {
   fechaFin: string;
   ciudad: string;
   pais: string;
+  numEntrenadoresHombres: number;
+  numEntrenadoresMujeres: number;
+  numAtletasHombres: number;
+  numAtletasMujeres: number;
 };
 
 export type AvalObjetivo = {
@@ -90,6 +94,7 @@ export type Aval = {
   descripcion?: string | null;
   estado: Estado;
   comentario?: string | null;
+  convocatoriaUrl?: string | null;
   dtmUrl?: string | null;
   pdaUrl?: string | null;
   solicitudUrl?: string | null;
@@ -102,14 +107,8 @@ export type Aval = {
   updatedAt: string;
 };
 
-export type AvalListResponse = {
-  items: Aval[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-  };
-};
+// La API devuelve el array directamente en data, y la paginación en meta
+export type AvalListResponse = Aval[];
 
 export type ObjetivoDto = {
   orden: number;

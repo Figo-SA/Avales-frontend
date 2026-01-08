@@ -85,3 +85,55 @@ export const TOAST_MESSAGES = {
   deleted: (entity: string) => `${entity} eliminado correctamente.`,
   error: "No se pudo procesar la solicitud.",
 } as const;
+
+/** Estados de avales */
+export const AVAL_ESTADOS = [
+  "DISPONIBLE",
+  "BORRADOR",
+  "SOLICITADO",
+  "RECHAZADO",
+  "ACEPTADO",
+] as const;
+
+export type AvalEstado = (typeof AVAL_ESTADOS)[number];
+
+/** Estilos CSS para badges de estado de avales */
+export const AVAL_STATUS_STYLES: Record<
+  AvalEstado,
+  { bg: string; text: string }
+> = {
+  DISPONIBLE: {
+    bg: "bg-blue-100 dark:bg-blue-900/60",
+    text: "text-blue-800 dark:text-blue-200",
+  },
+  BORRADOR: {
+    bg: "bg-orange-100 dark:bg-orange-900/60",
+    text: "text-orange-800 dark:text-orange-200",
+  },
+  SOLICITADO: {
+    bg: "bg-amber-100 dark:bg-amber-900/60",
+    text: "text-amber-800 dark:text-amber-200",
+  },
+  ACEPTADO: {
+    bg: "bg-green-100 dark:bg-green-900/60",
+    text: "text-green-800 dark:text-green-200",
+  },
+  RECHAZADO: {
+    bg: "bg-rose-100 dark:bg-rose-900/60",
+    text: "text-rose-800 dark:text-rose-200",
+  },
+};
+
+/**
+ * Obtiene las clases CSS para un estado de aval.
+ * @param status - Estado del aval
+ * @returns Objeto con clases CSS de fondo y texto
+ */
+export function getAvalStatusClasses(status?: string | null): {
+  bg: string;
+  text: string;
+} {
+  if (!status) return { bg: DEFAULT_STATUS_STYLE.split(" ")[0], text: "" };
+  const upperStatus = status.toUpperCase() as AvalEstado;
+  return AVAL_STATUS_STYLES[upperStatus] ?? { bg: DEFAULT_STATUS_STYLE.split(" ")[0], text: "" };
+}

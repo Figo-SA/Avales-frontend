@@ -23,7 +23,7 @@ import {
 
 import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
-import { getAval, cancelAval } from "@/lib/api/avales";
+import { getAval } from "@/lib/api/avales";
 import type { Aval } from "@/types/aval";
 import { calcularTotalEvento } from "@/types/evento";
 
@@ -31,13 +31,19 @@ const STATUS_STYLES: Record<
   string,
   { bg: string; text: string; dot: string; icon: typeof Clock }
 > = {
-  PENDIENTE: {
+  BORRADOR: {
+    bg: "bg-orange-50 dark:bg-orange-900/20",
+    text: "text-orange-700 dark:text-orange-300",
+    dot: "bg-orange-500",
+    icon: FileText,
+  },
+  SOLICITADO: {
     bg: "bg-amber-50 dark:bg-amber-900/20",
     text: "text-amber-700 dark:text-amber-300",
     dot: "bg-amber-500",
     icon: Clock,
   },
-  APROBADO: {
+  ACEPTADO: {
     bg: "bg-green-50 dark:bg-green-900/20",
     text: "text-green-700 dark:text-green-300",
     dot: "bg-green-500",
@@ -181,7 +187,6 @@ export default function AvalDetailPage() {
     if (!aval) return;
     try {
       setCancelling(true);
-      await cancelAval(aval.id);
       router.push("/avales?status=cancelled");
     } catch (err: any) {
       setError(err?.message ?? "No se pudo cancelar el aval.");
@@ -237,7 +242,8 @@ export default function AvalDetailPage() {
     ? (evento.numAtletasHombres || 0) + (evento.numAtletasMujeres || 0)
     : 0;
   const totalEntrenadores = evento
-    ? (evento.numEntrenadoresHombres || 0) + (evento.numEntrenadoresMujeres || 0)
+    ? (evento.numEntrenadoresHombres || 0) +
+      (evento.numEntrenadoresMujeres || 0)
     : 0;
 
   return (
@@ -273,25 +279,26 @@ export default function AvalDetailPage() {
             )}
           </div>
 
-          {/* Botón de cancelar solo si está pendiente */}
-          {aval.estado === "PENDIENTE" && (
-            <button
-              type="button"
-              onClick={() => setConfirmOpen(true)}
-              className="btn bg-rose-500 hover:bg-rose-600 text-white"
+          {/* Botón de crear solicitud si está en borrador */}
+          {aval.estado === "BORRADOR" && (
+            <Link
+              href={`/avales/${aval.id}/crear-solicitud`}
+              className="btn bg-indigo-500 hover:bg-indigo-600 text-white"
             >
-              <XCircle className="w-4 h-4 mr-2" />
-              Cancelar solicitud
-            </button>
+              <FileText className="w-4 h-4 mr-2" />
+              Crear solicitud
+            </Link>
           )}
         </div>
 
         {/* Estado del aval */}
         <div
           className={`rounded-xl p-5 ${statusStyles.bg} border ${
-            aval.estado === "PENDIENTE"
+            aval.estado === "BORRADOR"
+              ? "border-orange-200 dark:border-orange-800/40"
+              : aval.estado === "SOLICITADO"
               ? "border-amber-200 dark:border-amber-800/40"
-              : aval.estado === "APROBADO"
+              : aval.estado === "ACEPTADO"
               ? "border-green-200 dark:border-green-800/40"
               : "border-rose-200 dark:border-rose-800/40"
           }`}
@@ -299,49 +306,71 @@ export default function AvalDetailPage() {
           <div className="flex items-center gap-3 mb-3">
             <StatusIcon className={`w-6 h-6 ${statusStyles.text}`} />
             <h2 className={`text-lg font-semibold ${statusStyles.text}`}>
-              {aval.estado === "PENDIENTE"
+              {aval.estado === "BORRADOR"
+                ? "Sin solicitud creada"
+                : aval.estado === "SOLICITADO"
                 ? "Solicitud Pendiente"
-                : aval.estado === "APROBADO"
+                : aval.estado === "ACEPTADO"
                 ? "Aval Aprobado"
                 : "Solicitud Rechazada"}
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-500 dark:text-gray-400">
-                Fecha de solicitud
+
+          {aval.estado === "BORRADOR" ? (
+            <div className="text-sm">
+              <p className={`${statusStyles.text}`}>
+                La convocatoria fue subida exitosamente. Para continuar con el proceso de solicitud de aval, necesitas crear el aval técnico con la información de deportistas, objetivos, criterios y presupuesto.
               </p>
-              <p className={`font-medium ${statusStyles.text}`}>
-                {formatDate(aval.fechaSolicitud)}
-              </p>
+              <div className="mt-4">
+                <p className="text-gray-500 dark:text-gray-400 mb-2">
+                  Fecha de creación
+                </p>
+                <p className={`font-medium ${statusStyles.text}`}>
+                  {formatDate(aval.createdAt)}
+                </p>
+              </div>
+              {aval.convocatoriaUrl && (
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <a
+                    href={aval.convocatoriaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Ver convocatoria subida
+                  </a>
+                </div>
+              )}
             </div>
-            {aval.fechaRespuesta && (
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-gray-500 dark:text-gray-400">
-                  Fecha de respuesta
+                  Fecha de solicitud
                 </p>
                 <p className={`font-medium ${statusStyles.text}`}>
-                  {formatDate(aval.fechaRespuesta)}
+                  {formatDate(aval.createdAt)}
                 </p>
               </div>
-            )}
-            {aval.aprobadoPor && (
-              <div>
-                <p className="text-gray-500 dark:text-gray-400">
-                  {aval.estado === "APROBADO" ? "Aprobado por" : "Respondido por"}
-                </p>
-                <p className={`font-medium ${statusStyles.text}`}>
-                  {aval.aprobadoPor.nombre} {aval.aprobadoPor.apellido}
-                </p>
-              </div>
-            )}
-          </div>
-          {aval.observaciones && (
-            <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">
-                Observaciones
-              </p>
-              <p className={`${statusStyles.text}`}>{aval.observaciones}</p>
+              {aval.updatedAt && aval.createdAt !== aval.updatedAt && (
+                <div>
+                  <p className="text-gray-500 dark:text-gray-400">
+                    Última actualización
+                  </p>
+                  <p className={`font-medium ${statusStyles.text}`}>
+                    {formatDate(aval.updatedAt)}
+                  </p>
+                </div>
+              )}
+              {aval.comentario && (
+                <div className="sm:col-span-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-1">
+                    {aval.estado === "RECHAZADO" ? "Motivo de rechazo" : "Comentarios"}
+                  </p>
+                  <p className={`${statusStyles.text}`}>{aval.comentario}</p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -405,7 +434,9 @@ export default function AvalDetailPage() {
                     </div>
                     <div className="space-y-3 text-sm">
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Inicio</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Inicio
+                        </p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium capitalize">
                           {formatDate(evento.fechaInicio)}
                         </p>
@@ -454,14 +485,18 @@ export default function AvalDetailPage() {
                     <div className="space-y-3 text-sm">
                       {evento.lugar && (
                         <div>
-                          <p className="text-gray-500 dark:text-gray-400">Lugar</p>
+                          <p className="text-gray-500 dark:text-gray-400">
+                            Lugar
+                          </p>
                           <p className="text-gray-900 dark:text-gray-100 font-medium">
                             {evento.lugar}
                           </p>
                         </div>
                       )}
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Ciudad</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Ciudad
+                        </p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
                           {evento.ciudad || "-"}
                         </p>
@@ -509,7 +544,9 @@ export default function AvalDetailPage() {
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-500 dark:text-gray-400">Género</p>
+                        <p className="text-gray-500 dark:text-gray-400">
+                          Género
+                        </p>
                         <p className="text-gray-900 dark:text-gray-100 font-medium">
                           {formatGenero(evento.genero)}
                         </p>

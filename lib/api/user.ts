@@ -10,6 +10,8 @@ export type ListUsersOptions = {
   query?: string;
   page?: number;
   limit?: number;
+  rol?: string;
+  sexo?: string;
 };
 
 export async function listUsers(options: ListUsersOptions = {}) {
@@ -18,6 +20,8 @@ export async function listUsers(options: ListUsersOptions = {}) {
   if (options.query) params.set("query", options.query);
   if (options.page) params.set("page", String(options.page));
   if (options.limit) params.set("limit", String(options.limit));
+  if (options.rol) params.set("rol", options.rol);
+  if (options.sexo) params.set("sexo", options.sexo);
 
   const qs = params.toString();
   const url = qs ? `/users?${qs}` : "/users";

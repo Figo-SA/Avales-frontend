@@ -71,21 +71,21 @@ export default function EventosPage() {
         search: search.trim() || undefined,
       };
       const res = await listEventos(options);
-      const items = res.data?.items ?? [];
-      const pagination = res.data?.pagination;
+      const items = res.data ?? [];
+      const meta = res.meta;
       setEventos(items);
       setPagination({
         page:
-          typeof pagination?.page === "number" && pagination.page > 0
-            ? pagination.page
+          typeof meta?.page === "number" && meta.page > 0
+            ? meta.page
             : currentPage,
         limit:
-          typeof pagination?.limit === "number" && pagination.limit > 0
-            ? pagination.limit
+          typeof meta?.limit === "number" && meta.limit > 0
+            ? meta.limit
             : PAGE_SIZE,
         total:
-          typeof pagination?.total === "number" && pagination.total >= 0
-            ? pagination.total
+          typeof meta?.total === "number" && meta.total >= 0
+            ? meta.total
             : items.length,
       });
     } catch (err: any) {
