@@ -22,10 +22,16 @@ export default function SignIn() {
     setError("");
 
     try {
+      console.log('1. Iniciando login...');
       await login(email, password); // setea cookie HttpOnly
+      console.log('2. Login exitoso (cookie recibida?), refrescando usuario...');
+      
       await refreshUser(); // carga profile y lo pone global
+      console.log('3. Usuario refrescado correctamente.');
+      
       router.push("/dashboard");
     } catch (err: any) {
+      console.error('ERROR en flujo de login:', err);
       setError(err?.message ?? "Usuario o contraseña incorrectos.");
     } finally {
       setLoading(false);

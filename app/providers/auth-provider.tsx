@@ -29,11 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const json = await getProfile(); // ApiEnvelope<User>
       setUser(json.data);
     } catch (err) {
+      console.error("DEBUG: Error detallado en fetchUser:", err);
+      if (err instanceof ApiError) {
+        console.error("DEBUG: ApiError status:", err.status);
+        console.error("DEBUG: ApiError problem:", err.problem);
+      }
+      
       if (
         err instanceof ApiError &&
         (err.status === 401 || err.status === 403)
       ) {
         // estado normal: no autenticado
+        console.log("DEBUG: Usuario no autenticado (401/403) -> Limpiando usuario.");
         setUser(null);
         setError(null);
       } else {
