@@ -21,15 +21,10 @@ type FormData = {
   transporteRetorno: string;
   objetivos: string[];
   criterios: string[];
-  rubros: Array<{
-    rubro: string;
-    monto: number;
-    observaciones?: string;
-  }>;
   observaciones?: string;
 };
 
-type Step01DeportistasProps = {
+type Paso01DeportistasProps = {
   formData: FormData;
   aval: Aval;
   onComplete: (data: Partial<FormData>) => void;
@@ -39,12 +34,12 @@ type Step01DeportistasProps = {
 type SelectedDeportista = Deportista;
 type SelectedEntrenador = User;
 
-export default function Step01Deportistas({
+export default function Paso01Deportistas({
   formData,
   aval,
   onComplete,
   onBack,
-}: Step01DeportistasProps) {
+}: Paso01DeportistasProps) {
   const evento = aval.evento;
 
   // State for deportistas hombres
@@ -136,7 +131,7 @@ export default function Step01Deportistas({
         query: searchDeportistasMujeres.trim(),
         limit: 20,
         soloAfiliados: true,
-        genero: "F",
+        genero: "FEMENINO",
       };
 
       const res = await listDeportistas(options);

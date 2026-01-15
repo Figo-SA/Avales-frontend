@@ -10,18 +10,60 @@ export type EtapaFlujo =
   | "SECRETARIA"
   | "FINANCIERO";
 
+export type Genero = "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO";
+
+export type CatalogItemSimple = {
+  id: number;
+  nombre: string;
+};
+
+export type ActividadSimple = {
+  id: number;
+  nombre: string;
+  numero: number;
+};
+
+export type ItemSimple = {
+  id: number;
+  nombre: string;
+  numero: number;
+  actividad: ActividadSimple;
+};
+
+export type PresupuestoItem = {
+  id: number;
+  item: ItemSimple;
+  mes: number;
+  presupuesto: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type EventoSimple = {
   id: number;
   codigo: string;
   nombre: string;
-  fechaInicio: string;
-  fechaFin: string;
+  tipoParticipacion: string;
+  tipoEvento: string;
+  lugar: string;
+  genero: Genero;
+  disciplina: CatalogItemSimple;
+  categoria: CatalogItemSimple;
+  provincia: string;
   ciudad: string;
   pais: string;
+  alcance: string;
+  fechaInicio: string;
+  fechaFin: string;
   numEntrenadoresHombres: number;
   numEntrenadoresMujeres: number;
   numAtletasHombres: number;
   numAtletasMujeres: number;
+  estado: Estado;
+  archivo?: string;
+  presupuesto: PresupuestoItem[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type AvalObjetivo = {
@@ -145,7 +187,6 @@ export type CreateAvalPayload = {
   transporteRetorno: string;
   objetivos: ObjetivoDto[];
   criterios: CriterioDto[];
-  rubros: RubroPresupuestarioDto[];
   deportistas: DeportistaAvalDto[];
   entrenadores: EntrenadorAvalDto[];
   observaciones?: string;

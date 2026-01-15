@@ -57,6 +57,7 @@ export default function NuevoAvalPage() {
         limit: PAGE_SIZE,
         estado: "DISPONIBLE",
         search: search.trim() || undefined,
+        disciplinaId: user?.disciplinaId ?? undefined,
       };
 
       const res = await listEventos(options);
@@ -68,7 +69,7 @@ export default function NuevoAvalPage() {
     } finally {
       setLoading(false);
     }
-  }, [search]);
+  }, [search, user?.disciplinaId]);
 
   useEffect(() => {
     void fetchEventos();

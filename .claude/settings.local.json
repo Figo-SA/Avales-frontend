@@ -7,7 +7,9 @@
       "Bash(move \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(app\\)\\\\avales\\\\[id]\\\\crear-solicitud\\\\page.tsx\" \"c:\\\\Users\\\\crist\\\\Desktop\\\\FEDELOJA\\\\Proyecto de avales\\\\aplicaciones\\\\avales-frontend\\\\app\\\\\\(fullscreen\\)\\\\avales\\\\[id]\\\\crear-solicitud\\\\page.tsx\")",
       "Bash(ls:*)",
       "Bash(pnpm lint:fix:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(git mv:*)",
+      "Bash(git grep:*)"
     ]
   }
 }

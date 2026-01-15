@@ -16,11 +16,6 @@ type FormData = {
   transporteRetorno: string;
   objetivos: string[];
   criterios: string[];
-  rubros: Array<{
-    rubro: string;
-    monto: number;
-    observaciones?: string;
-  }>;
   observaciones?: string;
 };
 
@@ -34,8 +29,12 @@ function getTotalParticipants(formData: FormData) {
   return formData.deportistas.length + formData.entrenadores.length;
 }
 
-function getTotalPresupuesto(formData: FormData) {
-  return formData.rubros.reduce((sum, rubro) => sum + rubro.monto, 0);
+function getTotalPresupuesto(aval: Aval) {
+  const presupuestoItems = aval.evento?.presupuesto || [];
+  return presupuestoItems.reduce((sum, item) => {
+    const valor = parseFloat(item.presupuesto) || 0;
+    return sum + valor;
+  }, 0);
 }
 
 export default function OnboardingImage({ aval, formData, currentStep }: OnboardingImageProps) {
@@ -76,13 +75,7 @@ export default function OnboardingImage({ aval, formData, currentStep }: Onboard
               </div>
             </div>
 
-            {evento.disciplina?.nombre && (
-              <div className="mt-4 pt-4 border-t border-white/20">
-                <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-sm font-medium text-white">
-                  {evento.disciplina.nombre}
-                </span>
-              </div>
-            )}
+            {/* Disciplina no disponible en EventoSimple */}
           </div>
         )}
 
@@ -181,19 +174,19 @@ export default function OnboardingImage({ aval, formData, currentStep }: Onboard
         )}
 
         {/* Presupuesto Preview */}
-        {formData.rubros.length > 0 && (
+        {currentStep >= 4 && (aval.evento?.presupuesto?.length ?? 0) > 0 && (
           <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
             <div className="flex items-center gap-2 mb-4">
               <DollarSign className="w-5 h-5 text-white/60" />
-              <p className="text-sm font-medium text-white/90">Presupuesto</p>
+              <p className="text-sm font-medium text-white/90">Presupuesto del Evento</p>
             </div>
             <div>
               <p className="text-sm text-white/70 mb-2">Total:</p>
               <p className="text-3xl text-white font-bold">
-                {formatCurrency(getTotalPresupuesto(formData))}
+                {formatCurrency(getTotalPresupuesto(aval))}
               </p>
               <p className="text-sm text-white/80 mt-2">
-                {formData.rubros.length} {formData.rubros.length === 1 ? "rubro" : "rubros"}
+                {aval.evento.presupuesto!.length} {aval.evento.presupuesto!.length === 1 ? "item" : "items"}
               </p>
             </div>
           </div>

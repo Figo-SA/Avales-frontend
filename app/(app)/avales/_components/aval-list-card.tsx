@@ -24,6 +24,7 @@ type Props = {
   avales: Aval[];
   loading?: boolean;
   error?: string | null;
+  isAdmin?: boolean;
 };
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
@@ -39,7 +40,7 @@ function getStatusIcon(status?: string | null) {
   return STATUS_ICONS[status.toUpperCase()] ?? AlertCircle;
 }
 
-export default function AvalListCard({ avales, loading, error }: Props) {
+export default function AvalListCard({ avales, loading, error, isAdmin = false }: Props) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -71,10 +72,14 @@ export default function AvalListCard({ avales, loading, error }: Props) {
   if (avales.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 text-center text-gray-500 dark:text-gray-400">
-        <p className="mb-2">No tienes avales registrados.</p>
-        <p className="text-sm">
-          Haz clic en "Crear aval" para solicitar uno nuevo.
+        <p className="mb-2">
+          {isAdmin ? "No hay avales registrados en el sistema." : "No tienes avales registrados."}
         </p>
+        {!isAdmin && (
+          <p className="text-sm">
+            Haz clic en "Crear aval" para solicitar uno nuevo.
+          </p>
+        )}
       </div>
     );
   }
@@ -114,8 +119,8 @@ export default function AvalListCard({ avales, loading, error }: Props) {
 
             {/* Info del evento */}
             <div className="px-5 pb-4 flex-1 space-y-3">
-              {/* Alerta de BORRADOR */}
-              {aval.estado === "BORRADOR" && (
+              {/* Alerta de BORRADOR - solo para entrenadores */}
+              {!isAdmin && aval.estado === "BORRADOR" && (
                 <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -166,7 +171,7 @@ export default function AvalListCard({ avales, loading, error }: Props) {
 
             {/* Footer con acción */}
             <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-end gap-2">
-              {aval.estado === "BORRADOR" ? (
+              {!isAdmin && aval.estado === "BORRADOR" ? (
                 <>
                   <Link
                     href={`/avales/${aval.id}`}

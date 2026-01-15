@@ -12,6 +12,8 @@ import type { Aval } from "@/types/aval";
 import { useAuth } from "@/app/providers/auth-provider";
 import AvalListCard from "./_components/aval-list-card";
 
+const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
+
 const PAGE_SIZE = 9;
 
 const STATUS_OPTIONS = [
@@ -56,6 +58,7 @@ export default function AvalesPage() {
   const showing = avales.length;
 
   const hasDisciplina = user?.disciplinaId != null;
+  const isAdmin = user?.roles?.some((role) => ADMIN_ROLES.includes(role)) ?? false;
 
   useEffect(() => {
     if (page === currentPage) return;
@@ -179,10 +182,12 @@ export default function AvalesPage() {
         <div className="sm:flex sm:justify-between sm:items-center gap-4">
           <div className="mb-4 sm:mb-0">
             <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
-              Mis Avales
+              {isAdmin ? "Gestión de Avales" : "Mis Avales"}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              Gestiona tus solicitudes de avales para eventos deportivos.
+              {isAdmin
+                ? "Visualiza todos los avales solicitados en el sistema."
+                : "Gestiona tus solicitudes de avales para eventos deportivos."}
             </p>
           </div>
 
@@ -210,28 +215,30 @@ export default function AvalesPage() {
                 </option>
               ))}
             </select>
-            {hasDisciplina ? (
-              <Link
-                href="/avales/nuevo"
-                className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Crear aval
-              </Link>
-            ) : (
-              <button
-                disabled
-                className="btn bg-gray-400 text-gray-100 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
-                title="Debes tener una disciplina asignada para crear avales"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Crear aval
-              </button>
+            {!isAdmin && (
+              hasDisciplina ? (
+                <Link
+                  href="/avales/nuevo"
+                  className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear aval
+                </Link>
+              ) : (
+                <button
+                  disabled
+                  className="btn bg-gray-400 text-gray-100 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400"
+                  title="Debes tener una disciplina asignada para crear avales"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Crear aval
+                </button>
+              )
             )}
           </div>
         </div>
 
-        {!hasDisciplina && (
+        {!isAdmin && !hasDisciplina && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
@@ -259,7 +266,7 @@ export default function AvalesPage() {
           </div>
         )}
 
-        <AvalListCard avales={avales} loading={loading} error={error} />
+        <AvalListCard avales={avales} loading={loading} error={error} isAdmin={isAdmin} />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">

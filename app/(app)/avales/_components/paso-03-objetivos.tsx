@@ -12,25 +12,20 @@ type FormData = {
   transporteRetorno: string;
   objetivos: string[];
   criterios: string[];
-  rubros: Array<{
-    rubro: string;
-    monto: number;
-    observaciones?: string;
-  }>;
   observaciones?: string;
 };
 
-type Step03ObjetivosProps = {
+type Paso03ObjetivosProps = {
   formData: FormData;
   onComplete: (data: Partial<FormData>) => void;
   onBack: () => void;
 };
 
-export default function Step03Objetivos({
+export default function Paso03Objetivos({
   formData,
   onComplete,
   onBack,
-}: Step03ObjetivosProps) {
+}: Paso03ObjetivosProps) {
   const [objetivos, setObjetivos] = useState<string[]>(
     formData.objetivos || []
   );

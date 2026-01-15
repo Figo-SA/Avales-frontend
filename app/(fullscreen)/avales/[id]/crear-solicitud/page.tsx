@@ -5,10 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import { getAval } from "@/lib/api/avales";
 import type { Aval } from "@/types/aval";
 import OnboardingImage from "@/app/(app)/avales/_components/onboarding-image";
-import Step01Deportistas from "@/app/(app)/avales/_components/step-01-deportistas";
-import Step02Logistica from "@/app/(app)/avales/_components/step-02-logistica";
-import Step03Objetivos from "@/app/(app)/avales/_components/step-03-objetivos";
-import Step04Presupuesto from "@/app/(app)/avales/_components/step-04-presupuesto";
+import Paso01Deportistas from "@/app/(app)/avales/_components/paso-01-deportistas";
+import Paso02Logistica from "@/app/(app)/avales/_components/paso-02-logistica";
+import Paso03Objetivos from "@/app/(app)/avales/_components/paso-03-objetivos";
+import Paso04Presupuesto from "@/app/(app)/avales/_components/paso-04-presupuesto";
 import { Loader2 } from "lucide-react";
 
 type WizardStep = 1 | 2 | 3 | 4;
@@ -28,12 +28,7 @@ type FormData = {
   objetivos: string[];
   criterios: string[];
 
-  // Paso 4: Presupuesto
-  rubros: Array<{
-    rubro: string;
-    monto: number;
-    observaciones?: string;
-  }>;
+  // Paso 4: Observaciones
   observaciones?: string;
 };
 
@@ -46,7 +41,6 @@ const INITIAL_FORM_DATA: FormData = {
   transporteRetorno: "",
   objetivos: [],
   criterios: [],
-  rubros: [],
   observaciones: "",
 };
 
@@ -193,7 +187,7 @@ export default function CrearSolicitudPage() {
 
             {/* Step Content */}
             {currentStep === 1 && (
-              <Step01Deportistas
+              <Paso01Deportistas
                 formData={formData}
                 aval={aval}
                 onComplete={handleStepComplete}
@@ -201,25 +195,26 @@ export default function CrearSolicitudPage() {
               />
             )}
             {currentStep === 2 && (
-              <Step02Logistica
+              <Paso02Logistica
                 formData={formData}
                 onComplete={handleStepComplete}
                 onBack={handleBack}
               />
             )}
             {currentStep === 3 && (
-              <Step03Objetivos
+              <Paso03Objetivos
                 formData={formData}
                 onComplete={handleStepComplete}
                 onBack={handleBack}
               />
             )}
             {currentStep === 4 && (
-              <Step04Presupuesto
+              <Paso04Presupuesto
                 formData={formData}
                 onComplete={handleStepComplete}
                 onBack={handleBack}
                 avalId={avalId}
+                aval={aval}
               />
             )}
           </div>

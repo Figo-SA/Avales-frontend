@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, X, DollarSign, FileText } from "lucide-react";
+import { FileText, DollarSign, Info } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { useRouter } from "next/navigation";
 import { createAval } from "@/lib/api/avales";
+import type { Aval } from "@/types/aval";
 
 type FormData = {
   deportistas: Array<{ id: number; nombre: string }>;
@@ -15,106 +16,42 @@ type FormData = {
   transporteRetorno: string;
   objetivos: string[];
   criterios: string[];
-  rubros: Array<{
-    rubroId: number;
-    cantidadDias: string;
-    valorUnitario?: number;
-  }>;
   observaciones?: string;
 };
 
-type Step04PresupuestoProps = {
+type Paso04PresupuestoProps = {
   formData: FormData;
   onComplete: (data: Partial<FormData>) => void;
   onBack: () => void;
   avalId: number;
+  aval: Aval;
 };
 
-type RubroForm = {
-  rubroId: string;
-  cantidadDias: string;
-  valorUnitario: string;
-};
-
-const INITIAL_RUBRO_FORM: RubroForm = {
-  rubroId: "",
-  cantidadDias: "",
-  valorUnitario: "",
-};
-
-export default function Step04Presupuesto({
+export default function Paso04Presupuesto({
   formData,
   onBack,
   avalId,
-}: Step04PresupuestoProps) {
+  aval,
+}: Paso04PresupuestoProps) {
   const router = useRouter();
-  const [rubros, setRubros] = useState(formData.rubros || []);
   const [observaciones, setObservaciones] = useState(
     formData.observaciones || ""
   );
-  const [rubroForm, setRubroForm] = useState<RubroForm>(INITIAL_RUBRO_FORM);
-  const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleAddRubro = () => {
-    const parsedRubroId = parseInt(rubroForm.rubroId);
-    const trimmedCantidadDias = rubroForm.cantidadDias.trim();
-    const parsedValorUnitario = rubroForm.valorUnitario
-      ? parseFloat(rubroForm.valorUnitario)
-      : undefined;
-
-    if (!rubroForm.rubroId || isNaN(parsedRubroId)) {
-      setError("Debes seleccionar un rubro");
-      return;
-    }
-
-    if (!trimmedCantidadDias) {
-      setError("La cantidad de días es requerida");
-      return;
-    }
-
-    if (
-      rubroForm.valorUnitario &&
-      (isNaN(parsedValorUnitario!) || parsedValorUnitario! <= 0)
-    ) {
-      setError("El valor unitario debe ser un número mayor a 0");
-      return;
-    }
-
-    setRubros([
-      ...rubros,
-      {
-        rubroId: parsedRubroId,
-        cantidadDias: trimmedCantidadDias,
-        valorUnitario: parsedValorUnitario,
-      },
-    ]);
-
-    setRubroForm(INITIAL_RUBRO_FORM);
-    setShowForm(false);
-    setError(null);
-  };
-
-  const handleRemoveRubro = (index: number) => {
-    setRubros(rubros.filter((_, i) => i !== index));
-  };
+  // Obtener los items de presupuesto del evento asociado
+  const presupuestoItems = aval.evento?.presupuesto || [];
 
   const getTotalPresupuesto = () => {
-    return rubros.reduce((sum, rubro) => {
-      const dias = parseFloat(rubro.cantidadDias) || 0;
-      const valorUnitario = rubro.valorUnitario || 0;
-      return sum + dias * valorUnitario;
+    return presupuestoItems.reduce((sum, item) => {
+      const valor = parseFloat(item.presupuesto) || 0;
+      return sum + valor;
     }, 0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (rubros.length === 0) {
-      setError("Debes agregar al menos un rubro presupuestario");
-      return;
-    }
 
     try {
       setSubmitting(true);
@@ -135,7 +72,6 @@ export default function Step04Presupuesto({
           orden: index + 1,
           descripcion: crit,
         })),
-        rubros: rubros,
         deportistas: formData.deportistas.map((d) => ({
           deportistaId: d.id,
           rol: "DEPORTISTA",
@@ -163,110 +99,39 @@ export default function Step04Presupuesto({
   return (
     <div>
       <h1 className="text-2xl text-gray-800 dark:text-gray-100 font-bold mb-2">
-        Presupuesto
+        Presupuesto del Evento
       </h1>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
-        Define los rubros presupuestarios necesarios para el evento.
+        Revisa los items presupuestarios asociados al evento {aval.evento?.nombre}.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Rubros Section */}
+        {/* Info banner */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <div className="flex gap-3">
+            <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div className="text-sm text-blue-800 dark:text-blue-300">
+              <p className="font-medium mb-1">Información del presupuesto</p>
+              <p>
+                Los items presupuestarios están asociados al evento y no pueden ser modificados desde aquí.
+                Esta es solo una vista informativa de los gastos planificados.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Items del Evento */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Rubros presupuestarios
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Items presupuestarios del evento
           </label>
 
-          {!showForm ? (
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-4 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500 transition"
-            >
-              <Plus className="w-5 h-5" />
-              Agregar rubro
-            </button>
-          ) : (
-            <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-300 dark:border-gray-600 p-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  ID del rubro
-                </label>
-                <input
-                  type="number"
-                  value={rubroForm.rubroId}
-                  onChange={(e) =>
-                    setRubroForm({ ...rubroForm, rubroId: e.target.value })
-                  }
-                  placeholder="ID del rubro"
-                  className="form-input w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Cantidad de días
-                </label>
-                <input
-                  type="text"
-                  value={rubroForm.cantidadDias}
-                  onChange={(e) =>
-                    setRubroForm({ ...rubroForm, cantidadDias: e.target.value })
-                  }
-                  placeholder="Ej: 5"
-                  className="form-input w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Valor unitario (USD) (opcional)
-                </label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={rubroForm.valorUnitario}
-                    onChange={(e) =>
-                      setRubroForm({ ...rubroForm, valorUnitario: e.target.value })
-                    }
-                    placeholder="0.00"
-                    className="form-input w-full pl-10"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleAddRubro}
-                  className="btn bg-indigo-500 hover:bg-indigo-600 text-white flex-1"
-                >
-                  Agregar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false);
-                    setRubroForm(INITIAL_RUBRO_FORM);
-                    setError(null);
-                  }}
-                  className="btn border-gray-300 dark:border-gray-600 hover:border-gray-400 text-gray-700 dark:text-gray-300"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Rubros List */}
-          {rubros.length > 0 && (
-            <div className="mt-4 space-y-3">
+          {presupuestoItems.length > 0 ? (
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {rubros.length}{" "}
-                  {rubros.length === 1 ? "rubro agregado" : "rubros agregados"}
+                  {presupuestoItems.length}{" "}
+                  {presupuestoItems.length === 1 ? "item" : "items"}
                 </p>
                 <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
                   Total: {formatCurrency(getTotalPresupuesto())}
@@ -274,51 +139,45 @@ export default function Step04Presupuesto({
               </div>
 
               <div className="space-y-2">
-                {rubros.map((rubro, index) => {
-                  const dias = parseFloat(rubro.cantidadDias) || 0;
-                  const valorUnitario = rubro.valorUnitario || 0;
-                  const total = dias * valorUnitario;
+                {presupuestoItems.map((presupuestoItem) => {
+                  const valor = parseFloat(presupuestoItem.presupuesto) || 0;
 
                   return (
                     <div
-                      key={index}
-                      className="flex items-start gap-3 bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
+                      key={presupuestoItem.id}
+                      className="bg-white dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600"
                     >
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">
-                              Rubro ID: {rubro.rubroId}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {rubro.cantidadDias} días
-                              {valorUnitario > 0 && ` × ${formatCurrency(valorUnitario)}`}
-                            </p>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 dark:text-gray-100">
+                            {presupuestoItem.item.nombre}
+                          </p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Item #{presupuestoItem.item.numero}
+                          </p>
+                          <div className="flex gap-4 mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            <span>Mes: {presupuestoItem.mes}</span>
+                            <span>Actividad: {presupuestoItem.item.actividad.nombre}</span>
                           </div>
+                        </div>
+                        <div className="text-right">
                           <p className="font-bold text-indigo-600 dark:text-indigo-400 whitespace-nowrap">
-                            {formatCurrency(total)}
+                            {formatCurrency(valor)}
                           </p>
                         </div>
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveRubro(index)}
-                        className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 p-1"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
                     </div>
                   );
                 })}
               </div>
             </div>
-          )}
-
-          {rubros.length === 0 && !showForm && (
-            <p className="text-sm text-gray-500 dark:text-gray-400 italic mt-2">
-              No hay rubros agregados. Agrega al menos uno para continuar.
-            </p>
+          ) : (
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-8 text-center">
+              <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+              <p className="text-gray-600 dark:text-gray-400">
+                No hay items presupuestarios asociados a este evento.
+              </p>
+            </div>
           )}
         </div>
 

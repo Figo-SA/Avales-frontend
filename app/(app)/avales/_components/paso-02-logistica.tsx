@@ -12,15 +12,10 @@ type FormData = {
   transporteRetorno: string;
   objetivos: string[];
   criterios: string[];
-  rubros: Array<{
-    rubro: string;
-    monto: number;
-    observaciones?: string;
-  }>;
   observaciones?: string;
 };
 
-type Step02LogisticaProps = {
+type Paso02LogisticaProps = {
   formData: FormData;
   onComplete: (data: Partial<FormData>) => void;
   onBack: () => void;
@@ -34,11 +29,11 @@ const TRANSPORT_OPTIONS = [
   { value: "OTRO", label: "Otro", icon: Bus },
 ];
 
-export default function Step02Logistica({
+export default function Paso02Logistica({
   formData,
   onComplete,
   onBack,
-}: Step02LogisticaProps) {
+}: Paso02LogisticaProps) {
   const [fechaHoraSalida, setFechaHoraSalida] = useState(
     formData.fechaHoraSalida || ""
   );

@@ -76,14 +76,12 @@ export async function uploadAvalArchivo(id: number, archivo: File) {
 export async function downloadDtmPdf(id: number) {
   return apiFetch<Blob>(`/avales/${id}/dtm-pdf`, {
     method: "GET",
-    responseType: "blob",
   });
 }
 
 export async function downloadPdaPdf(id: number) {
   return apiFetch<Blob>(`/avales/${id}/pda-pdf`, {
     method: "GET",
-    responseType: "blob",
   });
 }
 
