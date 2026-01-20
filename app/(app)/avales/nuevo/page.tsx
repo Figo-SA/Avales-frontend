@@ -78,6 +78,11 @@ export default function NuevoAvalPage() {
   const handleEventSelect = (evento: Evento) => {
     setSelectedEvento(evento);
     setUploadModalOpen(true);
+    console.log("Evento seleccionado para convocatoria:", {
+      id: evento.id,
+      nombre: evento.nombre,
+      fecha: evento.fechaInicio,
+    });
   };
 
   const handleUploadConvocatoria = async (file: File) => {
@@ -93,9 +98,11 @@ export default function NuevoAvalPage() {
         fileType: file.type,
       });
 
+      console.log("Preparando llamada uploadConvocatoria...");
       const response = await uploadConvocatoria(selectedEvento.id, file);
 
       console.log("Upload exitoso:", response);
+      console.log("Redirigiendo al wizard con ID de aval:", response.data?.id);
 
       setUploadModalOpen(false);
       setSelectedEvento(null);

@@ -48,6 +48,13 @@ export async function apiFetch<T>(
 ): Promise<ApiResponse<T>> {
   // Si el body es FormData, no establecer Content-Type para que el browser lo haga automáticamente
   const isFormData = options.body instanceof FormData;
+  console.log("apiFetch preparando request", {
+    path,
+    method: options.method ?? "GET",
+    isFormData,
+    headers: options.headers,
+    body: isFormData ? "(FormData oculto)" : options.body,
+  });
 
   const res = await fetch(`${getApiUrl()}${path}`, {
     ...options,
@@ -61,10 +68,12 @@ export async function apiFetch<T>(
           ...(options.headers ?? {}),
         },
   });
+  console.log("apiFetch received raw status", res.status, res.statusText);
   const payload = (await res.json().catch(() => null)) as
     | ApiResponse<T>
     | ProblemDetails
     | null;
+  console.log("apiFetch parsed payload", payload);
 
   if (!res.ok) {
     const problem = isProblemDetails(payload) ? payload : null;

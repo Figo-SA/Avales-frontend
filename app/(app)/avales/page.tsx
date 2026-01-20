@@ -8,11 +8,12 @@ import { Plus } from "lucide-react";
 import AlertBanner from "@/components/ui/alert-banner";
 import Pagination from "@/components/ui/pagination";
 import { listAvales, type ListAvalesOptions } from "@/lib/api/avales";
-import type { Aval } from "@/types/aval";
+import type { Aval, EtapaFlujo } from "@/types/aval";
 import { useAuth } from "@/app/providers/auth-provider";
 import AvalListCard from "./_components/aval-list-card";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
+const DTM_ROLES = ["DTM", "DTM_EIDE"];
 
 const PAGE_SIZE = 9;
 
@@ -22,6 +23,16 @@ const STATUS_OPTIONS = [
   { label: "Solicitado", value: "SOLICITADO" },
   { label: "Aceptado", value: "ACEPTADO" },
   { label: "Rechazado", value: "RECHAZADO" },
+];
+
+const ETAPA_OPTIONS = [
+  { label: "Todas las etapas", value: "" },
+  { label: "Solicitud", value: "SOLICITUD" },
+  { label: "Revisión DTM", value: "REVISION_DTM" },
+  { label: "PDA", value: "PDA" },
+  { label: "Control Previo", value: "CONTROL_PREVIO" },
+  { label: "Secretaría", value: "SECRETARIA" },
+  { label: "Financiero", value: "FINANCIERO" },
 ];
 
 export default function AvalesPage() {
@@ -34,6 +45,7 @@ export default function AvalesPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [estado, setEstado] = useState(() => searchParams.get("estado") ?? "");
+  const [etapa, setEtapa] = useState(() => searchParams.get("etapa") ?? "");
   const [page, setPage] = useState(() => {
     const value = Number(searchParams.get("page") ?? "1");
     return Number.isFinite(value) && value > 0 ? value : 1;
@@ -58,7 +70,9 @@ export default function AvalesPage() {
   const showing = avales.length;
 
   const hasDisciplina = user?.disciplinaId != null;
-  const isAdmin = user?.roles?.some((role) => ADMIN_ROLES.includes(role)) ?? false;
+  const isAdmin =
+    user?.roles?.some((role) => ADMIN_ROLES.includes(role)) ?? false;
+  const isDTM = user?.roles?.some((role) => DTM_ROLES.includes(role)) ?? false;
 
   useEffect(() => {
     if (page === currentPage) return;
@@ -69,10 +83,16 @@ export default function AvalesPage() {
     try {
       setLoading(true);
       setError(null);
+
+      // Determinar los filtros efectivos (aplicar filtros por defecto para DTM)
+      const efectivoEstado = estado || (isDTM ? "SOLICITADO" : undefined);
+      const efectivoEtapa = etapa || (isDTM ? "SOLICITUD" : undefined);
+
       const options: ListAvalesOptions = {
         page: currentPage,
         limit: PAGE_SIZE,
-        estado: estado ? (estado as any) : undefined,
+        estado: efectivoEstado ? (efectivoEstado as any) : undefined,
+        etapa: efectivoEtapa ? (efectivoEtapa as EtapaFlujo) : undefined,
         search: search.trim() || undefined,
       };
 
@@ -100,7 +120,7 @@ export default function AvalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, estado, search]);
+  }, [currentPage, estado, etapa, search, isDTM]);
 
   useEffect(() => {
     void fetchAvales();
@@ -112,10 +132,9 @@ export default function AvalesPage() {
     if (estado) params.set("estado", estado);
     if (currentPage > 1) params.set("page", String(currentPage));
 
-    router.replace(
-      params.toString() ? `/avales?${params}` : "/avales",
-      { scroll: false }
-    );
+    router.replace(params.toString() ? `/avales?${params}` : "/avales", {
+      scroll: false,
+    });
   }, [search, estado, currentPage, router]);
 
   // Mostrar toast cuando viene status desde la creación
@@ -143,10 +162,9 @@ export default function AvalesPage() {
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete("status");
-    router.replace(
-      params.toString() ? `/avales?${params}` : "/avales",
-      { scroll: false }
-    );
+    router.replace(params.toString() ? `/avales?${params}` : "/avales", {
+      scroll: false,
+    });
   }, [searchParams, router]);
 
   useEffect(() => {
@@ -215,8 +233,8 @@ export default function AvalesPage() {
                 </option>
               ))}
             </select>
-            {!isAdmin && (
-              hasDisciplina ? (
+            {!isAdmin &&
+              (hasDisciplina ? (
                 <Link
                   href="/avales/nuevo"
                   className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
@@ -233,8 +251,7 @@ export default function AvalesPage() {
                   <Plus className="w-4 h-4 mr-2" />
                   Crear aval
                 </button>
-              )
-            )}
+              ))}
           </div>
         </div>
 
@@ -259,14 +276,22 @@ export default function AvalesPage() {
                   Disciplina requerida
                 </h3>
                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                  No tienes una disciplina asignada. Para poder crear avales, debes tener una disciplina asociada a tu cuenta. Por favor, contacta con el administrador para que te asigne una disciplina.
+                  No tienes una disciplina asignada. Para poder crear avales,
+                  debes tener una disciplina asociada a tu cuenta. Por favor,
+                  contacta con el administrador para que te asigne una
+                  disciplina.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        <AvalListCard avales={avales} loading={loading} error={error} isAdmin={isAdmin} />
+        <AvalListCard
+          avales={avales}
+          loading={loading}
+          error={error}
+          isAdmin={isAdmin}
+        />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
