@@ -94,20 +94,25 @@ export async function downloadPdaPdf(id: number) {
   });
 }
 
-export async function aprobarAval(id: number, usuarioId: number) {
+export async function aprobarAval(
+  id: number,
+  usuarioId: number,
+  etapa: EtapaFlujo,
+) {
   return apiFetch<Aval>(`/avales/${id}/aprobar`, {
     method: "PATCH",
-    body: JSON.stringify({ usuarioId }),
+    body: JSON.stringify({ usuarioId, etapa }),
   });
 }
 
 export async function rechazarAval(
   id: number,
   usuarioId: number,
-  motivo?: string
+  etapa: EtapaFlujo,
+  motivo?: string,
 ) {
   return apiFetch<Aval>(`/avales/${id}/rechazar`, {
     method: "PATCH",
-    body: JSON.stringify({ usuarioId, motivo }),
+    body: JSON.stringify({ usuarioId, etapa, motivo }),
   });
 }
