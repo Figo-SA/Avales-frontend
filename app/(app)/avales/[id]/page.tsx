@@ -185,11 +185,14 @@ export default function AvalDetailPage() {
   ];
   const isMetodologoStage = currentEtapa === "SOLICITUD";
   const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
+  const isPdaStage = currentEtapa === "REVISION_DTM";
   const showMetodologoPanel =
     userRoles.includes("METODOLOGO") && isMetodologoStage;
   const showDtmPanel = userRoles.includes("DTM") && isDtmStage;
+  const showPdaPanel = userRoles.includes("PDA") && isPdaStage;
   const showApprovalPanel =
-    aval?.estado === "SOLICITADO" && (showMetodologoPanel || showDtmPanel);
+    aval?.estado === "SOLICITADO" &&
+    (showMetodologoPanel || showDtmPanel || showPdaPanel);
 
   const fetchAval = useCallback(async () => {
     if (!id || Number.isNaN(id)) {

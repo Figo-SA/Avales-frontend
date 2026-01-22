@@ -97,7 +97,7 @@ export default function AvalesPage() {
         : isDTM
         ? "REVISION_METODOLOGO"
         : isPda
-        ? "PDA"
+        ? "REVISION_DTM"
         : undefined;
       const efectivoEstado = estado || defaultEstado;
       const efectivoEtapa = etapa || defaultEtapa;
