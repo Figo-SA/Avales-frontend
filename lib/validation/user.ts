@@ -7,7 +7,7 @@ const rolesSchema = z
       "ADMIN",
       "SECRETARIA",
       "DTM",
-      "DTM_EIDE",
+      "METODOLOGO",
       "ENTRENADOR",
       "USUARIO",
       "DEPORTISTA",

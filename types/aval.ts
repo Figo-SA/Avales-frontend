@@ -4,6 +4,7 @@ export type Estado = "DISPONIBLE" | "BORRADOR" | "SOLICITADO" | "RECHAZADO" | "A
 
 export type EtapaFlujo =
   | "SOLICITUD"
+  | "REVISION_METODOLOGO"
   | "REVISION_DTM"
   | "PDA"
   | "CONTROL_PREVIO"
