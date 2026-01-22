@@ -13,8 +13,6 @@ import { useAuth } from "@/app/providers/auth-provider";
 import AvalListCard from "./_components/aval-list-card";
 
 const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"];
-const DTM_ROLES = ["DTM", "DTM_EIDE"];
-
 const PAGE_SIZE = 9;
 
 const STATUS_OPTIONS = [
@@ -28,6 +26,10 @@ const STATUS_OPTIONS = [
 const ETAPA_OPTIONS = [
   { label: "Todas las etapas", value: "" },
   { label: "Solicitud", value: "SOLICITUD" },
+  {
+    label: "Aval aprobado metodólogo (Director técnico metodológico)",
+    value: "REVISION_METODOLOGO",
+  },
   { label: "Revisión DTM", value: "REVISION_DTM" },
   { label: "PDA", value: "PDA" },
   { label: "Control Previo", value: "CONTROL_PREVIO" },
@@ -64,7 +66,7 @@ export default function AvalesPage() {
   const pageSize = pagination.limit || PAGE_SIZE;
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil((pagination.total || 0) / pageSize)),
-    [pagination.total, pageSize]
+    [pagination.total, pageSize],
   );
   const currentPage = Math.min(page, totalPages);
   const showing = avales.length;
@@ -72,7 +74,11 @@ export default function AvalesPage() {
   const hasDisciplina = user?.disciplinaId != null;
   const isAdmin =
     user?.roles?.some((role) => ADMIN_ROLES.includes(role)) ?? false;
-  const isDTM = user?.roles?.some((role) => DTM_ROLES.includes(role)) ?? false;
+  const isDTM = user?.roles?.some((role) => role === "DTM") ?? false;
+  const isMetodologo =
+    user?.roles?.some((role) => role === "METODOLOGO") ?? false;
+  const isPda = user?.roles?.some((role) => role === "PDA") ?? false;
+  const isReviewer = isDTM || isMetodologo || isPda;
 
   useEffect(() => {
     if (page === currentPage) return;
@@ -84,9 +90,17 @@ export default function AvalesPage() {
       setLoading(true);
       setError(null);
 
-      // Determinar los filtros efectivos (aplicar filtros por defecto para DTM)
-      const efectivoEstado = estado || (isDTM ? "SOLICITADO" : undefined);
-      const efectivoEtapa = etapa || (isDTM ? "SOLICITUD" : undefined);
+      // Determinar los filtros efectivos (aplicar filtros por defecto para revisores)
+      const defaultEstado = isReviewer ? "SOLICITADO" : undefined;
+      const defaultEtapa: EtapaFlujo | undefined = isMetodologo
+        ? "SOLICITUD"
+        : isDTM
+        ? "REVISION_METODOLOGO"
+        : isPda
+        ? "PDA"
+        : undefined;
+      const efectivoEstado = estado || defaultEstado;
+      const efectivoEtapa = etapa || defaultEtapa;
 
       const options: ListAvalesOptions = {
         page: currentPage,
@@ -120,7 +134,15 @@ export default function AvalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, estado, etapa, search, isDTM]);
+  }, [currentPage, estado, etapa, search, isReviewer, isMetodologo, isDTM]);
+
+  const handleActionResult = useCallback(
+    (message: string, variant: "success" | "error" = "success") => {
+      setToast({ variant, message });
+      void fetchAvales();
+    },
+    [fetchAvales, setToast],
+  );
 
   useEffect(() => {
     void fetchAvales();
@@ -234,6 +256,9 @@ export default function AvalesPage() {
               ))}
             </select>
             {!isAdmin &&
+              !isPda &&
+              !isMetodologo &&
+              !isDTM &&
               (hasDisciplina ? (
                 <Link
                   href="/avales/nuevo"
@@ -255,7 +280,11 @@ export default function AvalesPage() {
           </div>
         </div>
 
-        {!isAdmin && !hasDisciplina && (
+        {!isAdmin &&
+          !hasDisciplina &&
+          !isPda &&
+          !isMetodologo &&
+          !isDTM && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
@@ -291,6 +320,8 @@ export default function AvalesPage() {
           loading={loading}
           error={error}
           isAdmin={isAdmin}
+          currentUser={user}
+          onActionResult={handleActionResult}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">

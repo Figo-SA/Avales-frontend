@@ -18,7 +18,7 @@ export const ROLES = [
   "ADMIN",
   "SECRETARIA",
   "DTM",
-  "DTM_EIDE",
+  "METODOLOGO",
   "ENTRENADOR",
   "USUARIO",
   "DEPORTISTA",

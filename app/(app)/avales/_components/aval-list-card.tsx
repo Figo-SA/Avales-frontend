@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Calendar,
@@ -12,7 +13,9 @@ import {
   FileEdit,
 } from "lucide-react";
 
-import type { Aval } from "@/types/aval";
+import type { Aval, Historial } from "@/types/aval";
+import type { User } from "@/types/user";
+import { aprobarAval, rechazarAval } from "@/lib/api/avales";
 import { getAvalStatusClasses } from "@/lib/constants";
 import {
   formatDate,
@@ -20,11 +23,33 @@ import {
   formatLocation,
 } from "@/lib/utils/formatters";
 
+function getLatestHistorialEntry(historial?: Historial[]) {
+  if (!historial || historial.length === 0) return undefined;
+  return historial.reduce<Historial | undefined>((latest, entry) => {
+    if (!entry.createdAt) return latest ?? entry;
+    if (!latest) return entry;
+    const latestTime = new Date(latest.createdAt).getTime();
+    const entryTime = new Date(entry.createdAt).getTime();
+    if (Number.isNaN(entryTime)) return latest;
+    if (Number.isNaN(latestTime)) return entry;
+    return entryTime > latestTime ? entry : latest;
+  }, undefined);
+}
+
+function getCurrentEtapa(historial?: Historial[]) {
+  return getLatestHistorialEntry(historial)?.etapa;
+}
+
 type Props = {
   avales: Aval[];
   loading?: boolean;
   error?: string | null;
   isAdmin?: boolean;
+  currentUser?: User | null;
+  onActionResult?: (
+    message: string,
+    variant?: "success" | "error",
+  ) => void;
 };
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
@@ -40,7 +65,78 @@ function getStatusIcon(status?: string | null) {
   return STATUS_ICONS[status.toUpperCase()] ?? AlertCircle;
 }
 
-export default function AvalListCard({ avales, loading, error, isAdmin = false }: Props) {
+export default function AvalListCard({
+  avales,
+  loading,
+  error,
+  isAdmin = false,
+  currentUser,
+  onActionResult,
+}: Props) {
+  const [loadingAvalId, setLoadingAvalId] = useState<number | null>(null);
+  const userRoles = currentUser?.roles ?? [];
+  const isMetodologo = userRoles.includes("METODOLOGO");
+  const isDtm = userRoles.includes("DTM");
+  const isPda = userRoles.includes("PDA");
+
+  const handleActionResult = (
+    message: string,
+    variant: "success" | "error" = "success",
+  ) => {
+    onActionResult?.(message, variant);
+  };
+
+  const handleApprove = async (avalId: number) => {
+    if (!currentUser?.id) {
+      handleActionResult("No se pudo identificar el usuario.", "error");
+      return;
+    }
+
+    setLoadingAvalId(avalId);
+    try {
+      await aprobarAval(avalId, currentUser.id);
+      handleActionResult("Aval aprobado correctamente.", "success");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "No se pudo aprobar el aval. Intenta nuevamente.";
+      handleActionResult(message, "error");
+    } finally {
+      setLoadingAvalId(null);
+    }
+  };
+
+  const handleReject = async (avalId: number) => {
+    if (!currentUser?.id) {
+      handleActionResult("No se pudo identificar el usuario.", "error");
+      return;
+    }
+
+    if (typeof window === "undefined") return;
+    const motivoInput = window.prompt(
+      "Motivo del rechazo (opcional):",
+      "",
+    )?.trim();
+
+    setLoadingAvalId(avalId);
+    try {
+      await rechazarAval(
+        avalId,
+        currentUser.id,
+        motivoInput?.length ? motivoInput : undefined,
+      );
+      handleActionResult("Aval rechazado correctamente.", "success");
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "No se pudo rechazar el aval. Intenta nuevamente.";
+      handleActionResult(message, "error");
+    } finally {
+      setLoadingAvalId(null);
+    }
+  };
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -75,9 +171,9 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
         <p className="mb-2">
           {isAdmin ? "No hay avales registrados en el sistema." : "No tienes avales registrados."}
         </p>
-        {!isAdmin && (
+        {!isAdmin && !isPda && !isDtm && (
           <p className="text-sm">
-            Haz clic en "Crear aval" para solicitar uno nuevo.
+            Haz clic en &quot;Crear aval&quot; para solicitar uno nuevo.
           </p>
         )}
       </div>
@@ -89,6 +185,17 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
       {avales.map((aval) => {
         const statusStyles = getAvalStatusClasses(aval.estado);
         const StatusIcon = getStatusIcon(aval.estado);
+        const etapaActual = getCurrentEtapa(aval.historial);
+        const showMetodologoActions =
+          (isMetodologo || isDtm) &&
+          aval.estado === "SOLICITADO" &&
+          etapaActual === "REVISION_METODOLOGO";
+        const showPdaActions =
+          isPda &&
+          aval.estado === "SOLICITADO" &&
+          etapaActual === "PDA";
+        const showReviewerActions = showMetodologoActions || showPdaActions;
+        const isActionLoading = loadingAvalId === aval.id;
 
         return (
           <div
@@ -170,33 +277,55 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
             </div>
 
             {/* Footer con acción */}
-            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-end gap-2">
-              {!isAdmin && aval.estado === "BORRADOR" ? (
-                <>
+            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex flex-col gap-2">
+              {showReviewerActions && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium border border-rose-300 text-rose-600 hover:bg-rose-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleReject(aval.id)}
+                  >
+                    Rechazar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isActionLoading}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    onClick={() => handleApprove(aval.id)}
+                  >
+                    Aprobar
+                  </button>
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-2">
+                {!isAdmin && aval.estado === "BORRADOR" ? (
+                  <>
+                    <Link
+                      href={`/avales/${aval.id}`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver detalle
+                    </Link>
+                    <Link
+                      href={`/avales/${aval.id}/crear-solicitud`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                    >
+                      <FileEdit className="w-4 h-4" />
+                      Editar solicitud
+                    </Link>
+                  </>
+                ) : (
                   <Link
                     href={`/avales/${aval.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
                   >
                     <Eye className="w-4 h-4" />
                     Ver detalle
                   </Link>
-                  <Link
-                    href={`/avales/${aval.id}/crear-solicitud`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
-                  >
-                    <FileEdit className="w-4 h-4" />
-                    Editar solicitud
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  href={`/avales/${aval.id}`}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  Ver detalle
-                </Link>
-              )}
+                )}
+              </div>
             </div>
           </div>
         );

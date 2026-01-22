@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -25,10 +25,16 @@ import {
 } from "lucide-react";
 
 import AlertBanner from "@/components/ui/alert-banner";
+import ApprovalFlowCard from "../_components/approval-flow-card";
 import ConfirmModal from "@/components/ui/confirm-modal";
-import { getAval } from "@/lib/api/avales";
-import type { Aval } from "@/types/aval";
-import { formatCurrency, formatDate, formatDateTime } from "@/lib/utils/formatters";
+import { useAuth } from "@/app/providers/auth-provider";
+import { aprobarAval, getAval, rechazarAval } from "@/lib/api/avales";
+import type { Aval, EtapaFlujo, Historial } from "@/types/aval";
+import {
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+} from "@/lib/utils/formatters";
 
 const STATUS_STYLES: Record<
   string,
@@ -96,14 +102,14 @@ function getDaysUntilEvent(fechaInicio?: string | null) {
   now.setHours(0, 0, 0, 0);
   start.setHours(0, 0, 0, 0);
   const diff = Math.ceil(
-    (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    (start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
   );
   return diff;
 }
 
 function getEventDuration(
   fechaInicio?: string | null,
-  fechaFin?: string | null
+  fechaFin?: string | null,
 ) {
   if (!fechaInicio || !fechaFin) return null;
   const start = new Date(fechaInicio);
@@ -133,10 +139,80 @@ function formatMes(mes: number) {
   return MESES[mes - 1] || `Mes ${mes}`;
 }
 
+const REVIEWER_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "METODOLOGO",
+  "DTM",
+  "PDA",
+  "CONTROL_PREVIO",
+  "SECRETARIA",
+  "FINANCIERO",
+] as const;
+
+const STAGE_FLOW: EtapaFlujo[] = [
+  "SOLICITUD",
+  "REVISION_METODOLOGO",
+  "REVISION_DTM",
+  "PDA",
+  "CONTROL_PREVIO",
+  "SECRETARIA",
+  "FINANCIERO",
+];
+
+const STAGE_LABELS: Record<EtapaFlujo, string> = {
+  SOLICITUD: "Solicitud",
+  REVISION_METODOLOGO:
+    "Aval aprobado metodólogo (Director técnico metodológico)",
+  REVISION_DTM: "Revisión DTM",
+  PDA: "PDA",
+  CONTROL_PREVIO: "Control previo",
+  SECRETARIA: "Secretaría",
+  FINANCIERO: "Financiero",
+};
+
+function getStageLabel(etapa: EtapaFlujo) {
+  return STAGE_LABELS[etapa] ?? etapa;
+}
+
+function getNextEtapa(etapa: EtapaFlujo): EtapaFlujo | undefined {
+  const index = STAGE_FLOW.indexOf(etapa);
+  if (index === -1 || index === STAGE_FLOW.length - 1) {
+    return undefined;
+  }
+  return STAGE_FLOW[index + 1];
+}
+
+function getLatestHistorialEntry(historial?: Historial[]) {
+  if (!historial || historial.length === 0) return undefined;
+  return historial.reduce<Historial | undefined>((latest, entry) => {
+    if (!entry.createdAt) return latest ?? entry;
+    if (!latest) return entry;
+    const latestTime = new Date(latest.createdAt).getTime();
+    const entryTime = new Date(entry.createdAt).getTime();
+    if (Number.isNaN(entryTime)) return latest;
+    if (Number.isNaN(latestTime)) return entry;
+    return entryTime > latestTime ? entry : latest;
+  }, undefined);
+}
+
+function getCurrentEtapa(historial?: Historial[]) {
+  return getLatestHistorialEntry(historial)?.etapa;
+}
+
 export default function AvalDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = Number(params.id);
+  const { user } = useAuth();
+
+  const [rechazoMotivo, setRechazoMotivo] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const [aval, setAval] = useState<Aval | null>(null);
   const [loading, setLoading] = useState(true);
@@ -144,27 +220,43 @@ export default function AvalDetailPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  useEffect(() => {
+  const userRoles = user?.roles ?? [];
+  const canReview = userRoles.some((role) => REVIEWER_ROLES.includes(role));
+  const showApprovalPanel = canReview && aval?.estado === "SOLICITADO";
+  const etapaActualHistorial = getCurrentEtapa(aval?.historial);
+  const currentEtapa = (etapaActualHistorial ?? "SOLICITUD") as EtapaFlujo;
+  const nextEtapa = getNextEtapa(currentEtapa);
+  const approvalEtapa = nextEtapa ?? currentEtapa;
+  const arrowCurrentLabel = "Solicitud aval";
+  const arrowNextLabel = "Aval aprobado por el metodólogo";
+  const summaryLines = [
+    'El aval pasará de "Solicitud" a estar "Revisado por el metodólogo".',
+    'Al aprobar el aval quedará en revisión con "el director técnico metodológico" (DTM) hasta que confirme la siguiente etapa.',
+  ];
+
+  const fetchAval = useCallback(async () => {
     if (!id || Number.isNaN(id)) {
       setError("ID de aval inválido");
       setLoading(false);
+      setAval(null);
       return;
     }
 
-    async function fetchAval() {
-      try {
-        setLoading(true);
-        const res = await getAval(id);
-        setAval(res.data);
-      } catch (err: any) {
-        setError(err?.message ?? "No se pudo cargar el aval.");
-      } finally {
-        setLoading(false);
-      }
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await getAval(id);
+      setAval(res.data);
+    } catch (err: any) {
+      setError(err?.message ?? "No se pudo cargar el aval.");
+    } finally {
+      setLoading(false);
     }
-
-    void fetchAval();
   }, [id]);
+
+  useEffect(() => {
+    void fetchAval();
+  }, [fetchAval]);
 
   const handleCancel = async () => {
     if (!aval) return;
@@ -178,6 +270,54 @@ export default function AvalDetailPage() {
       setCancelling(false);
     }
   };
+
+  const handleApprove = useCallback(async () => {
+    if (!aval) return;
+    if (!user?.id) {
+      setActionError("No se pudo identificar el usuario.");
+      return;
+    }
+
+    setActionError(null);
+    setActionLoading(true);
+    try {
+      await aprobarAval(aval.id, user.id, approvalEtapa);
+      setToast({ variant: "success", message: "Aval aprobado correctamente." });
+      await fetchAval();
+    } catch (err: any) {
+      setActionError(err?.message ?? "No se pudo aprobar el aval.");
+    } finally {
+      setActionLoading(false);
+    }
+  }, [aval, user?.id, approvalEtapa, fetchAval]);
+
+  const handleReject = useCallback(async () => {
+    if (!aval) return;
+    if (!user?.id) {
+      setActionError("No se pudo identificar el usuario.");
+      return;
+    }
+    if (!rechazoMotivo.trim()) {
+      setActionError("Debes indicar un motivo para el rechazo.");
+      return;
+    }
+
+    setActionError(null);
+    setActionLoading(true);
+    try {
+      await rechazarAval(aval.id, user.id, currentEtapa, rechazoMotivo.trim());
+      setToast({
+        variant: "success",
+        message: "Aval rechazado correctamente.",
+      });
+      setRechazoMotivo("");
+      await fetchAval();
+    } catch (err: any) {
+      setActionError(err?.message ?? "No se pudo rechazar el aval.");
+    } finally {
+      setActionLoading(false);
+    }
+  }, [aval, user?.id, rechazoMotivo, currentEtapa, fetchAval]);
 
   if (loading) {
     return (
@@ -247,6 +387,15 @@ export default function AvalDetailPage() {
           />
         </div>
       )}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
 
       <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto space-y-8">
         {/* Header */}
@@ -287,10 +436,10 @@ export default function AvalDetailPage() {
             aval.estado === "BORRADOR"
               ? "border-orange-200 dark:border-orange-800/40"
               : aval.estado === "SOLICITADO"
-              ? "border-amber-200 dark:border-amber-800/40"
-              : aval.estado === "ACEPTADO"
-              ? "border-green-200 dark:border-green-800/40"
-              : "border-rose-200 dark:border-rose-800/40"
+                ? "border-amber-200 dark:border-amber-800/40"
+                : aval.estado === "ACEPTADO"
+                  ? "border-green-200 dark:border-green-800/40"
+                  : "border-rose-200 dark:border-rose-800/40"
           }`}
         >
           <div className="flex items-center gap-3 mb-3">
@@ -299,17 +448,20 @@ export default function AvalDetailPage() {
               {aval.estado === "BORRADOR"
                 ? "Sin solicitud creada"
                 : aval.estado === "SOLICITADO"
-                ? "Solicitud Pendiente"
-                : aval.estado === "ACEPTADO"
-                ? "Aval Aprobado"
-                : "Solicitud Rechazada"}
+                  ? "Solicitud Pendiente"
+                  : aval.estado === "ACEPTADO"
+                    ? "Aval Aprobado"
+                    : "Solicitud Rechazada"}
             </h2>
           </div>
 
           {aval.estado === "BORRADOR" ? (
             <div className="text-sm">
               <p className={`${statusStyles.text}`}>
-                La convocatoria fue subida exitosamente. Para continuar con el proceso de solicitud de aval, necesitas crear el aval técnico con la información de deportistas, objetivos, criterios y presupuesto.
+                La convocatoria fue subida exitosamente. Para continuar con el
+                proceso de solicitud de aval, necesitas crear el aval técnico
+                con la información de deportistas, objetivos, criterios y
+                presupuesto.
               </p>
               <div className="mt-4">
                 <p className="text-gray-500 dark:text-gray-400 mb-2">
@@ -358,7 +510,9 @@ export default function AvalDetailPage() {
               {aval.comentario && (
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-2 font-medium">
-                    {aval.estado === "RECHAZADO" ? "Motivo de rechazo" : "Comentarios"}
+                    {aval.estado === "RECHAZADO"
+                      ? "Motivo de rechazo"
+                      : "Comentarios"}
                   </p>
                   <p className={`${statusStyles.text}`}>{aval.comentario}</p>
                 </div>
@@ -467,8 +621,8 @@ export default function AvalDetailPage() {
                           {daysUntil === 0
                             ? "¡El evento es hoy!"
                             : daysUntil === 1
-                            ? "El evento es mañana"
-                            : `Faltan ${daysUntil} días`}
+                              ? "El evento es mañana"
+                              : `Faltan ${daysUntil} días`}
                         </span>
                       </div>
                     </div>
@@ -512,7 +666,9 @@ export default function AvalDetailPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">País</p>
+                    <p className="text-gray-500 dark:text-gray-400 mb-1">
+                      País
+                    </p>
                     <p className="text-gray-900 dark:text-gray-100 font-medium">
                       {evento.pais || "-"}
                     </p>
@@ -719,100 +875,122 @@ export default function AvalDetailPage() {
                 {/* Objetivos y Criterios */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Objetivos */}
-                  {aval.avalTecnico.objetivos && aval.avalTecnico.objetivos.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
-                          <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  {aval.avalTecnico.objetivos &&
+                    aval.avalTecnico.objetivos.length > 0 && (
+                      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
+                            <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                            Objetivos
+                          </h3>
                         </div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                          Objetivos
-                        </h3>
+                        <ol className="space-y-3">
+                          {aval.avalTecnico.objetivos
+                            .sort((a, b) => a.orden - b.orden)
+                            .map((objetivo) => (
+                              <li
+                                key={objetivo.id}
+                                className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-xs">
+                                  {objetivo.orden}
+                                </span>
+                                <span className="flex-1 pt-0.5">
+                                  {objetivo.descripcion}
+                                </span>
+                              </li>
+                            ))}
+                        </ol>
                       </div>
-                      <ol className="space-y-3">
-                        {aval.avalTecnico.objetivos
-                          .sort((a, b) => a.orden - b.orden)
-                          .map((objetivo) => (
-                            <li
-                              key={objetivo.id}
-                              className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
-                            >
-                              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-xs">
-                                {objetivo.orden}
-                              </span>
-                              <span className="flex-1 pt-0.5">{objetivo.descripcion}</span>
-                            </li>
-                          ))}
-                      </ol>
-                    </div>
-                  )}
+                    )}
 
                   {/* Criterios */}
-                  {aval.avalTecnico.criterios && aval.avalTecnico.criterios.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30">
-                          <CheckCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                  {aval.avalTecnico.criterios &&
+                    aval.avalTecnico.criterios.length > 0 && (
+                      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-3 mb-5">
+                          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                            <CheckCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                            Criterios de Selección
+                          </h3>
                         </div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                          Criterios de Selección
-                        </h3>
+                        <ol className="space-y-3">
+                          {aval.avalTecnico.criterios
+                            .sort((a, b) => a.orden - b.orden)
+                            .map((criterio) => (
+                              <li
+                                key={criterio.id}
+                                className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
+                              >
+                                <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold text-xs">
+                                  {criterio.orden}
+                                </span>
+                                <span className="flex-1 pt-0.5">
+                                  {criterio.descripcion}
+                                </span>
+                              </li>
+                            ))}
+                        </ol>
                       </div>
-                      <ol className="space-y-3">
-                        {aval.avalTecnico.criterios
-                          .sort((a, b) => a.orden - b.orden)
-                          .map((criterio) => (
-                            <li
-                              key={criterio.id}
-                              className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
-                            >
-                              <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold text-xs">
-                                {criterio.orden}
-                              </span>
-                              <span className="flex-1 pt-0.5">{criterio.descripcion}</span>
-                            </li>
-                          ))}
-                      </ol>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 {/* Deportistas */}
-                {aval.avalTecnico.deportistasAval && aval.avalTecnico.deportistasAval.length > 0 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                        <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                        Deportistas Seleccionados ({aval.avalTecnico.deportistasAval.length})
-                      </h3>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {aval.avalTecnico.deportistasAval.map((deportista) => (
-                        <div
-                          key={deportista.id}
-                          className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                            <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                              Deportista #{deportista.deportistaId}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {deportista.rol}
-                            </p>
-                          </div>
+                {aval.avalTecnico.deportistasAval &&
+                  aval.avalTecnico.deportistasAval.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+                          <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                      ))}
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                          Deportistas Seleccionados (
+                          {aval.avalTecnico.deportistasAval.length})
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {aval.avalTecnico.deportistasAval.map((deportista) => (
+                          <div
+                            key={deportista.id}
+                            className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
+                          >
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                Deportista #{deportista.deportistaId}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {deportista.rol}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </>
             )}
           </>
+        )}
+        {showApprovalPanel && (
+          <ApprovalFlowCard
+            title="Este aval necesita aprobación"
+            summaryLines={summaryLines}
+            currentStageLabel={arrowCurrentLabel}
+            nextStageLabel={arrowNextLabel}
+            reasonValue={rechazoMotivo}
+            onReasonChange={setRechazoMotivo}
+            actionError={actionError}
+            actionLoading={actionLoading}
+            onApprove={handleApprove}
+            onReject={handleReject}
+          />
         )}
       </div>
 
