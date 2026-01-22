@@ -78,6 +78,8 @@ export default function AvalesPage() {
   const isMetodologo =
     user?.roles?.some((role) => role === "METODOLOGO") ?? false;
   const isPda = user?.roles?.some((role) => role === "PDA") ?? false;
+  const isControlPrevio =
+    user?.roles?.some((role) => role === "CONTROL_PREVIO") ?? false;
   const isSecretaria =
     user?.roles?.some((role) => role === "SECRETARIA") ?? false;
   const isReviewer = isDTM || isMetodologo || isPda;
@@ -136,7 +138,16 @@ export default function AvalesPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, estado, etapa, search, isReviewer, isMetodologo, isDTM]);
+  }, [
+    currentPage,
+    estado,
+    etapa,
+    search,
+    isReviewer,
+    isMetodologo,
+    isDTM,
+    isPda,
+  ]);
 
   useEffect(() => {
     void fetchAvales();
@@ -251,6 +262,7 @@ export default function AvalesPage() {
             </select>
             {!isAdmin &&
               !isPda &&
+              !isControlPrevio &&
               !isMetodologo &&
               !isDTM &&
               !isSecretaria &&
@@ -278,6 +290,7 @@ export default function AvalesPage() {
         {!isAdmin &&
           !hasDisciplina &&
           !isPda &&
+          !isControlPrevio &&
           !isMetodologo &&
           !isDTM &&
           !isSecretaria && (

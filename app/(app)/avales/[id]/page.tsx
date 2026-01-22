@@ -171,6 +171,7 @@ export default function AvalDetailPage() {
   const currentEtapa = (
     etapaActualResponse ?? etapaActualHistorial ?? "SOLICITUD"
   ) as EtapaFlujo;
+  const isControlPrevioStage = currentEtapa === "PDA";
   const nextEtapa = getNextApprovalStage(currentEtapa);
   const approvalEtapa = nextEtapa ?? currentEtapa;
   const currentStageLabel = getApprovalStageLabel(currentEtapa);
@@ -190,9 +191,14 @@ export default function AvalDetailPage() {
     userRoles.includes("METODOLOGO") && isMetodologoStage;
   const showDtmPanel = userRoles.includes("DTM") && isDtmStage;
   const showPdaPanel = userRoles.includes("PDA") && isPdaStage;
+  const showControlPrevioPanel =
+    userRoles.includes("CONTROL_PREVIO") && isControlPrevioStage;
   const showApprovalPanel =
     aval?.estado === "SOLICITADO" &&
-    (showMetodologoPanel || showDtmPanel || showPdaPanel);
+    (showMetodologoPanel ||
+      showDtmPanel ||
+      showPdaPanel ||
+      showControlPrevioPanel);
 
   const fetchAval = useCallback(async () => {
     if (!id || Number.isNaN(id)) {

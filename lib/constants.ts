@@ -25,6 +25,7 @@ export const ROLES = [
   "USUARIO",
   "DEPORTISTA",
   "PDA",
+  "CONTROL_PREVIO",
   "FINANCIERO",
 ] as const;
 
