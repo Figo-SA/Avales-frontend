@@ -163,16 +163,42 @@ export const APPROVAL_STAGE_FLOW: EtapaFlujo[] = [
 
 export const APPROVAL_STAGE_LABELS: Record<EtapaFlujo, string> = {
   SOLICITUD: "Solicitud",
-  REVISION_METODOLOGO: "Aval aprobado metodólogo (Director técnico metodológico)",
-  REVISION_DTM: "Revisión DTM",
-  PDA: "PDA",
-  CONTROL_PREVIO: "Control previo",
-  SECRETARIA: "Secretaría",
-  FINANCIERO: "Financiero",
+  REVISION_METODOLOGO: "Revisado por el metodólogo",
+  REVISION_DTM: "Revisado por el DTM",
+  PDA: "Revisado por el PDA",
+  CONTROL_PREVIO: "Revisado por Control Previo",
+  SECRETARIA: "Revisado por Secretaría",
+  FINANCIERO: "Ya está aprobado",
 };
 
 export function getApprovalStageLabel(etapa: EtapaFlujo): string {
   return APPROVAL_STAGE_LABELS[etapa] ?? etapa;
+}
+
+const STAGE_BADGE_DEFAULT = {
+  bg: "bg-amber-100 dark:bg-amber-900/60",
+  text: "text-amber-800 dark:text-amber-200",
+};
+const STAGE_BADGE_FINANCIERO = {
+  bg: "bg-green-100 dark:bg-green-900/60",
+  text: "text-green-800 dark:text-green-200",
+};
+const STAGE_BADGE_RECHAZADO = {
+  bg: "bg-rose-100 dark:bg-rose-900/60",
+  text: "text-rose-800 dark:text-rose-200",
+};
+
+export function getApprovalStageBadgeStyles(
+  estado?: string | null,
+  etapa?: EtapaFlujo,
+): { bg: string; text: string } {
+  if (estado?.toUpperCase() === "RECHAZADO") {
+    return STAGE_BADGE_RECHAZADO;
+  }
+  if (etapa === "FINANCIERO") {
+    return STAGE_BADGE_FINANCIERO;
+  }
+  return STAGE_BADGE_DEFAULT;
 }
 
 export function getNextApprovalStage(

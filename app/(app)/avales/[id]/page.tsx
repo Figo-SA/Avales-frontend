@@ -36,7 +36,8 @@ import {
   formatDateTime,
 } from "@/lib/utils/formatters";
 import {
-  AVAL_APPROVAL_REVIEWER_ROLES,
+  getApprovalStageBadgeStyles,
+  getApprovalStageLabel,
   getNextApprovalStage,
 } from "@/lib/constants";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
@@ -165,22 +166,30 @@ export default function AvalDetailPage() {
   const [cancelling, setCancelling] = useState(false);
 
   const userRoles = user?.roles ?? [];
-  const canReview = userRoles.some((role) =>
-    AVAL_APPROVAL_REVIEWER_ROLES.includes(
-      role as (typeof AVAL_APPROVAL_REVIEWER_ROLES)[number],
-    ),
-  );
-  const showApprovalPanel = canReview && aval?.estado === "SOLICITADO";
+  const etapaActualResponse = aval?.etapaActual;
   const etapaActualHistorial = getCurrentEtapa(aval?.historial);
-  const currentEtapa = (etapaActualHistorial ?? "SOLICITUD") as EtapaFlujo;
+  const currentEtapa = (
+    etapaActualResponse ?? etapaActualHistorial ?? "SOLICITUD"
+  ) as EtapaFlujo;
   const nextEtapa = getNextApprovalStage(currentEtapa);
   const approvalEtapa = nextEtapa ?? currentEtapa;
-  const arrowCurrentLabel = "Solicitud aval";
-  const arrowNextLabel = "Aval aprobado por el metodólogo";
+  const currentStageLabel = getApprovalStageLabel(currentEtapa);
+  const nextStageLabel = getApprovalStageLabel(nextEtapa ?? currentEtapa);
+  const arrowCurrentLabel = currentStageLabel;
+  const arrowNextLabel = nextStageLabel;
   const summaryLines = [
-    'El aval pasará de "Solicitud" a estar "Revisado por el metodólogo".',
-    'Al aprobar el aval quedará en revisión con "el director técnico metodológico" (DTM) hasta que confirme la siguiente etapa.',
+    `El aval pasará de "${currentStageLabel}" a "${nextStageLabel}".`,
+    nextEtapa
+      ? `Al aprobarlo quedará en "${nextStageLabel}" hasta que confirme la siguiente etapa.`
+      : `Al aprobarlo permanecerá en "${currentStageLabel}".`,
   ];
+  const isMetodologoStage = currentEtapa === "SOLICITUD";
+  const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
+  const showMetodologoPanel =
+    userRoles.includes("METODOLOGO") && isMetodologoStage;
+  const showDtmPanel = userRoles.includes("DTM") && isDtmStage;
+  const showApprovalPanel =
+    aval?.estado === "SOLICITADO" && (showMetodologoPanel || showDtmPanel);
 
   const fetchAval = useCallback(async () => {
     if (!id || Number.isNaN(id)) {
@@ -195,6 +204,7 @@ export default function AvalDetailPage() {
       setError(null);
       const res = await getAval(id);
       setAval(res.data);
+      console.log(res.data);
     } catch (err: any) {
       setError(err?.message ?? "No se pudo cargar el aval.");
     } finally {
@@ -303,7 +313,17 @@ export default function AvalDetailPage() {
 
   const evento = aval.evento;
   const statusStyles = getStatusStyles(aval.estado);
+  const stageStyles = getApprovalStageBadgeStyles(aval.estado, currentEtapa);
+  const stageBadgeLabel = getApprovalStageLabel(currentEtapa);
   const StatusIcon = statusStyles.icon;
+  const stageBorderClass =
+    aval.estado === "BORRADOR"
+      ? "border-orange-200 dark:border-orange-800/40"
+      : aval.estado === "RECHAZADO"
+        ? "border-rose-200 dark:border-rose-800/40"
+        : currentEtapa === "FINANCIERO"
+          ? "border-green-200 dark:border-green-800/40"
+          : "border-amber-200 dark:border-amber-800/40";
   const daysUntil = evento ? getDaysUntilEvent(evento.fechaInicio) : null;
   const duration = evento
     ? getEventDuration(evento.fechaInicio, evento.fechaFin)
@@ -344,13 +364,13 @@ export default function AvalDetailPage() {
     },
   );
 
-  const formatDeportistaName = (item: typeof deportistasList[number]) => {
+  const formatDeportistaName = (item: (typeof deportistasList)[number]) => {
     const nombre = item.deportista?.nombre?.trim();
     if (nombre) return nombre;
     return `Deportista #${item.id}`;
   };
 
-  const getDeportistaCedula = (item: typeof deportistasList[number]) => {
+  const getDeportistaCedula = (item: (typeof deportistasList)[number]) => {
     return item.deportista?.cedula ?? "Cédula no disponible";
   };
 
@@ -460,32 +480,18 @@ export default function AvalDetailPage() {
 
         {/* Estado del aval */}
         <div
-          className={`rounded-xl p-6 ${statusStyles.bg} border ${
-            aval.estado === "BORRADOR"
-              ? "border-orange-200 dark:border-orange-800/40"
-              : aval.estado === "SOLICITADO"
-                ? "border-amber-200 dark:border-amber-800/40"
-                : aval.estado === "ACEPTADO"
-                  ? "border-green-200 dark:border-green-800/40"
-                  : "border-rose-200 dark:border-rose-800/40"
-          }`}
+          className={`rounded-xl p-6 ${stageStyles.bg} border ${stageBorderClass}`}
         >
           <div className="flex items-center gap-3 mb-3">
-            <StatusIcon className={`w-6 h-6 ${statusStyles.text}`} />
-            <h2 className={`text-lg font-semibold ${statusStyles.text}`}>
-              {aval.estado === "BORRADOR"
-                ? "Sin solicitud creada"
-                : aval.estado === "SOLICITADO"
-                  ? "Solicitud Pendiente"
-                  : aval.estado === "ACEPTADO"
-                    ? "Aval Aprobado"
-                    : "Solicitud Rechazada"}
+            <StatusIcon className={`w-6 h-6 ${stageStyles.text}`} />
+            <h2 className={`text-lg font-semibold ${stageStyles.text}`}>
+              {stageBadgeLabel}
             </h2>
           </div>
 
           {aval.estado === "BORRADOR" ? (
             <div className="text-sm">
-              <p className={`${statusStyles.text}`}>
+              <p className={`${stageStyles.text}`}>
                 La convocatoria fue subida exitosamente. Para continuar con el
                 proceso de solicitud de aval, necesitas crear el aval técnico
                 con la información de deportistas, objetivos, criterios y
@@ -495,7 +501,7 @@ export default function AvalDetailPage() {
                 <p className="text-gray-500 dark:text-gray-400 mb-2">
                   Fecha de creación
                 </p>
-                <p className={`font-medium ${statusStyles.text}`}>
+                <p className={`font-medium ${stageStyles.text}`}>
                   {formatDate(aval.createdAt)}
                 </p>
               </div>
@@ -520,7 +526,7 @@ export default function AvalDetailPage() {
                   <p className="text-gray-500 dark:text-gray-400 mb-1">
                     Fecha de solicitud
                   </p>
-                  <p className={`font-medium ${statusStyles.text}`}>
+                  <p className={`font-medium ${stageStyles.text}`}>
                     {formatDate(aval.createdAt)}
                   </p>
                 </div>
@@ -529,7 +535,7 @@ export default function AvalDetailPage() {
                     <p className="text-gray-500 dark:text-gray-400 mb-1">
                       Última actualización
                     </p>
-                    <p className={`font-medium ${statusStyles.text}`}>
+                    <p className={`font-medium ${stageStyles.text}`}>
                       {formatDate(aval.updatedAt)}
                     </p>
                   </div>
@@ -542,7 +548,7 @@ export default function AvalDetailPage() {
                       ? "Motivo de rechazo"
                       : "Comentarios"}
                   </p>
-                  <p className={`${statusStyles.text}`}>{aval.comentario}</p>
+                  <p className={`${stageStyles.text}`}>{aval.comentario}</p>
                 </div>
               )}
             </div>
@@ -980,12 +986,20 @@ export default function AvalDetailPage() {
                     </div>
                     <div className="space-y-6">
                       <div className="grid grid-cols-1 gap-6 rounded-3xl bg-gray-50/60 dark:bg-gray-900/40 p-1 divide-y divide-gray-200 dark:divide-gray-700 lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
-                        {renderDeportistasGroup("Hombres", groupedDeportistas.hombres)}
-                        {renderDeportistasGroup("Mujeres", groupedDeportistas.mujeres, {
-                          showEmpty: true,
-                          emptyMessage: "No hay deportistas mujeres registradas.",
-                        })}
-                     </div>
+                        {renderDeportistasGroup(
+                          "Hombres",
+                          groupedDeportistas.hombres,
+                        )}
+                        {renderDeportistasGroup(
+                          "Mujeres",
+                          groupedDeportistas.mujeres,
+                          {
+                            showEmpty: true,
+                            emptyMessage:
+                              "No hay deportistas mujeres registradas.",
+                          },
+                        )}
+                      </div>
                       {groupedDeportistas.otros.length > 0 && (
                         <div className="pt-6 border-t border-dashed border-gray-200 dark:border-gray-700/60">
                           {renderDeportistasGroup(

@@ -144,6 +144,7 @@ export type Aval = {
   id: number;
   descripcion?: string | null;
   estado: Estado;
+  etapaActual?: EtapaFlujo;
   comentario?: string | null;
   convocatoriaUrl?: string | null;
   dtmUrl?: string | null;

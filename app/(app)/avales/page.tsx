@@ -136,14 +136,6 @@ export default function AvalesPage() {
     }
   }, [currentPage, estado, etapa, search, isReviewer, isMetodologo, isDTM]);
 
-  const handleActionResult = useCallback(
-    (message: string, variant: "success" | "error" = "success") => {
-      setToast({ variant, message });
-      void fetchAvales();
-    },
-    [fetchAvales, setToast],
-  );
-
   useEffect(() => {
     void fetchAvales();
   }, [fetchAvales]);
@@ -315,14 +307,7 @@ export default function AvalesPage() {
           </div>
         )}
 
-        <AvalListCard
-          avales={avales}
-          loading={loading}
-          error={error}
-          isAdmin={isAdmin}
-          currentUser={user}
-          onActionResult={handleActionResult}
-        />
+        <AvalListCard avales={avales} loading={loading} error={error} isAdmin={isAdmin} />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">
