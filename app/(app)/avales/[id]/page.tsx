@@ -35,6 +35,11 @@ import {
   formatDate,
   formatDateTime,
 } from "@/lib/utils/formatters";
+import {
+  AVAL_APPROVAL_REVIEWER_ROLES,
+  getNextApprovalStage,
+} from "@/lib/constants";
+import { getCurrentEtapa } from "@/lib/utils/aval-historial";
 
 const STATUS_STYLES: Record<
   string,
@@ -139,67 +144,6 @@ function formatMes(mes: number) {
   return MESES[mes - 1] || `Mes ${mes}`;
 }
 
-const REVIEWER_ROLES = [
-  "SUPER_ADMIN",
-  "ADMIN",
-  "METODOLOGO",
-  "DTM",
-  "PDA",
-  "CONTROL_PREVIO",
-  "SECRETARIA",
-  "FINANCIERO",
-] as const;
-
-const STAGE_FLOW: EtapaFlujo[] = [
-  "SOLICITUD",
-  "REVISION_METODOLOGO",
-  "REVISION_DTM",
-  "PDA",
-  "CONTROL_PREVIO",
-  "SECRETARIA",
-  "FINANCIERO",
-];
-
-const STAGE_LABELS: Record<EtapaFlujo, string> = {
-  SOLICITUD: "Solicitud",
-  REVISION_METODOLOGO:
-    "Aval aprobado metodólogo (Director técnico metodológico)",
-  REVISION_DTM: "Revisión DTM",
-  PDA: "PDA",
-  CONTROL_PREVIO: "Control previo",
-  SECRETARIA: "Secretaría",
-  FINANCIERO: "Financiero",
-};
-
-function getStageLabel(etapa: EtapaFlujo) {
-  return STAGE_LABELS[etapa] ?? etapa;
-}
-
-function getNextEtapa(etapa: EtapaFlujo): EtapaFlujo | undefined {
-  const index = STAGE_FLOW.indexOf(etapa);
-  if (index === -1 || index === STAGE_FLOW.length - 1) {
-    return undefined;
-  }
-  return STAGE_FLOW[index + 1];
-}
-
-function getLatestHistorialEntry(historial?: Historial[]) {
-  if (!historial || historial.length === 0) return undefined;
-  return historial.reduce<Historial | undefined>((latest, entry) => {
-    if (!entry.createdAt) return latest ?? entry;
-    if (!latest) return entry;
-    const latestTime = new Date(latest.createdAt).getTime();
-    const entryTime = new Date(entry.createdAt).getTime();
-    if (Number.isNaN(entryTime)) return latest;
-    if (Number.isNaN(latestTime)) return entry;
-    return entryTime > latestTime ? entry : latest;
-  }, undefined);
-}
-
-function getCurrentEtapa(historial?: Historial[]) {
-  return getLatestHistorialEntry(historial)?.etapa;
-}
-
 export default function AvalDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -221,11 +165,15 @@ export default function AvalDetailPage() {
   const [cancelling, setCancelling] = useState(false);
 
   const userRoles = user?.roles ?? [];
-  const canReview = userRoles.some((role) => REVIEWER_ROLES.includes(role));
+  const canReview = userRoles.some((role) =>
+    AVAL_APPROVAL_REVIEWER_ROLES.includes(
+      role as (typeof AVAL_APPROVAL_REVIEWER_ROLES)[number],
+    ),
+  );
   const showApprovalPanel = canReview && aval?.estado === "SOLICITADO";
   const etapaActualHistorial = getCurrentEtapa(aval?.historial);
   const currentEtapa = (etapaActualHistorial ?? "SOLICITUD") as EtapaFlujo;
-  const nextEtapa = getNextEtapa(currentEtapa);
+  const nextEtapa = getNextApprovalStage(currentEtapa);
   const approvalEtapa = nextEtapa ?? currentEtapa;
   const arrowCurrentLabel = "Solicitud aval";
   const arrowNextLabel = "Aval aprobado por el metodólogo";
@@ -375,6 +323,86 @@ export default function AvalDetailPage() {
         return sum + valor;
       }, 0)
     : 0;
+
+  const deportistasList = aval.avalTecnico?.deportistasAval ?? [];
+  const groupedDeportistas = deportistasList.reduce(
+    (acc, item) => {
+      const genero = item.deportista?.genero?.toUpperCase();
+      if (genero === "FEMENINO") {
+        acc.mujeres.push(item);
+      } else if (genero === "MASCULINO") {
+        acc.hombres.push(item);
+      } else {
+        acc.otros.push(item);
+      }
+      return acc;
+    },
+    {
+      hombres: [] as typeof deportistasList,
+      mujeres: [] as typeof deportistasList,
+      otros: [] as typeof deportistasList,
+    },
+  );
+
+  const formatDeportistaName = (item: typeof deportistasList[number]) => {
+    const nombre = item.deportista?.nombre?.trim();
+    if (nombre) return nombre;
+    return `Deportista #${item.id}`;
+  };
+
+  const getDeportistaCedula = (item: typeof deportistasList[number]) => {
+    return item.deportista?.cedula ?? "Cédula no disponible";
+  };
+
+  const renderDeportistasGroup = (
+    title: string,
+    list: typeof deportistasList,
+    options?: { showEmpty?: boolean; emptyMessage?: string },
+  ) => {
+    const showEmpty = options?.showEmpty ?? false;
+    if (!list.length && !showEmpty) return null;
+    return (
+      <section className="space-y-3 px-4 py-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+            {title}
+          </p>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {list.length} {list.length === 1 ? "registro" : "registros"}
+          </span>
+        </div>
+        <div className="space-y-3">
+          {list.length > 0 ? (
+            list.map((deportista) => (
+              <div
+                key={deportista.id}
+                className="flex items-center gap-3 rounded-2xl border border-transparent bg-gray-50/70 dark:bg-gray-900/40 px-3 py-2"
+              >
+                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                    {formatDeportistaName(deportista)}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {deportista.rol}
+                    {" · "}
+                    {getDeportistaCedula(deportista)}
+                  </p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl border border-dashed border-gray-200 dark:border-gray-600 bg-white/60 dark:bg-gray-900/40 px-3 py-4 text-sm text-gray-500 dark:text-gray-400">
+              {options?.emptyMessage ??
+                `No hay ${title.toLowerCase()} registrados aún.`}
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  };
 
   return (
     <>
@@ -940,40 +968,35 @@ export default function AvalDetailPage() {
                 </div>
 
                 {/* Deportistas */}
-                {aval.avalTecnico.deportistasAval &&
-                  aval.avalTecnico.deportistasAval.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-3 mb-5">
-                        <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                          <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                          Deportistas Seleccionados (
-                          {aval.avalTecnico.deportistasAval.length})
-                        </h3>
+                {deportistasList.length > 0 && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-3 mb-5">
+                      <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+                        <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {aval.avalTecnico.deportistasAval.map((deportista) => (
-                          <div
-                            key={deportista.id}
-                            className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600"
-                          >
-                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                              <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                Deportista #{deportista.deportistaId}
-                              </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {deportista.rol}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                        Deportistas Seleccionados ({deportistasList.length})
+                      </h3>
                     </div>
-                  )}
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 gap-6 rounded-3xl bg-gray-50/60 dark:bg-gray-900/40 p-1 divide-y divide-gray-200 dark:divide-gray-700 lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
+                        {renderDeportistasGroup("Hombres", groupedDeportistas.hombres)}
+                        {renderDeportistasGroup("Mujeres", groupedDeportistas.mujeres, {
+                          showEmpty: true,
+                          emptyMessage: "No hay deportistas mujeres registradas.",
+                        })}
+                     </div>
+                      {groupedDeportistas.otros.length > 0 && (
+                        <div className="pt-6 border-t border-dashed border-gray-200 dark:border-gray-700/60">
+                          {renderDeportistasGroup(
+                            "Otros géneros",
+                            groupedDeportistas.otros,
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </>

@@ -1,3 +1,5 @@
+import type { EtapaFlujo } from "@/types/aval";
+
 /**
  * Constantes globales de la aplicación.
  * Centraliza valores que se usan en múltiples lugares.
@@ -136,4 +138,48 @@ export function getAvalStatusClasses(status?: string | null): {
   if (!status) return { bg: DEFAULT_STATUS_STYLE.split(" ")[0], text: "" };
   const upperStatus = status.toUpperCase() as AvalEstado;
   return AVAL_STATUS_STYLES[upperStatus] ?? { bg: DEFAULT_STATUS_STYLE.split(" ")[0], text: "" };
+}
+
+export const AVAL_APPROVAL_REVIEWER_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "METODOLOGO",
+  "DTM",
+  "PDA",
+  "CONTROL_PREVIO",
+  "SECRETARIA",
+  "FINANCIERO",
+] as const;
+
+export const APPROVAL_STAGE_FLOW: EtapaFlujo[] = [
+  "SOLICITUD",
+  "REVISION_METODOLOGO",
+  "REVISION_DTM",
+  "PDA",
+  "CONTROL_PREVIO",
+  "SECRETARIA",
+  "FINANCIERO",
+];
+
+export const APPROVAL_STAGE_LABELS: Record<EtapaFlujo, string> = {
+  SOLICITUD: "Solicitud",
+  REVISION_METODOLOGO: "Aval aprobado metodólogo (Director técnico metodológico)",
+  REVISION_DTM: "Revisión DTM",
+  PDA: "PDA",
+  CONTROL_PREVIO: "Control previo",
+  SECRETARIA: "Secretaría",
+  FINANCIERO: "Financiero",
+};
+
+export function getApprovalStageLabel(etapa: EtapaFlujo): string {
+  return APPROVAL_STAGE_LABELS[etapa] ?? etapa;
+}
+
+export function getNextApprovalStage(
+  etapa?: EtapaFlujo,
+): EtapaFlujo | undefined {
+  if (!etapa) return undefined;
+  const index = APPROVAL_STAGE_FLOW.indexOf(etapa);
+  if (index === -1 || index === APPROVAL_STAGE_FLOW.length - 1) return undefined;
+  return APPROVAL_STAGE_FLOW[index + 1];
 }

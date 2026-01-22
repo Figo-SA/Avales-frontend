@@ -86,10 +86,18 @@ export type RubroPresupuestario = {
   valorUnitario?: number | null;
 };
 
+export type DeportistaAvalDetail = {
+  id: number;
+  nombre: string;
+  cedula: string;
+  genero: string;
+};
+
 export type DeportistaAval = {
   id: number;
   deportistaId: number;
   rol: string;
+  deportista: DeportistaAvalDetail;
 };
 
 export type EntrenadorAval = {
