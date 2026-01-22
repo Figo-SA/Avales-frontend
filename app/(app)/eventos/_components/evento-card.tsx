@@ -11,6 +11,7 @@ type Props = {
   loading?: boolean;
   error?: string | null;
   onDelete?: (evento: Evento) => void;
+  canManageEvents?: boolean;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -95,6 +96,7 @@ export default function EventoCard({
   loading,
   error,
   onDelete,
+  canManageEvents = true,
 }: Props) {
   if (loading) {
     return (
@@ -229,21 +231,25 @@ export default function EventoCard({
             >
               <Eye className="w-4 h-4" />
             </Link>
-            <Link
-              href={`/eventos/${evento.id}/editar`}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-indigo-100 hover:text-indigo-600 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300 transition-colors"
-              title="Editar"
-            >
-              <Pencil className="w-4 h-4" />
-            </Link>
-            <button
-              type="button"
-              onClick={() => onDelete?.(evento)}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/40 dark:hover:text-rose-300 transition-colors"
-              title="Eliminar"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            {canManageEvents && (
+              <>
+                <Link
+                  href={`/eventos/${evento.id}/editar`}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-indigo-100 hover:text-indigo-600 dark:hover:bg-indigo-900/40 dark:hover:text-indigo-300 transition-colors"
+                  title="Editar"
+                >
+                  <Pencil className="w-4 h-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => onDelete?.(evento)}
+                  className="h-8 w-8 inline-flex items-center justify-center rounded-lg text-gray-500 dark:text-gray-400 hover:bg-rose-100 hover:text-rose-600 dark:hover:bg-rose-900/40 dark:hover:text-rose-300 transition-colors"
+                  title="Eliminar"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
       ))}

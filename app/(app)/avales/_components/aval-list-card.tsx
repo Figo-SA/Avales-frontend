@@ -29,6 +29,7 @@ type Props = {
   loading?: boolean;
   error?: string | null;
   isAdmin?: boolean;
+  isSecretaria?: boolean;
 };
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
@@ -49,6 +50,7 @@ export default function AvalListCard({
   loading,
   error,
   isAdmin = false,
+  isSecretaria = false,
 }: Props) {
   if (loading) {
     return (
@@ -196,13 +198,15 @@ export default function AvalListCard({
                       <Eye className="w-4 h-4" />
                       Ver detalle
                     </Link>
-                    <Link
-                      href={`/avales/${aval.id}/crear-solicitud`}
-                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
-                    >
-                      <FileEdit className="w-4 h-4" />
-                      Editar solicitud
-                    </Link>
+                    {!isSecretaria && (
+                      <Link
+                        href={`/avales/${aval.id}/crear-solicitud`}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                      >
+                        <FileEdit className="w-4 h-4" />
+                        Editar solicitud
+                      </Link>
+                    )}
                   </>
                 ) : (
                   <Link

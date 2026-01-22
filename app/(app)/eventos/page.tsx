@@ -7,6 +7,7 @@ import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import EventoCard from "./_components/evento-card";
 import Pagination from "@/components/ui/pagination";
+import { useAuth } from "@/app/providers/auth-provider";
 import { listEventos, softDeleteEvento, type ListEventosOptions } from "@/lib/api/eventos";
 import type { Evento } from "@/types/evento";
 
@@ -43,6 +44,9 @@ export default function EventosPage() {
     message: string;
     description?: string;
   } | null>(null);
+  const { user } = useAuth();
+  const userRoles = user?.roles ?? [];
+  const isSecretaria = userRoles.includes("SECRETARIA");
   const [confirmEvento, setConfirmEvento] = useState<Evento | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -240,16 +244,24 @@ export default function EventosPage() {
                 </option>
               ))}
             </select>
-            <a
-              href="/eventos/nuevo"
-              className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
-            >
-              Nuevo evento
-            </a>
+            {!isSecretaria && (
+              <a
+                href="/eventos/nuevo"
+                className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+              >
+                Nuevo evento
+              </a>
+            )}
           </div>
         </div>
 
-        <EventoCard eventos={eventos} loading={loading} error={error} onDelete={handleDelete} />
+        <EventoCard
+          eventos={eventos}
+          loading={loading}
+          error={error}
+          onDelete={isSecretaria ? undefined : handleDelete}
+          canManageEvents={!isSecretaria}
+        />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">

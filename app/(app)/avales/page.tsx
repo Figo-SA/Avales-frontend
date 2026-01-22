@@ -78,6 +78,8 @@ export default function AvalesPage() {
   const isMetodologo =
     user?.roles?.some((role) => role === "METODOLOGO") ?? false;
   const isPda = user?.roles?.some((role) => role === "PDA") ?? false;
+  const isSecretaria =
+    user?.roles?.some((role) => role === "SECRETARIA") ?? false;
   const isReviewer = isDTM || isMetodologo || isPda;
 
   useEffect(() => {
@@ -251,6 +253,7 @@ export default function AvalesPage() {
               !isPda &&
               !isMetodologo &&
               !isDTM &&
+              !isSecretaria &&
               (hasDisciplina ? (
                 <Link
                   href="/avales/nuevo"
@@ -276,7 +279,8 @@ export default function AvalesPage() {
           !hasDisciplina &&
           !isPda &&
           !isMetodologo &&
-          !isDTM && (
+          !isDTM &&
+          !isSecretaria && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0">
@@ -307,7 +311,13 @@ export default function AvalesPage() {
           </div>
         )}
 
-        <AvalListCard avales={avales} loading={loading} error={error} isAdmin={isAdmin} />
+        <AvalListCard
+          avales={avales}
+          loading={loading}
+          error={error}
+          isAdmin={isAdmin}
+          isSecretaria={isSecretaria}
+        />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">
           <div className="text-sm text-gray-500 dark:text-gray-400 mb-3 sm:mb-0">

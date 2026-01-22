@@ -24,6 +24,7 @@ import ConfirmModal from "@/components/ui/confirm-modal";
 import { getEvento, softDeleteEvento } from "@/lib/api/eventos";
 import type { Evento } from "@/types/evento";
 import { calcularTotalEvento } from "@/types/evento";
+import { useAuth } from "@/app/providers/auth-provider";
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> =
   {
@@ -153,6 +154,9 @@ function formatMes(mes: number) {
 export default function EventoDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const userRoles = user?.roles ?? [];
+  const isSecretaria = userRoles.includes("SECRETARIA");
   const id = Number(params.id);
 
   const [evento, setEvento] = useState<Evento | null>(null);
@@ -272,23 +276,25 @@ export default function EventoDetailPage() {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={`/eventos/${evento.id}/editar`}
-              className="btn bg-indigo-500 hover:bg-indigo-600 text-white"
-            >
-              <Pencil className="w-4 h-4 mr-2" />
-              Editar
-            </Link>
-            <button
-              type="button"
-              onClick={() => setConfirmOpen(true)}
-              className="btn bg-rose-500 hover:bg-rose-600 text-white"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Eliminar
-            </button>
-          </div>
+          {!isSecretaria && (
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/eventos/${evento.id}/editar`}
+                className="btn bg-indigo-500 hover:bg-indigo-600 text-white"
+              >
+                <Pencil className="w-4 h-4 mr-2" />
+                Editar
+              </Link>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(true)}
+                className="btn bg-rose-500 hover:bg-rose-600 text-white"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Eliminar
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Estado y badges */}
