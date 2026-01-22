@@ -147,7 +147,6 @@ export const AVAL_APPROVAL_REVIEWER_ROLES = [
   "DTM",
   "PDA",
   "CONTROL_PREVIO",
-  "SECRETARIA",
   "FINANCIERO",
 ] as const;
 

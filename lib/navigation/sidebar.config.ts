@@ -42,6 +42,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       "METODOLOGO",
       "PDA",
       "FINANCIERO",
+      "SECRETARIA",
     ],
     children: [
       {
@@ -82,7 +83,15 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     href: "/avales",
     segment: "avales",
     icon: "avales",
-    roles: ["SUPER_ADMIN", "ADMIN", "ENTRENADOR", "METODOLOGO", "DTM", "PDA"],
+    roles: [
+      "SUPER_ADMIN",
+      "ADMIN",
+      "ENTRENADOR",
+      "METODOLOGO",
+      "DTM",
+      "PDA",
+      "SECRETARIA",
+    ],
   },
   {
     type: "link",
@@ -90,6 +99,6 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     href: "/eventos",
     segment: "eventos",
     icon: "eventos",
-    roles: ["SUPER_ADMIN", "ADMIN"],
+    roles: ["SUPER_ADMIN", "ADMIN", "SECRETARIA"],
   },
 ];
