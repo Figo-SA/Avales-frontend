@@ -12,13 +12,17 @@ import {
   FileEdit,
 } from "lucide-react";
 
-import type { Aval } from "@/types/aval";
-import { getAvalStatusClasses } from "@/lib/constants";
+import type { Aval, EtapaFlujo } from "@/types/aval";
+import {
+  getApprovalStageBadgeStyles,
+  getApprovalStageLabel,
+} from "@/lib/constants";
 import {
   formatDate,
   formatDateRange,
   formatLocation,
 } from "@/lib/utils/formatters";
+import { getCurrentEtapa } from "@/lib/utils/aval-historial";
 
 type Props = {
   avales: Aval[];
@@ -40,7 +44,12 @@ function getStatusIcon(status?: string | null) {
   return STATUS_ICONS[status.toUpperCase()] ?? AlertCircle;
 }
 
-export default function AvalListCard({ avales, loading, error, isAdmin = false }: Props) {
+export default function AvalListCard({
+  avales,
+  loading,
+  error,
+  isAdmin = false,
+}: Props) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -77,7 +86,7 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
         </p>
         {!isAdmin && (
           <p className="text-sm">
-            Haz clic en "Crear aval" para solicitar uno nuevo.
+            Haz clic en &quot;Crear aval&quot; para solicitar uno nuevo.
           </p>
         )}
       </div>
@@ -87,8 +96,14 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {avales.map((aval) => {
-        const statusStyles = getAvalStatusClasses(aval.estado);
+        const etapaActual = aval.etapaActual ?? getCurrentEtapa(aval.historial);
+        const etapaParaMostrar = (etapaActual ?? "SOLICITUD") as EtapaFlujo;
+        const statusStyles = getApprovalStageBadgeStyles(
+          aval.estado,
+          etapaParaMostrar,
+        );
         const StatusIcon = getStatusIcon(aval.estado);
+        const stageLabel = getApprovalStageLabel(etapaParaMostrar);
 
         return (
           <div
@@ -103,7 +118,7 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
                     className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${statusStyles.bg} ${statusStyles.text}`}
                   >
                     <StatusIcon className="w-3 h-3" />
-                    {aval.estado || "Sin estado"}
+                    {stageLabel}
                   </span>
                 </div>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
@@ -170,33 +185,35 @@ export default function AvalListCard({ avales, loading, error, isAdmin = false }
             </div>
 
             {/* Footer con acción */}
-            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-end gap-2">
-              {!isAdmin && aval.estado === "BORRADOR" ? (
-                <>
+            <div className="px-5 py-3 bg-gray-50 dark:bg-gray-900/30 border-t border-gray-100 dark:border-gray-700/60 flex flex-col gap-2">
+              <div className="flex items-center justify-end gap-2">
+                {!isAdmin && aval.estado === "BORRADOR" ? (
+                  <>
+                    <Link
+                      href={`/avales/${aval.id}`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver detalle
+                    </Link>
+                    <Link
+                      href={`/avales/${aval.id}/crear-solicitud`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
+                    >
+                      <FileEdit className="w-4 h-4" />
+                      Editar solicitud
+                    </Link>
+                  </>
+                ) : (
                   <Link
                     href={`/avales/${aval.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
                   >
                     <Eye className="w-4 h-4" />
                     Ver detalle
                   </Link>
-                  <Link
-                    href={`/avales/${aval.id}/crear-solicitud`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-500 text-white hover:bg-indigo-600 transition-colors"
-                  >
-                    <FileEdit className="w-4 h-4" />
-                    Editar solicitud
-                  </Link>
-                </>
-              ) : (
-                <Link
-                  href={`/avales/${aval.id}`}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
-                >
-                  <Eye className="w-4 h-4" />
-                  Ver detalle
-                </Link>
-              )}
+                )}
+              </div>
             </div>
           </div>
         );

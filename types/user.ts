@@ -5,7 +5,7 @@ export type Role =
   | "ADMIN"
   | "SECRETARIA"
   | "DTM"
-  | "DTM_EIDE"
+  | "METODOLOGO"
   | "ENTRENADOR"
   | "USUARIO"
   | "DEPORTISTA"
@@ -26,6 +26,9 @@ export type User = {
   disciplina?: CatalogItem;
   disciplinaId?: number;
   roles?: Role[];
+  rolId?: number;
+  disciplinas?: number[];
+  categorias?: number[];
   pushToken?: string;
   createdAt?: string;
   updatedAt?: string;

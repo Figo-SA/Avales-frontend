@@ -22,7 +22,7 @@ const ROLE_OPTIONS: Role[] = [
   "ADMIN",
   "SECRETARIA",
   "DTM",
-  "DTM_EIDE",
+  "METODOLOGO",
   "ENTRENADOR",
   "USUARIO",
   "DEPORTISTA",

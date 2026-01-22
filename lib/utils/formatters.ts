@@ -79,7 +79,7 @@ export function formatEnum<T extends string>(
 
 /**
  * Formatea un rol de usuario a texto legible.
- * Convierte SUPER_ADMIN -> "Super Admin", DTM_EIDE -> "Dtm Eide"
+ * Convierte SUPER_ADMIN -> "Super Admin"
  * @param role - Código del rol
  * @returns Rol formateado
  */
@@ -205,3 +205,4 @@ export function formatLocationWithProvince(location?: {
   );
   return parts.length ? parts.join(", ") : "-";
 }
+

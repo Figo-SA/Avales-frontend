@@ -4,6 +4,7 @@ export type Estado = "DISPONIBLE" | "BORRADOR" | "SOLICITADO" | "RECHAZADO" | "A
 
 export type EtapaFlujo =
   | "SOLICITUD"
+  | "REVISION_METODOLOGO"
   | "REVISION_DTM"
   | "PDA"
   | "CONTROL_PREVIO"
@@ -85,10 +86,18 @@ export type RubroPresupuestario = {
   valorUnitario?: number | null;
 };
 
+export type DeportistaAvalDetail = {
+  id: number;
+  nombre: string;
+  cedula: string;
+  genero: string;
+};
+
 export type DeportistaAval = {
   id: number;
   deportistaId: number;
   rol: string;
+  deportista: DeportistaAvalDetail;
 };
 
 export type EntrenadorAval = {
@@ -135,6 +144,7 @@ export type Aval = {
   id: number;
   descripcion?: string | null;
   estado: Estado;
+  etapaActual?: EtapaFlujo;
   comentario?: string | null;
   convocatoriaUrl?: string | null;
   dtmUrl?: string | null;

@@ -1,3 +1,5 @@
+import type { EtapaFlujo } from "@/types/aval";
+
 /**
  * Constantes globales de la aplicación.
  * Centraliza valores que se usan en múltiples lugares.
@@ -18,7 +20,7 @@ export const ROLES = [
   "ADMIN",
   "SECRETARIA",
   "DTM",
-  "DTM_EIDE",
+  "METODOLOGO",
   "ENTRENADOR",
   "USUARIO",
   "DEPORTISTA",
@@ -136,4 +138,74 @@ export function getAvalStatusClasses(status?: string | null): {
   if (!status) return { bg: DEFAULT_STATUS_STYLE.split(" ")[0], text: "" };
   const upperStatus = status.toUpperCase() as AvalEstado;
   return AVAL_STATUS_STYLES[upperStatus] ?? { bg: DEFAULT_STATUS_STYLE.split(" ")[0], text: "" };
+}
+
+export const AVAL_APPROVAL_REVIEWER_ROLES = [
+  "SUPER_ADMIN",
+  "ADMIN",
+  "METODOLOGO",
+  "DTM",
+  "PDA",
+  "CONTROL_PREVIO",
+  "SECRETARIA",
+  "FINANCIERO",
+] as const;
+
+export const APPROVAL_STAGE_FLOW: EtapaFlujo[] = [
+  "SOLICITUD",
+  "REVISION_METODOLOGO",
+  "REVISION_DTM",
+  "PDA",
+  "CONTROL_PREVIO",
+  "SECRETARIA",
+  "FINANCIERO",
+];
+
+export const APPROVAL_STAGE_LABELS: Record<EtapaFlujo, string> = {
+  SOLICITUD: "Solicitud",
+  REVISION_METODOLOGO: "Revisado por el metodólogo",
+  REVISION_DTM: "Revisado por el DTM",
+  PDA: "Revisado por el PDA",
+  CONTROL_PREVIO: "Revisado por Control Previo",
+  SECRETARIA: "Revisado por Secretaría",
+  FINANCIERO: "Ya está aprobado",
+};
+
+export function getApprovalStageLabel(etapa: EtapaFlujo): string {
+  return APPROVAL_STAGE_LABELS[etapa] ?? etapa;
+}
+
+const STAGE_BADGE_DEFAULT = {
+  bg: "bg-amber-100 dark:bg-amber-900/60",
+  text: "text-amber-800 dark:text-amber-200",
+};
+const STAGE_BADGE_FINANCIERO = {
+  bg: "bg-green-100 dark:bg-green-900/60",
+  text: "text-green-800 dark:text-green-200",
+};
+const STAGE_BADGE_RECHAZADO = {
+  bg: "bg-rose-100 dark:bg-rose-900/60",
+  text: "text-rose-800 dark:text-rose-200",
+};
+
+export function getApprovalStageBadgeStyles(
+  estado?: string | null,
+  etapa?: EtapaFlujo,
+): { bg: string; text: string } {
+  if (estado?.toUpperCase() === "RECHAZADO") {
+    return STAGE_BADGE_RECHAZADO;
+  }
+  if (etapa === "FINANCIERO") {
+    return STAGE_BADGE_FINANCIERO;
+  }
+  return STAGE_BADGE_DEFAULT;
+}
+
+export function getNextApprovalStage(
+  etapa?: EtapaFlujo,
+): EtapaFlujo | undefined {
+  if (!etapa) return undefined;
+  const index = APPROVAL_STAGE_FLOW.indexOf(etapa);
+  if (index === -1 || index === APPROVAL_STAGE_FLOW.length - 1) return undefined;
+  return APPROVAL_STAGE_FLOW[index + 1];
 }

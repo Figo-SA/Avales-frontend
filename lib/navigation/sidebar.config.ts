@@ -26,7 +26,7 @@ export type SidebarItem =
       }>;
     };
 
-export const ROLES_WITHOUT_SIDEBAR: Role[] = ["DTM"];
+export const ROLES_WITHOUT_SIDEBAR: Role[] = [];
 
 export const SIDEBAR_ITEMS: SidebarItem[] = [
   {
@@ -39,7 +39,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       "ADMIN",
       "ENTRENADOR",
       "DTM",
-      "DTM_EIDE",
+      "METODOLOGO",
       "PDA",
       "FINANCIERO",
     ],
@@ -52,7 +52,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
           "SUPER_ADMIN",
           "ADMIN",
           "DTM",
-          "DTM_EIDE",
+          "METODOLOGO",
           "FINANCIERO",
           "PDA",
           "ENTRENADOR",
@@ -82,7 +82,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     href: "/avales",
     segment: "avales",
     icon: "avales",
-    roles: ["SUPER_ADMIN", "ADMIN", "ENTRENADOR"],
+    roles: ["SUPER_ADMIN", "ADMIN", "ENTRENADOR", "METODOLOGO", "DTM"],
   },
   {
     type: "link",
