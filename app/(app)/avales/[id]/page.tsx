@@ -6,22 +6,20 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Calendar,
+  Check,
   MapPin,
   Users,
   Trophy,
   Tag,
-  Globe,
   FileText,
   Clock,
   UserCheck,
   DollarSign,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
   User,
   Target,
   Plane,
   Building2,
+  Eye,
 } from "lucide-react";
 
 import AlertBanner from "@/components/ui/alert-banner";
@@ -36,59 +34,11 @@ import {
   formatDateTime,
 } from "@/lib/utils/formatters";
 import {
-  getApprovalStageBadgeStyles,
   getApprovalStageLabel,
   getNextApprovalStage,
+  APPROVAL_STAGE_FLOW,
 } from "@/lib/constants";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
-
-const STATUS_STYLES: Record<
-  string,
-  { bg: string; text: string; dot: string; icon: typeof Clock }
-> = {
-  BORRADOR: {
-    bg: "bg-orange-50 dark:bg-orange-900/20",
-    text: "text-orange-700 dark:text-orange-300",
-    dot: "bg-orange-500",
-    icon: FileText,
-  },
-  SOLICITADO: {
-    bg: "bg-amber-50 dark:bg-amber-900/20",
-    text: "text-amber-700 dark:text-amber-300",
-    dot: "bg-amber-500",
-    icon: Clock,
-  },
-  ACEPTADO: {
-    bg: "bg-green-50 dark:bg-green-900/20",
-    text: "text-green-700 dark:text-green-300",
-    dot: "bg-green-500",
-    icon: CheckCircle,
-  },
-  RECHAZADO: {
-    bg: "bg-rose-50 dark:bg-rose-900/20",
-    text: "text-rose-700 dark:text-rose-300",
-    dot: "bg-rose-500",
-    icon: XCircle,
-  },
-};
-
-function getStatusStyles(status?: string | null) {
-  if (!status)
-    return {
-      bg: "bg-gray-50 dark:bg-gray-800/50",
-      text: "text-gray-700 dark:text-gray-300",
-      dot: "bg-gray-400",
-      icon: AlertCircle,
-    };
-  return (
-    STATUS_STYLES[status.toUpperCase()] ?? {
-      bg: "bg-gray-50 dark:bg-gray-800/50",
-      text: "text-gray-700 dark:text-gray-300",
-      dot: "bg-gray-400",
-      icon: AlertCircle,
-    }
-  );
-}
 
 function formatGenero(genero?: string | null) {
   if (!genero) return "-";
@@ -145,6 +95,110 @@ function formatMes(mes: number) {
   return MESES[mes - 1] || `Mes ${mes}`;
 }
 
+type SectionHeaderProps = {
+  title: string;
+  description?: string;
+  icon?: JSX.Element;
+};
+
+function SectionHeader({ title, description, icon }: SectionHeaderProps) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[0.65rem] uppercase tracking-[0.4em] text-gray-400 dark:text-gray-500">
+        Sección
+      </p>
+      <div className="flex items-center gap-2">
+        {icon}
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          {title}
+        </h2>
+      </div>
+      {description && (
+        <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+      )}
+    </div>
+  );
+}
+
+type StageTimelineProps = {
+  currentStage: EtapaFlujo;
+};
+
+function StageTimeline({ currentStage }: StageTimelineProps) {
+  const stages = APPROVAL_STAGE_FLOW.filter((etapa) => etapa !== "SECRETARIA").map(
+    (etapa) => ({
+      etapa,
+      label: getApprovalStageLabel(etapa),
+    }),
+  );
+  const timelineCurrentStage =
+    stages.find((stage) => stage.etapa === currentStage)?.etapa ??
+    stages[stages.length - 1]?.etapa ??
+    currentStage;
+  const rawIndex = stages.findIndex((stage) => stage.etapa === timelineCurrentStage);
+  const currentIndex = Math.min(
+    Math.max(rawIndex === -1 ? 0 : rawIndex, 0),
+    Math.max(stages.length - 1, 0),
+  );
+  const progressPercent =
+    stages.length > 1
+      ? (currentIndex / Math.max(stages.length - 1, 1)) * 100
+      : 100;
+
+  return (
+    <div className="space-y-3">
+      <div className="relative py-6">
+        <div className="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 bg-gray-200 dark:bg-gray-700 rounded-full" />
+        <div
+          className="absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-blue-600 transition-all duration-300"
+          style={{ width: `${progressPercent}%` }}
+        />
+        <div className="relative flex justify-between">
+          {stages.map((stage, idx) => {
+            const isStageCompleted = idx <= currentIndex;
+            const isCurrentStage = idx === currentIndex;
+            const isFinancieroCompleted =
+              stage.etapa === "FINANCIERO" && currentStage === "FINANCIERO";
+            const status =
+              (isStageCompleted && !isCurrentStage) || isFinancieroCompleted
+                ? "done"
+                : isCurrentStage
+                  ? "current"
+                  : "upcoming";
+            const circleClasses =
+              status === "done"
+                ? "bg-blue-600 border-blue-600 text-white"
+                : status === "current"
+                  ? "border-blue-600 bg-white text-blue-600 shadow"
+                  : "border border-gray-200 dark:border-gray-700 bg-white text-gray-400";
+            const showCheckIcon = status !== "upcoming";
+
+            return (
+              <div
+                key={stage.etapa}
+                className="flex flex-col items-center text-center flex-1"
+              >
+                <div
+                  className={`relative flex h-11 w-11 items-center justify-center rounded-full border-2 transition-colors ${circleClasses}`}
+                >
+                  {showCheckIcon ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <span className="text-sm font-semibold">{idx + 1}</span>
+                  )}
+                </div>
+                <p className="mt-3 text-xs font-semibold leading-snug text-gray-600 dark:text-gray-300 max-w-[80px]">
+                  {stage.label}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AvalDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -172,17 +226,28 @@ export default function AvalDetailPage() {
     etapaActualResponse ?? etapaActualHistorial ?? "SOLICITUD"
   ) as EtapaFlujo;
   const isControlPrevioStage = currentEtapa === "PDA";
+  const isFinancieroStage = currentEtapa === "CONTROL_PREVIO";
   const nextEtapa = getNextApprovalStage(currentEtapa);
-  const approvalEtapa = nextEtapa ?? currentEtapa;
+  const showFinancieroPanel =
+    userRoles.includes("FINANCIERO") && isFinancieroStage;
+  const resolvedNextEtapa: EtapaFlujo | undefined = showFinancieroPanel
+    ? "FINANCIERO"
+    : nextEtapa;
+  const approvalEtapa = resolvedNextEtapa ?? currentEtapa;
   const currentStageLabel = getApprovalStageLabel(currentEtapa);
-  const nextStageLabel = getApprovalStageLabel(nextEtapa ?? currentEtapa);
+  const nextStageLabel = getApprovalStageLabel(
+    resolvedNextEtapa ?? currentEtapa,
+  );
   const arrowCurrentLabel = currentStageLabel;
   const arrowNextLabel = nextStageLabel;
+  const hasNextAfterApproval = Boolean(
+    getNextApprovalStage(resolvedNextEtapa ?? currentEtapa),
+  );
   const summaryLines = [
     `El aval pasará de "${currentStageLabel}" a "${nextStageLabel}".`,
-    nextEtapa
+    hasNextAfterApproval
       ? `Al aprobarlo quedará en "${nextStageLabel}" hasta que confirme la siguiente etapa.`
-      : `Al aprobarlo permanecerá en "${currentStageLabel}".`,
+      : `Al aprobarlo permanecerá en "${nextStageLabel}".`,
   ];
   const isMetodologoStage = currentEtapa === "SOLICITUD";
   const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
@@ -198,7 +263,8 @@ export default function AvalDetailPage() {
     (showMetodologoPanel ||
       showDtmPanel ||
       showPdaPanel ||
-      showControlPrevioPanel);
+      showControlPrevioPanel ||
+      showFinancieroPanel);
 
   const fetchAval = useCallback(async () => {
     if (!id || Number.isNaN(id)) {
@@ -321,18 +387,21 @@ export default function AvalDetailPage() {
   }
 
   const evento = aval.evento;
-  const statusStyles = getStatusStyles(aval.estado);
-  const stageStyles = getApprovalStageBadgeStyles(aval.estado, currentEtapa);
-  const stageBadgeLabel = getApprovalStageLabel(currentEtapa);
-  const StatusIcon = statusStyles.icon;
-  const stageBorderClass =
+  const stageDescription =
     aval.estado === "BORRADOR"
-      ? "border-orange-200 dark:border-orange-800/40"
-      : aval.estado === "RECHAZADO"
-        ? "border-rose-200 dark:border-rose-800/40"
-        : currentEtapa === "FINANCIERO"
-          ? "border-green-200 dark:border-green-800/40"
-          : "border-amber-200 dark:border-amber-800/40";
+      ? "La convocatoria permanece en borrador hasta que completes el aval técnico."
+      : `Está en ${currentStageLabel.toLowerCase()} (${aval.estado}).`;
+  const generoEtiqueta = evento?.genero ? formatGenero(evento.genero) : undefined;
+  const eventBadges = evento
+    ? [
+        evento.tipoEvento,
+        evento.tipoParticipacion,
+        evento.disciplina?.nombre,
+        evento.categoria?.nombre,
+        evento.alcance,
+        generoEtiqueta,
+      ].filter(Boolean)
+    : [];
   const daysUntil = evento ? getDaysUntilEvent(evento.fechaInicio) : null;
   const duration = evento
     ? getEventDuration(evento.fechaInicio, evento.fechaFin)
@@ -405,9 +474,9 @@ export default function AvalDetailPage() {
             list.map((deportista) => (
               <div
                 key={deportista.id}
-                className="flex items-center gap-3 rounded-2xl border border-transparent bg-gray-50/70 dark:bg-gray-900/40 px-3 py-2"
+                className="flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 px-3 py-2"
               >
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800/60 flex items-center justify-center">
                   <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -488,539 +557,378 @@ export default function AvalDetailPage() {
         </div>
 
         {/* Estado del aval */}
-        <div
-          className={`rounded-xl p-6 ${stageStyles.bg} border ${stageBorderClass}`}
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <StatusIcon className={`w-6 h-6 ${stageStyles.text}`} />
-            <h2 className={`text-lg font-semibold ${stageStyles.text}`}>
-              {stageBadgeLabel}
-            </h2>
+        <div className="space-y-4">
+          <StageTimeline currentStage={currentEtapa} />
+          <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
+            <p>{stageDescription}</p>
+            {summaryLines.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+            <div className="pt-3">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-sky-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400"
+              >
+                <Eye className="w-4 h-4" />
+                Ver aval en PDF
+              </button>
+            </div>
           </div>
-
-          {aval.estado === "BORRADOR" ? (
-            <div className="text-sm">
-              <p className={`${stageStyles.text}`}>
-                La convocatoria fue subida exitosamente. Para continuar con el
-                proceso de solicitud de aval, necesitas crear el aval técnico
-                con la información de deportistas, objetivos, criterios y
-                presupuesto.
-              </p>
-              <div className="mt-4">
-                <p className="text-gray-500 dark:text-gray-400 mb-2">
-                  Fecha de creación
-                </p>
-                <p className={`font-medium ${stageStyles.text}`}>
-                  {formatDate(aval.createdAt)}
-                </p>
-              </div>
-              {aval.convocatoriaUrl && (
-                <div className="mt-4 pt-4 border-t border-orange-200 dark:border-orange-700">
-                  <a
-                    href={aval.convocatoriaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Ver convocatoria subida
-                  </a>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-4 text-sm">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <p className="text-gray-500 dark:text-gray-400 mb-1">
-                    Fecha de solicitud
-                  </p>
-                  <p className={`font-medium ${stageStyles.text}`}>
-                    {formatDate(aval.createdAt)}
-                  </p>
-                </div>
-                {aval.updatedAt && aval.createdAt !== aval.updatedAt && (
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      Última actualización
-                    </p>
-                    <p className={`font-medium ${stageStyles.text}`}>
-                      {formatDate(aval.updatedAt)}
-                    </p>
-                  </div>
-                )}
-              </div>
-              {aval.comentario && (
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-2 font-medium">
-                    {aval.estado === "RECHAZADO"
-                      ? "Motivo de rechazo"
-                      : "Comentarios"}
-                  </p>
-                  <p className={`${stageStyles.text}`}>{aval.comentario}</p>
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Información del evento */}
         {evento && (
           <>
-            <div className="flex items-center gap-2 pt-2">
-              <Trophy className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                Información del Evento
-              </h2>
-            </div>
-
-            {/* Nombre del evento y badges */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                    {evento.nombre}
-                  </h3>
-                  {evento.codigo && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Código: {evento.codigo}
-                    </p>
-                  )}
-                </div>
-                <div className="flex flex-col gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-medium">
-                    {evento.tipoEvento}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-medium">
-                    {evento.tipoParticipacion}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm">
-                  <Tag className="w-4 h-4" />
-                  {evento.disciplina.nombre}
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-50 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 text-sm">
-                  <Trophy className="w-4 h-4" />
-                  {evento.categoria.nombre}
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-50 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 text-sm">
-                  <Globe className="w-4 h-4" />
-                  {evento.alcance}
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-sm">
-                  <Users className="w-4 h-4" />
-                  {formatGenero(evento.genero)}
-                </span>
-              </div>
-            </div>
-
-            {/* Tarjetas de información */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Fechas */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                    <Calendar className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    Fechas del Evento
-                  </h3>
-                </div>
-                <div className="space-y-4 text-sm">
+            <section className="space-y-4">
+              <SectionHeader
+                icon={<Trophy className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+                title="Información del evento"
+                description="Datos esenciales para ubicar el aval de forma rápida, tal como en un PDF."
+              />
+              <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4 shadow-sm">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      Fecha de inicio
+                    <p className="text-xs uppercase tracking-[0.4em] text-gray-400 dark:text-gray-500">
+                      Evento
                     </p>
-                    <p className="text-gray-900 dark:text-gray-100 font-medium">
+                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                      {evento.nombre}
+                    </h3>
+                    {evento.codigo && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Código: {evento.codigo}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    {eventBadges.map((badge, index) => (
+                      <span
+                        key={`${badge}-${index}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-gray-300 bg-gray-50 dark:bg-gray-900/40"
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 text-sm text-gray-700 dark:text-gray-300">
+                  {[
+                    { label: "Tipo de evento", value: evento.tipoEvento },
+                    { label: "Participación", value: evento.tipoParticipacion },
+                    { label: "Disciplina", value: evento.disciplina?.nombre },
+                    { label: "Categoría", value: evento.categoria?.nombre },
+                    { label: "Alcance", value: evento.alcance },
+                    {
+                      label: "Género",
+                      value: evento.genero ? formatGenero(evento.genero) : "-",
+                    },
+                  ].map((fact) => (
+                    <div key={fact.label}>
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500 dark:text-gray-500">
+                        {fact.label}
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {fact.value || "-"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 pt-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-300">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em]">Inicio</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {formatDate(evento.fechaInicio)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      Fecha de fin
-                    </p>
-                    <p className="text-gray-900 dark:text-gray-100 font-medium">
+                    <p className="text-xs uppercase tracking-[0.3em]">Fin</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {formatDate(evento.fechaFin)}
                     </p>
                   </div>
-                  {duration && (
-                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <p className="text-gray-500 dark:text-gray-400 mb-1">
-                        Duración
-                      </p>
-                      <p className="text-gray-900 dark:text-gray-100 font-semibold text-lg">
-                        {duration} {duration === 1 ? "día" : "días"}
-                      </p>
-                    </div>
-                  )}
-                  {daysUntil !== null && daysUntil >= 0 && (
-                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700">
-                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/30 dark:to-blue-900/30 border border-indigo-200 dark:border-indigo-700">
-                        <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                        <span className="text-indigo-700 dark:text-indigo-300 font-semibold text-sm">
-                          {daysUntil === 0
-                            ? "¡El evento es hoy!"
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em]">Duración</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {duration ? `${duration} ${duration === 1 ? "día" : "días"}` : "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em]">Tiempo restante</p>
+                    <p className="font-semibold text-gray-900 dark:text-gray-100">
+                      {daysUntil === null
+                        ? "-"
+                        : daysUntil < 0
+                          ? "Evento pasado"
+                          : daysUntil === 0
+                            ? "Hoy"
                             : daysUntil === 1
-                              ? "El evento es mañana"
+                              ? "Mañana"
                               : `Faltan ${daysUntil} días`}
-                        </span>
-                      </div>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+            <section className="space-y-4">
+              <SectionHeader
+                icon={<MapPin className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
+                title="Ubicación"
+                description="Dirección exacta y jurisdicción para los documentos."
+              />
+              <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-sm text-gray-700 dark:text-gray-300 space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    { label: "Lugar", value: evento.lugar },
+                    { label: "Ciudad", value: evento.ciudad },
+                    { label: "Provincia", value: evento.provincia },
+                    { label: "País", value: evento.pais },
+                  ].map((field) => (
+                    <div key={field.label}>
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                        {field.label}
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {field.value || "-"}
+                      </p>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
-
-              {/* Ubicación */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-900/30">
-                    <MapPin className="w-5 h-5 text-rose-600 dark:text-rose-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    Ubicación
-                  </h3>
+            </section>
+            <section className="space-y-4">
+              <SectionHeader
+                icon={<Users className="w-5 h-5 text-gray-600 dark:text-gray-300" />}
+                title="Participantes"
+                description="Distribución por género y totales como lo verías en la planilla PDF."
+              />
+              <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {[
+                    { label: "Atletas (H)", value: evento.numAtletasHombres || 0 },
+                    { label: "Atletas (M)", value: evento.numAtletasMujeres || 0 },
+                    { label: "Entrenadores (H)", value: evento.numEntrenadoresHombres || 0 },
+                    { label: "Entrenadores (M)", value: evento.numEntrenadoresMujeres || 0 },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900/40 px-3 py-3 text-center text-gray-700 dark:text-gray-200"
+                    >
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                        {item.label}
+                      </p>
+                      <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {item.value}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-                <div className="space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3 border-t border-gray-200 dark:border-gray-700 pt-4 text-center">
                   <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      Lugar
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                      Total atletas
                     </p>
-                    <p className="text-gray-900 dark:text-gray-100 font-medium">
-                      {evento.lugar || "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      Ciudad
-                    </p>
-                    <p className="text-gray-900 dark:text-gray-100 font-medium">
-                      {evento.ciudad || "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      Provincia
-                    </p>
-                    <p className="text-gray-900 dark:text-gray-100 font-medium">
-                      {evento.provincia || "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-1">
-                      País
-                    </p>
-                    <p className="text-gray-900 dark:text-gray-100 font-medium">
-                      {evento.pais || "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Participantes */}
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
-                    <Users className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    Participantes
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="text-center p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800">
-                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                      {evento.numAtletasHombres || 0}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      Atletas (H)
-                    </p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-pink-50 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800">
-                    <p className="text-2xl font-bold text-pink-700 dark:text-pink-300">
-                      {evento.numAtletasMujeres || 0}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      Atletas (M)
-                    </p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800">
-                    <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
-                      {evento.numEntrenadoresHombres || 0}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      Entrenadores (H)
-                    </p>
-                  </div>
-                  <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800">
-                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">
-                      {evento.numEntrenadoresMujeres || 0}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                      Entrenadores (M)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 grid grid-cols-2 gap-3">
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                       {totalAtletas}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Total Atletas
-                    </p>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                      {totalEntrenadores}
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                      Total entrenadores
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Total Entrenadores
+                    <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                      {totalEntrenadores}
                     </p>
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Presupuesto */}
+            </section>
             {evento.presupuesto && evento.presupuesto.length > 0 && (
-              <>
-                <div className="flex items-center gap-2 pt-4">
-                  <DollarSign className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    Presupuesto del Evento
-                  </h2>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-6 border-b border-gray-200 dark:border-gray-700">
+            <section className="space-y-4">
+              <SectionHeader
+                icon={<DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
+                title="Presupuesto del evento"
+                description="Lista de partidas y montos para cotejar con los anexos del PDF."
+              />
+                <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
+                  <div className="flex flex-col gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          Presupuesto Total
-                        </p>
-                        <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                          {formatCurrency(totalPresupuesto)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          Items Presupuestarios
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                          {evento.presupuesto.length}
-                        </p>
-                      </div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                        Presupuesto total
+                      </p>
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                        Items registrados
+                      </p>
+                    </div>
+                    <div className="flex items-end justify-between">
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                        {formatCurrency(totalPresupuesto)}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {evento.presupuesto.length}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="p-6">
-                    <div className="space-y-3">
-                      {evento.presupuesto.map((item) => (
-                        <div
-                          key={item.id}
-                          className="flex items-start justify-between gap-4 p-4 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 transition-colors"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-                              {item.item.nombre}
-                            </h4>
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
-                              <span className="inline-flex items-center gap-1">
-                                <Tag className="w-3 h-3" />
-                                Item #{item.item.numero}
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <Building2 className="w-3 h-3" />
-                                {item.item.actividad.nombre}
-                              </span>
-                              <span className="inline-flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                {formatMes(item.mes)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <p className="text-lg font-bold text-green-700 dark:text-green-300">
-                              {formatCurrency(parseFloat(item.presupuesto))}
-                            </p>
-                          </div>
+                  <div className="p-6 space-y-3">
+                    {evento.presupuesto.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex flex-col gap-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 p-4"
+                      >
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {item.item.nombre}
+                          </h4>
+                          <p className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                            {formatCurrency(parseFloat(item.presupuesto))}
+                          </p>
                         </div>
-                      ))}
-                    </div>
+                        <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Tag className="w-3 h-3" />
+                            Item #{item.item.numero}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Building2 className="w-3 h-3" />
+                            {item.item.actividad.nombre}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {formatMes(item.mes)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </>
+              </section>
             )}
-
-            {/* Aval Técnico */}
             {aval.avalTecnico && (
-              <>
-                <div className="flex items-center gap-2 pt-4">
-                  <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                    Aval Técnico
-                  </h2>
-                </div>
-
-                {/* Logística */}
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-3 mb-5">
-                    <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                      <Plane className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              <section className="space-y-4">
+                <SectionHeader
+                  icon={<FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+                  title="Aval técnico"
+                  description="Logística, objetivos y deportistas organizados como en el PDF impreso."
+                />
+                <div className="space-y-4">
+                  <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                    <p className="text-xs uppercase tracking-[0.3em] text-gray-500 mb-2">
+                      Información de viaje
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-700 dark:text-gray-300">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                          Salida
+                        </p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100">
+                          {formatDateTime(aval.avalTecnico.fechaHoraSalida)}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {aval.avalTecnico.transporteSalida}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                          Retorno
+                        </p>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100">
+                          {formatDateTime(aval.avalTecnico.fechaHoraRetorno)}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                          {aval.avalTecnico.transporteRetorno}
+                        </p>
+                      </div>
                     </div>
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                      Información de Viaje
-                    </h3>
+                    {aval.avalTecnico.observaciones && (
+                      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">
+                          Observaciones
+                        </p>
+                        <p className="mt-1">{aval.avalTecnico.observaciones}</p>
+                      </div>
+                    )}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Salida
-                      </p>
-                      <p className="text-gray-900 dark:text-gray-100 font-medium mb-1">
-                        {formatDateTime(aval.avalTecnico.fechaHoraSalida)}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {aval.avalTecnico.transporteSalida}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Retorno
-                      </p>
-                      <p className="text-gray-900 dark:text-gray-100 font-medium mb-1">
-                        {formatDateTime(aval.avalTecnico.fechaHoraRetorno)}
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {aval.avalTecnico.transporteRetorno}
-                      </p>
-                    </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {aval.avalTecnico.objetivos &&
+                      aval.avalTecnico.objetivos.length > 0 && (
+                        <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 mb-3">
+                            Objetivos
+                          </p>
+                          <ol className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                            {aval.avalTecnico.objetivos
+                              .sort((a, b) => a.orden - b.orden)
+                              .map((objetivo) => (
+                                <li
+                                  key={objetivo.id}
+                                  className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
+                                >
+                                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-xs font-semibold">
+                                    {objetivo.orden}
+                                  </span>
+                                  <span className="flex-1">{objetivo.descripcion}</span>
+                                </li>
+                              ))}
+                          </ol>
+                        </div>
+                      )}
+                    {aval.avalTecnico.criterios &&
+                      aval.avalTecnico.criterios.length > 0 && (
+                        <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                          <p className="text-xs uppercase tracking-[0.3em] text-gray-500 mb-3">
+                            Criterios de selección
+                          </p>
+                          <ol className="space-y-3">
+                            {aval.avalTecnico.criterios
+                              .sort((a, b) => a.orden - b.orden)
+                              .map((criterio) => (
+                                <li
+                                  key={criterio.id}
+                                  className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
+                                >
+                                  <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-xs font-semibold">
+                                    {criterio.orden}
+                                  </span>
+                                  <span className="flex-1">{criterio.descripcion}</span>
+                                </li>
+                              ))}
+                          </ol>
+                        </div>
+                      )}
                   </div>
-
-                  {aval.avalTecnico.observaciones && (
-                    <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                        Observaciones
+                  {deportistasList.length > 0 && (
+                    <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                      <p className="text-xs uppercase tracking-[0.3em] text-gray-500 mb-3">
+                        Deportistas seleccionados ({deportistasList.length})
                       </p>
-                      <p className="text-gray-900 dark:text-gray-100">
-                        {aval.avalTecnico.observaciones}
-                      </p>
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 gap-6 rounded-3xl bg-gray-50/60 dark:bg-gray-900/40 p-1 divide-y divide-gray-200 dark:divide-gray-700 lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
+                          {renderDeportistasGroup(
+                            "Hombres",
+                            groupedDeportistas.hombres,
+                          )}
+                          {renderDeportistasGroup(
+                            "Mujeres",
+                            groupedDeportistas.mujeres,
+                            {
+                              showEmpty: true,
+                              emptyMessage:
+                                "No hay deportistas mujeres registradas.",
+                            },
+                          )}
+                        </div>
+                        {groupedDeportistas.otros.length > 0 && (
+                          <div className="pt-6 border-t border-dashed border-gray-200 dark:border-gray-700/60">
+                            {renderDeportistasGroup(
+                              "Otros géneros",
+                              groupedDeportistas.otros,
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* Objetivos y Criterios */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Objetivos */}
-                  {aval.avalTecnico.objetivos &&
-                    aval.avalTecnico.objetivos.length > 0 && (
-                      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-3 mb-5">
-                          <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
-                            <Target className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                            Objetivos
-                          </h3>
-                        </div>
-                        <ol className="space-y-3">
-                          {aval.avalTecnico.objetivos
-                            .sort((a, b) => a.orden - b.orden)
-                            .map((objetivo) => (
-                              <li
-                                key={objetivo.id}
-                                className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
-                              >
-                                <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-semibold text-xs">
-                                  {objetivo.orden}
-                                </span>
-                                <span className="flex-1 pt-0.5">
-                                  {objetivo.descripcion}
-                                </span>
-                              </li>
-                            ))}
-                        </ol>
-                      </div>
-                    )}
-
-                  {/* Criterios */}
-                  {aval.avalTecnico.criterios &&
-                    aval.avalTecnico.criterios.length > 0 && (
-                      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                        <div className="flex items-center gap-3 mb-5">
-                          <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-900/30">
-                            <CheckCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                          </div>
-                          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                            Criterios de Selección
-                          </h3>
-                        </div>
-                        <ol className="space-y-3">
-                          {aval.avalTecnico.criterios
-                            .sort((a, b) => a.orden - b.orden)
-                            .map((criterio) => (
-                              <li
-                                key={criterio.id}
-                                className="flex gap-3 text-sm text-gray-700 dark:text-gray-300"
-                              >
-                                <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold text-xs">
-                                  {criterio.orden}
-                                </span>
-                                <span className="flex-1 pt-0.5">
-                                  {criterio.descripcion}
-                                </span>
-                              </li>
-                            ))}
-                        </ol>
-                      </div>
-                    )}
-                </div>
-
-                {/* Deportistas */}
-                {deportistasList.length > 0 && (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                        <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                        Deportistas Seleccionados ({deportistasList.length})
-                      </h3>
-                    </div>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 gap-6 rounded-3xl bg-gray-50/60 dark:bg-gray-900/40 p-1 divide-y divide-gray-200 dark:divide-gray-700 lg:grid-cols-2 lg:divide-y-0 lg:divide-x">
-                        {renderDeportistasGroup(
-                          "Hombres",
-                          groupedDeportistas.hombres,
-                        )}
-                        {renderDeportistasGroup(
-                          "Mujeres",
-                          groupedDeportistas.mujeres,
-                          {
-                            showEmpty: true,
-                            emptyMessage:
-                              "No hay deportistas mujeres registradas.",
-                          },
-                        )}
-                      </div>
-                      {groupedDeportistas.otros.length > 0 && (
-                        <div className="pt-6 border-t border-dashed border-gray-200 dark:border-gray-700/60">
-                          {renderDeportistasGroup(
-                            "Otros géneros",
-                            groupedDeportistas.otros,
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </>
+              </section>
             )}
           </>
         )}

@@ -11,6 +11,7 @@ export type Role =
   | "DEPORTISTA"
   | "PDA"
   | "CONTROL_PREVIO"
+  | "COMPRAS_PUBLICAS"
   | "FINANCIERO";
 
 export type Genero = "MASCULINO" | "FEMENINO" | "MASCULINO_FEMENINO";

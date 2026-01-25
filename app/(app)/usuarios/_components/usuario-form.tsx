@@ -27,6 +27,7 @@ const ROLE_OPTIONS: Role[] = [
   "USUARIO",
   "DEPORTISTA",
   "PDA",
+  "COMPRAS_PUBLICAS",
   "FINANCIERO",
 ];
 

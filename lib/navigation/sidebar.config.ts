@@ -44,6 +44,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       "CONTROL_PREVIO",
       "FINANCIERO",
       "SECRETARIA",
+      "COMPRAS_PUBLICAS",
     ],
     children: [
       {
@@ -59,6 +60,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
           "PDA",
           "CONTROL_PREVIO",
           "ENTRENADOR",
+          "COMPRAS_PUBLICAS",
         ],
       },
     ],
@@ -93,7 +95,9 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
       "DTM",
       "PDA",
       "CONTROL_PREVIO",
+      "FINANCIERO",
       "SECRETARIA",
+      "COMPRAS_PUBLICAS",
     ],
   },
   {

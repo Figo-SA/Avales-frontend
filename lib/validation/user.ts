@@ -12,6 +12,8 @@ const rolesSchema = z
       "USUARIO",
       "DEPORTISTA",
       "PDA",
+      "CONTROL_PREVIO",
+      "COMPRAS_PUBLICAS",
       "FINANCIERO",
     ])
   )
