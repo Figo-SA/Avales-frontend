@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import type React from "react";
 import {
   ArrowLeft,
   Calendar,
@@ -98,7 +99,7 @@ function formatMes(mes: number) {
 type SectionHeaderProps = {
   title: string;
   description?: string;
-  icon?: JSX.Element;
+  icon?: React.ReactNode;
 };
 
 function SectionHeader({ title, description, icon }: SectionHeaderProps) {
@@ -114,7 +115,9 @@ function SectionHeader({ title, description, icon }: SectionHeaderProps) {
         </h2>
       </div>
       {description && (
-        <p className="text-sm text-gray-600 dark:text-gray-400">{description}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {description}
+        </p>
       )}
     </div>
   );
@@ -125,17 +128,19 @@ type StageTimelineProps = {
 };
 
 function StageTimeline({ currentStage }: StageTimelineProps) {
-  const stages = APPROVAL_STAGE_FLOW.filter((etapa) => etapa !== "SECRETARIA").map(
-    (etapa) => ({
-      etapa,
-      label: getApprovalStageLabel(etapa),
-    }),
-  );
+  const stages = APPROVAL_STAGE_FLOW.filter(
+    (etapa) => etapa !== "SECRETARIA",
+  ).map((etapa) => ({
+    etapa,
+    label: getApprovalStageLabel(etapa),
+  }));
   const timelineCurrentStage =
     stages.find((stage) => stage.etapa === currentStage)?.etapa ??
     stages[stages.length - 1]?.etapa ??
     currentStage;
-  const rawIndex = stages.findIndex((stage) => stage.etapa === timelineCurrentStage);
+  const rawIndex = stages.findIndex(
+    (stage) => stage.etapa === timelineCurrentStage,
+  );
   const currentIndex = Math.min(
     Math.max(rawIndex === -1 ? 0 : rawIndex, 0),
     Math.max(stages.length - 1, 0),
@@ -222,9 +227,9 @@ export default function AvalDetailPage() {
   const userRoles = user?.roles ?? [];
   const etapaActualResponse = aval?.etapaActual;
   const etapaActualHistorial = getCurrentEtapa(aval?.historial);
-  const currentEtapa = (
-    etapaActualResponse ?? etapaActualHistorial ?? "SOLICITUD"
-  ) as EtapaFlujo;
+  const currentEtapa = (etapaActualResponse ??
+    etapaActualHistorial ??
+    "SOLICITUD") as EtapaFlujo;
   const isControlPrevioStage = currentEtapa === "PDA";
   const isFinancieroStage = currentEtapa === "CONTROL_PREVIO";
   const nextEtapa = getNextApprovalStage(currentEtapa);
@@ -391,7 +396,9 @@ export default function AvalDetailPage() {
     aval.estado === "BORRADOR"
       ? "La convocatoria permanece en borrador hasta que completes el aval técnico."
       : `Está en ${currentStageLabel.toLowerCase()} (${aval.estado}).`;
-  const generoEtiqueta = evento?.genero ? formatGenero(evento.genero) : undefined;
+  const generoEtiqueta = evento?.genero
+    ? formatGenero(evento.genero)
+    : undefined;
   const eventBadges = evento
     ? [
         evento.tipoEvento,
@@ -581,7 +588,9 @@ export default function AvalDetailPage() {
           <>
             <section className="space-y-4">
               <SectionHeader
-                icon={<Trophy className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+                icon={
+                  <Trophy className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                }
                 title="Información del evento"
                 description="Datos esenciales para ubicar el aval de forma rápida, tal como en un PDF."
               />
@@ -647,13 +656,19 @@ export default function AvalDetailPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em]">Duración</p>
+                    <p className="text-xs uppercase tracking-[0.3em]">
+                      Duración
+                    </p>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
-                      {duration ? `${duration} ${duration === 1 ? "día" : "días"}` : "-"}
+                      {duration
+                        ? `${duration} ${duration === 1 ? "día" : "días"}`
+                        : "-"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.3em]">Tiempo restante</p>
+                    <p className="text-xs uppercase tracking-[0.3em]">
+                      Tiempo restante
+                    </p>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">
                       {daysUntil === null
                         ? "-"
@@ -671,7 +686,9 @@ export default function AvalDetailPage() {
             </section>
             <section className="space-y-4">
               <SectionHeader
-                icon={<MapPin className="w-5 h-5 text-rose-600 dark:text-rose-400" />}
+                icon={
+                  <MapPin className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                }
                 title="Ubicación"
                 description="Dirección exacta y jurisdicción para los documentos."
               />
@@ -697,17 +714,31 @@ export default function AvalDetailPage() {
             </section>
             <section className="space-y-4">
               <SectionHeader
-                icon={<Users className="w-5 h-5 text-gray-600 dark:text-gray-300" />}
+                icon={
+                  <Users className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                }
                 title="Participantes"
                 description="Distribución por género y totales como lo verías en la planilla PDF."
               />
               <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl p-6 space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {[
-                    { label: "Atletas (H)", value: evento.numAtletasHombres || 0 },
-                    { label: "Atletas (M)", value: evento.numAtletasMujeres || 0 },
-                    { label: "Entrenadores (H)", value: evento.numEntrenadoresHombres || 0 },
-                    { label: "Entrenadores (M)", value: evento.numEntrenadoresMujeres || 0 },
+                    {
+                      label: "Atletas (H)",
+                      value: evento.numAtletasHombres || 0,
+                    },
+                    {
+                      label: "Atletas (M)",
+                      value: evento.numAtletasMujeres || 0,
+                    },
+                    {
+                      label: "Entrenadores (H)",
+                      value: evento.numEntrenadoresHombres || 0,
+                    },
+                    {
+                      label: "Entrenadores (M)",
+                      value: evento.numEntrenadoresMujeres || 0,
+                    },
                   ].map((item) => (
                     <div
                       key={item.label}
@@ -743,12 +774,14 @@ export default function AvalDetailPage() {
               </div>
             </section>
             {evento.presupuesto && evento.presupuesto.length > 0 && (
-            <section className="space-y-4">
-              <SectionHeader
-                icon={<DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />}
-                title="Presupuesto del evento"
-                description="Lista de partidas y montos para cotejar con los anexos del PDF."
-              />
+              <section className="space-y-4">
+                <SectionHeader
+                  icon={
+                    <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  }
+                  title="Presupuesto del evento"
+                  description="Lista de partidas y montos para cotejar con los anexos del PDF."
+                />
                 <div className="bg-white dark:bg-gray-950/60 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm">
                   <div className="flex flex-col gap-2 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center justify-between">
@@ -805,7 +838,9 @@ export default function AvalDetailPage() {
             {aval.avalTecnico && (
               <section className="space-y-4">
                 <SectionHeader
-                  icon={<FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />}
+                  icon={
+                    <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                  }
                   title="Aval técnico"
                   description="Logística, objetivos y deportistas organizados como en el PDF impreso."
                 />
@@ -865,7 +900,9 @@ export default function AvalDetailPage() {
                                   <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-xs font-semibold">
                                     {objetivo.orden}
                                   </span>
-                                  <span className="flex-1">{objetivo.descripcion}</span>
+                                  <span className="flex-1">
+                                    {objetivo.descripcion}
+                                  </span>
                                 </li>
                               ))}
                           </ol>
@@ -888,7 +925,9 @@ export default function AvalDetailPage() {
                                   <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100 text-xs font-semibold">
                                     {criterio.orden}
                                   </span>
-                                  <span className="flex-1">{criterio.descripcion}</span>
+                                  <span className="flex-1">
+                                    {criterio.descripcion}
+                                  </span>
                                 </li>
                               ))}
                           </ol>

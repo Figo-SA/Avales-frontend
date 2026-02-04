@@ -1,10 +1,11 @@
 {
-    "workbench.colorCustomizations": {
-        "activityBar.background": "#32284B",
-        "titleBar.activeBackground": "#463869",
-        "titleBar.inactiveBackground": "#463869",
-        "titleBar.activeForeground": "#FAF9FC",
-        "statusBar.background": "#463869",
-        "statusBar.foreground": "#FAF9FC"
-    }
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#32284B",
+    "titleBar.activeBackground": "#463869",
+    "titleBar.inactiveBackground": "#463869",
+    "titleBar.activeForeground": "#FAF9FC",
+    "statusBar.background": "#463869",
+    "statusBar.foreground": "#FAF9FC"
+  },
+  "conventionalCommits.scopes": ["build"]
 }
