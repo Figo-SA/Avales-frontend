@@ -9,33 +9,12 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // ====== 1) (Opcional) CORS solo si /api es de Next ======
-  if (pathname.startsWith("/api")) {
-    if (req.method === "OPTIONS") {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
-      });
-    }
+  // (Opcional) Ignorar rutas públicas estáticas comunes
+  // if (pathname.startsWith("/images") || pathname.startsWith("/public")) {
+  //   return NextResponse.next();
+  // }
 
-    const res = NextResponse.next();
-    res.headers.set("Access-Control-Allow-Origin", "*");
-    res.headers.set(
-      "Access-Control-Allow-Methods",
-      "GET, POST, PUT, DELETE, OPTIONS"
-    );
-    res.headers.set(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
-    return res;
-  }
-
-  // ====== 2) Auth (cookie HttpOnly "token") ======
+  // ====== Auth (cookie HttpOnly "token") ======
   const token = req.cookies.get("token")?.value;
 
   const isPublic =
@@ -43,7 +22,7 @@ export function proxy(req: NextRequest) {
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/reset-password");
 
-  // No autenticado -> solo rutas públicas, todo lo demás a /signin (incluye /fjdsa)
+  // No autenticado -> solo rutas públicas
   if (!token && !isPublic) {
     const url = req.nextUrl.clone();
     url.pathname = "/signin";
@@ -61,6 +40,6 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Atrapa todo (incluye rutas inexistentes) excepto recursos internos
+  // Atrapa todo excepto recursos internos
   matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
