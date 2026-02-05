@@ -87,3 +87,20 @@ export async function softDeleteEvento(id: number) {
 export async function restoreEvento(id: number) {
   return apiFetch<Evento>(`/events/${id}/restore`, { method: "PATCH" });
 }
+
+export type UploadExcelResponse = {
+  procesados: number;
+  creados: string[];
+  errores: { fila: number; error: string }[];
+};
+
+export async function uploadEventsExcel(file: File) {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  return apiFetch<UploadExcelResponse>("/events/upload-excel", {
+    method: "POST",
+    body: formData,
+    headers: {},
+  });
+}

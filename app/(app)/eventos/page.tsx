@@ -3,10 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import Link from "next/link";
+import { Upload } from "lucide-react";
+
 import AlertBanner from "@/components/ui/alert-banner";
 import ConfirmModal from "@/components/ui/confirm-modal";
 import EventoCard from "./_components/evento-card";
 import Pagination from "@/components/ui/pagination";
+import UploadEventsExcelModal from "@/components/events/upload-excel-events-modal";
 import { useAuth } from "@/app/providers/auth-provider";
 import { listEventos, softDeleteEvento, type ListEventosOptions } from "@/lib/api/eventos";
 import type { Evento } from "@/types/evento";
@@ -50,6 +54,7 @@ export default function EventosPage() {
   const [confirmEvento, setConfirmEvento] = useState<Evento | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   const pageSize = pagination.limit || PAGE_SIZE;
   const totalPages = useMemo(
@@ -245,12 +250,21 @@ export default function EventosPage() {
               ))}
             </select>
             {!isSecretaria && (
-              <a
-                href="/eventos/nuevo"
-                className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
-              >
-                Nuevo evento
-              </a>
+              <>
+                <button
+                  onClick={() => setUploadModalOpen(true)}
+                  className="btn bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Importar Excel
+                </button>
+                <Link
+                  href="/eventos/nuevo"
+                  className="btn bg-gray-900 text-gray-100 hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-800 dark:hover:bg-white"
+                >
+                  Nuevo evento
+                </Link>
+              </>
             )}
           </div>
         </div>
@@ -288,6 +302,15 @@ export default function EventosPage() {
         onClose={() => {
           if (deleting) return;
           setConfirmOpen(false);
+        }}
+      />
+      <UploadEventsExcelModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSuccess={() => {
+          fetchEventos(); // Refrescar la lista
+          // No cerramos el modal automáticamente para que vean el resultado, 
+          // pero si el usuario cierra, ya estará refrescado.
         }}
       />
     </>
