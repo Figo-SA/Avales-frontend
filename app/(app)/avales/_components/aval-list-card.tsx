@@ -10,6 +10,7 @@ import {
   XCircle,
   AlertCircle,
   FileEdit,
+  Stamp,
 } from "lucide-react";
 
 import type { Aval, EtapaFlujo } from "@/types/aval";
@@ -30,6 +31,7 @@ type Props = {
   error?: string | null;
   isAdmin?: boolean;
   isSecretaria?: boolean;
+  isPda?: boolean;
 };
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
@@ -51,6 +53,7 @@ export default function AvalListCard({
   error,
   isAdmin = false,
   isSecretaria = false,
+  isPda = false,
 }: Props) {
   if (loading) {
     return (
@@ -209,13 +212,24 @@ export default function AvalListCard({
                     )}
                   </>
                 ) : (
-                  <Link
-                    href={`/avales/${aval.id}`}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Ver detalle
-                  </Link>
+                  <>
+                    <Link
+                      href={`/avales/${aval.id}`}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-sky-100 hover:text-sky-600 dark:hover:bg-sky-900/40 dark:hover:text-sky-300 transition-colors"
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver detalle
+                    </Link>
+                    {isPda && (
+                      <Link
+                        href={`/avales/${aval.id}/certificar`}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-cyan-600 text-white hover:bg-cyan-700 transition-colors"
+                      >
+                        <Stamp className="w-4 h-4" />
+                        Certificar
+                      </Link>
+                    )}
+                  </>
                 )}
               </div>
             </div>

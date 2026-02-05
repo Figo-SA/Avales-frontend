@@ -26,12 +26,12 @@ const STATUS_OPTIONS = [
 const ETAPA_OPTIONS = [
   { label: "Todas las etapas", value: "" },
   { label: "Solicitud", value: "SOLICITUD" },
+  { label: "PDA", value: "PDA" },
   {
     label: "Aval aprobado metodólogo (Director técnico metodológico)",
     value: "REVISION_METODOLOGO",
   },
   { label: "Revisión DTM", value: "REVISION_DTM" },
-  { label: "PDA", value: "PDA" },
   { label: "Control Previo", value: "CONTROL_PREVIO" },
   { label: "Secretaría", value: "SECRETARIA" },
   { label: "Financiero", value: "FINANCIERO" },
@@ -84,7 +84,8 @@ export default function AvalesPage() {
     user?.roles?.some((role) => role === "SECRETARIA") ?? false;
   const isComprasPublicas =
     user?.roles?.some((role) => role === "COMPRAS_PUBLICAS") ?? false;
-  const isReviewer = isDTM || isMetodologo || isPda || isComprasPublicas;
+  const isReviewer =
+    isDTM || isMetodologo || isPda || isControlPrevio || isComprasPublicas;
 
   useEffect(() => {
     if (page === currentPage) return;
@@ -98,11 +99,13 @@ export default function AvalesPage() {
 
       // Determinar los filtros efectivos (aplicar filtros por defecto para revisores)
       const defaultEstado = isReviewer ? "SOLICITADO" : undefined;
-      const defaultEtapa: EtapaFlujo | undefined = isMetodologo
+      const defaultEtapa: EtapaFlujo | undefined = isPda
         ? "SOLICITUD"
-        : isDTM
+        : isMetodologo
+          ? "PDA"
+          : isDTM
           ? "REVISION_METODOLOGO"
-          : isPda
+          : isControlPrevio
             ? "REVISION_DTM"
             : isComprasPublicas
               ? "CONTROL_PREVIO"
@@ -158,6 +161,7 @@ export default function AvalesPage() {
     etapa,
     search,
     isReviewer,
+    isControlPrevio,
     isMetodologo,
     isDTM,
     isPda,
@@ -347,6 +351,7 @@ export default function AvalesPage() {
           error={error}
           isAdmin={isAdmin}
           isSecretaria={isSecretaria}
+          isPda={isPda}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">

@@ -230,7 +230,7 @@ export default function AvalDetailPage() {
   const currentEtapa = (etapaActualResponse ??
     etapaActualHistorial ??
     "SOLICITUD") as EtapaFlujo;
-  const isControlPrevioStage = currentEtapa === "PDA";
+  const isControlPrevioStage = currentEtapa === "REVISION_DTM";
   const isFinancieroStage = currentEtapa === "CONTROL_PREVIO";
   const nextEtapa = getNextApprovalStage(currentEtapa);
   const showFinancieroPanel =
@@ -254,9 +254,9 @@ export default function AvalDetailPage() {
       ? `Al aprobarlo quedará en "${nextStageLabel}" hasta que confirme la siguiente etapa.`
       : `Al aprobarlo permanecerá en "${nextStageLabel}".`,
   ];
-  const isMetodologoStage = currentEtapa === "SOLICITUD";
+  const isMetodologoStage = currentEtapa === "PDA";
   const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
-  const isPdaStage = currentEtapa === "REVISION_DTM";
+  const isPdaStage = currentEtapa === "SOLICITUD";
   const showMetodologoPanel =
     userRoles.includes("METODOLOGO") && isMetodologoStage;
   const showDtmPanel = userRoles.includes("DTM") && isDtmStage;
