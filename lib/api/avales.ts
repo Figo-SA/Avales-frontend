@@ -45,16 +45,28 @@ export async function getAvalHistorial(id: number) {
   return apiFetch<Historial[]>(`/avales/${id}/historial`, { method: "GET" });
 }
 
-export async function uploadConvocatoria(eventoId: number, convocatoria: File) {
+export async function uploadConvocatoria(
+  eventoId: number,
+  convocatoria: File,
+  certificadoMedico: File,
+) {
   console.log("uploadConvocatoria llamada:", {
     eventoId,
-    fileName: convocatoria.name,
-    fileSize: convocatoria.size,
-    fileType: convocatoria.type,
+    convocatoria: {
+      fileName: convocatoria.name,
+      fileSize: convocatoria.size,
+      fileType: convocatoria.type,
+    },
+    certificadoMedico: {
+      fileName: certificadoMedico.name,
+      fileSize: certificadoMedico.size,
+      fileType: certificadoMedico.type,
+    },
   });
   const formData = new FormData();
   formData.append("eventoId", String(eventoId));
   formData.append("convocatoria", convocatoria);
+  formData.append("certificadoMedico", certificadoMedico);
 
   const response = await apiFetch<Aval>("/avales/convocatoria", {
     method: "POST",

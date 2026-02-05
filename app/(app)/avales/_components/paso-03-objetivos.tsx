@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, X, Target, CheckCircle } from "lucide-react";
 
 type FormData = {
@@ -18,12 +18,14 @@ type FormData = {
 type Paso03ObjetivosProps = {
   formData: FormData;
   onComplete: (data: Partial<FormData>) => void;
+  onPreviewChange?: (data: Partial<FormData>) => void;
   onBack: () => void;
 };
 
 export default function Paso03Objetivos({
   formData,
   onComplete,
+  onPreviewChange,
   onBack,
 }: Paso03ObjetivosProps) {
   const [objetivos, setObjetivos] = useState<string[]>(
@@ -35,6 +37,13 @@ export default function Paso03Objetivos({
   const [newObjetivo, setNewObjetivo] = useState("");
   const [newCriterio, setNewCriterio] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onPreviewChange?.({
+      objetivos,
+      criterios,
+    });
+  }, [objetivos, criterios, onPreviewChange]);
 
   const handleAddObjetivo = () => {
     const trimmed = newObjetivo.trim();

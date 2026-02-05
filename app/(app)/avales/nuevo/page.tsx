@@ -48,6 +48,13 @@ export default function NuevoAvalPage() {
     user?.roles?.includes("ENTRENADOR") &&
     !user?.roles?.includes("SUPER_ADMIN") &&
     !user?.roles?.includes("ADMIN");
+  const isComprasPublicas = user?.roles?.includes("COMPRAS_PUBLICAS");
+
+  useEffect(() => {
+    if (isComprasPublicas) {
+      router.replace("/avales");
+    }
+  }, [isComprasPublicas, router]);
 
   const fetchEventos = useCallback(async () => {
     try {
@@ -76,6 +83,11 @@ export default function NuevoAvalPage() {
   }, [fetchEventos]);
 
   const handleEventSelect = (evento: Evento) => {
+    if (isComprasPublicas) {
+      setSubmitError("Tu rol no tiene permisos para crear avales.");
+      return;
+    }
+
     setSelectedEvento(evento);
     setUploadModalOpen(true);
     console.log("Evento seleccionado para convocatoria:", {
@@ -85,21 +97,24 @@ export default function NuevoAvalPage() {
     });
   };
 
-  const handleUploadConvocatoria = async (file: File) => {
+  const handleUploadConvocatoria = async ({
+    convocatoria,
+    certificadoMedico,
+  }: {
+    convocatoria: File;
+    certificadoMedico: File;
+  }) => {
     if (!selectedEvento) {
       throw new Error("No se ha seleccionado un evento");
     }
 
     try {
-      console.log("Iniciando upload de convocatoria...", {
-        eventoId: selectedEvento.id,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-      });
-
       console.log("Preparando llamada uploadConvocatoria...");
-      const response = await uploadConvocatoria(selectedEvento.id, file);
+      const response = await uploadConvocatoria(
+        selectedEvento.id,
+        convocatoria,
+        certificadoMedico
+      );
 
       console.log("Upload exitoso:", response);
       console.log("Redirigiendo al wizard con ID de aval:", response.data?.id);
@@ -113,7 +128,7 @@ export default function NuevoAvalPage() {
       console.error("Error al subir convocatoria:", err);
 
       // Mejorar el mensaje de error
-      let errorMessage = "Error al subir la convocatoria";
+      let errorMessage = "Error al subir los documentos";
 
       if (err?.problem?.detail) {
         errorMessage = err.problem.detail;
@@ -147,8 +162,8 @@ export default function NuevoAvalPage() {
           setSelectedEvento(null);
         }}
         onUpload={handleUploadConvocatoria}
-        title="Subir convocatoria"
-        description="Sube el documento de convocatoria para crear la colección de aval. Luego podrás completar el aval técnico."
+        title="Subir documentos obligatorios"
+        description="Sube la convocatoria y el certificado médico para crear la colección de aval. Luego podrás completar el aval técnico."
       />
 
       <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-7xl mx-auto space-y-6">
@@ -165,7 +180,7 @@ export default function NuevoAvalPage() {
             Crear nuevo aval
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Selecciona un evento disponible y sube la convocatoria.
+            Selecciona un evento disponible y sube convocatoria + certificado médico.
           </p>
         </div>
 

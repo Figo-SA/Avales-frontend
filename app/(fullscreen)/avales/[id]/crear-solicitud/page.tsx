@@ -15,7 +15,13 @@ type WizardStep = 1 | 2 | 3 | 4;
 
 type FormData = {
   // Paso 1: Participantes
-  deportistas: Array<{ id: number; nombre: string }>;
+  deportistas: Array<{
+    id: number;
+    nombre: string;
+    cedula?: string;
+    fechaNacimiento?: string;
+    observacion?: string;
+  }>;
   entrenadores: Array<{ id: number; nombre: string }>;
 
   // Paso 2: Logística
@@ -88,6 +94,10 @@ export default function CrearSolicitudPage() {
     },
     [currentStep]
   );
+
+  const handlePreviewDataChange = useCallback((stepData: Partial<FormData>) => {
+    setFormData((prev) => ({ ...prev, ...stepData }));
+  }, []);
 
   const handleBack = useCallback(() => {
     if (currentStep > 1) {
@@ -191,6 +201,7 @@ export default function CrearSolicitudPage() {
                 formData={formData}
                 aval={aval}
                 onComplete={handleStepComplete}
+                onPreviewChange={handlePreviewDataChange}
                 onBack={handleBack}
               />
             )}
@@ -198,6 +209,7 @@ export default function CrearSolicitudPage() {
               <Paso02Logistica
                 formData={formData}
                 onComplete={handleStepComplete}
+                onPreviewChange={handlePreviewDataChange}
                 onBack={handleBack}
               />
             )}
@@ -205,6 +217,7 @@ export default function CrearSolicitudPage() {
               <Paso03Objetivos
                 formData={formData}
                 onComplete={handleStepComplete}
+                onPreviewChange={handlePreviewDataChange}
                 onBack={handleBack}
               />
             )}
@@ -212,6 +225,7 @@ export default function CrearSolicitudPage() {
               <Paso04Presupuesto
                 formData={formData}
                 onComplete={handleStepComplete}
+                onPreviewChange={handlePreviewDataChange}
                 onBack={handleBack}
                 avalId={avalId}
                 aval={aval}
@@ -221,21 +235,12 @@ export default function CrearSolicitudPage() {
         </div>
       </div>
 
-      {/* Right Panel - Image */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <img
-          src="https://images.unsplash.com/photo-1551632811-561732d1e306?w=1200&auto=format&fit=crop"
-          alt="Background"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/90 to-purple-600/90 mix-blend-multiply" />
-
-        {/* Preview Content */}
-        <div className="absolute inset-0 p-12 flex flex-col justify-center">
+      {/* Right Panel - Documento */}
+      <div className="hidden lg:block lg:w-1/2 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
+        <div className="p-6 xl:p-8">
           <OnboardingImage
             aval={aval}
             formData={formData}
-            currentStep={currentStep}
           />
         </div>
       </div>

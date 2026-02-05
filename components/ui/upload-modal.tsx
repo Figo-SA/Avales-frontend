@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { X, Upload, FileText, Loader2 } from "lucide-react";
+
+type UploadFiles = {
+  convocatoria: File;
+  certificadoMedico: File;
+};
 
 type UploadModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (files: UploadFiles) => Promise<void>;
   title?: string;
   description?: string;
   acceptedTypes?: string;
@@ -16,67 +21,74 @@ export default function UploadModal({
   isOpen,
   onClose,
   onUpload,
-  title = "Subir convocatoria",
-  description = "Por favor sube el documento de convocatoria para continuar con la creación del aval.",
+  title = "Subir documentos obligatorios",
+  description = "Sube la convocatoria y el certificado médico para crear el borrador del aval.",
   acceptedTypes = ".pdf,.doc,.docx",
 }: UploadModalProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [convocatoriaFile, setConvocatoriaFile] = useState<File | null>(null);
+  const [certificadoMedicoFile, setCertificadoMedicoFile] =
+    useState<File | null>(null);
+  const convocatoriaInputRef = useRef<HTMLInputElement>(null);
+  const certificadoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setConvocatoriaFile(null);
+      setCertificadoMedicoFile(null);
+      setError(null);
+      setUploading(false);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
-  const handleDrag = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      setSelectedFile(file);
-      setError(null);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    type: "convocatoria" | "certificado"
+  ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setSelectedFile(file);
+      if (type === "convocatoria") {
+        setConvocatoriaFile(file);
+      } else {
+        setCertificadoMedicoFile(file);
+      }
       setError(null);
     }
   };
 
   const handleUpload = async () => {
-    if (!selectedFile) {
-      setError("Por favor selecciona un archivo");
+    if (!convocatoriaFile || !certificadoMedicoFile) {
+      setError(
+        "Debes seleccionar la convocatoria y el certificado médico para continuar."
+      );
       return;
     }
 
     try {
       setUploading(true);
       setError(null);
-      await onUpload(selectedFile);
-    } catch (err: any) {
-      setError(err?.message ?? "Error al subir el archivo");
+      await onUpload({
+        convocatoria: convocatoriaFile,
+        certificadoMedico: certificadoMedicoFile,
+      });
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Error al subir los archivos";
+      setError(message);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleClickUpload = () => {
-    fileInputRef.current?.click();
+  const handleClickUpload = (type: "convocatoria" | "certificado") => {
+    if (type === "convocatoria") {
+      convocatoriaInputRef.current?.click();
+      return;
+    }
+    certificadoInputRef.current?.click();
   };
 
   return (
@@ -111,52 +123,95 @@ export default function UploadModal({
               {description}
             </p>
 
-            {/* Upload area */}
-            <div
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={handleClickUpload}
-              className={`relative border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                dragActive
-                  ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20"
-                  : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-              }`}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                accept={acceptedTypes}
-                onChange={handleFileChange}
-                disabled={uploading}
-              />
-
-              {selectedFile ? (
-                <div className="flex items-center justify-center gap-3">
-                  <FileText className="w-8 h-8 text-indigo-500" />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {selectedFile.name}
+            <div className="space-y-4">
+              {/* Convocatoria */}
+              <div
+                onClick={() => handleClickUpload("convocatoria")}
+                className="relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+              >
+                <input
+                  ref={convocatoriaInputRef}
+                  type="file"
+                  className="hidden"
+                  accept={acceptedTypes}
+                  onChange={(e) => handleFileChange(e, "convocatoria")}
+                  disabled={uploading}
+                />
+                {convocatoriaFile ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <FileText className="w-8 h-8 text-indigo-500" />
+                    <div className="text-left">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Convocatoria
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {convocatoriaFile.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {(convocatoriaFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                      Subir convocatoria
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                      PDF, DOC o DOCX
                     </p>
+                  </>
+                )}
+              </div>
+
+              {/* Certificado medico */}
+              <div
+                onClick={() => handleClickUpload("certificado")}
+                className="relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+              >
+                <input
+                  ref={certificadoInputRef}
+                  type="file"
+                  className="hidden"
+                  accept={acceptedTypes}
+                  onChange={(e) => handleFileChange(e, "certificado")}
+                  disabled={uploading}
+                />
+                {certificadoMedicoFile ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <FileText className="w-8 h-8 text-indigo-500" />
+                    <div className="text-left">
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Certificado medico
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                        {certificadoMedicoFile.name}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {(certificadoMedicoFile.size / 1024 / 1024).toFixed(2)}{" "}
+                        MB
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                    Arrastra tu archivo aquí o haz clic para seleccionar
-                  </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Archivos soportados: PDF, DOC, DOCX
-                  </p>
-                </>
-              )}
+                ) : (
+                  <>
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
+                      Subir certificado medico
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      PDF, DOC o DOCX
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
+
+            {/* Supported types */}
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Archivos soportados: PDF, DOC, DOCX
+            </p>
 
             {/* Error */}
             {error && (
@@ -179,7 +234,7 @@ export default function UploadModal({
             <button
               type="button"
               onClick={handleUpload}
-              disabled={!selectedFile || uploading}
+              disabled={!convocatoriaFile || !certificadoMedicoFile || uploading}
               className="btn bg-indigo-500 hover:bg-indigo-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {uploading ? (

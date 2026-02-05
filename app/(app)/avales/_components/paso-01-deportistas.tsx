@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, Plus, X, Loader2 } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 import {
   listDeportistas,
   type ListDeportistasOptions,
@@ -13,7 +13,13 @@ import type { Aval } from "@/types/aval";
 import { formatGenero } from "@/lib/utils/formatters";
 
 type FormData = {
-  deportistas: Array<{ id: number; nombre: string }>;
+  deportistas: Array<{
+    id: number;
+    nombre: string;
+    cedula?: string;
+    fechaNacimiento?: string;
+    observacion?: string;
+  }>;
   entrenadores: Array<{ id: number; nombre: string }>;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
@@ -28,6 +34,7 @@ type Paso01DeportistasProps = {
   formData: FormData;
   aval: Aval;
   onComplete: (data: Partial<FormData>) => void;
+  onPreviewChange?: (data: Partial<FormData>) => void;
   onBack: () => void;
 };
 
@@ -38,6 +45,7 @@ export default function Paso01Deportistas({
   formData,
   aval,
   onComplete,
+  onPreviewChange,
   onBack,
 }: Paso01DeportistasProps) {
   const evento = aval.evento;
@@ -48,8 +56,6 @@ export default function Paso01Deportistas({
     []
   );
   const [loadingDeportistasHombres, setLoadingDeportistasHombres] =
-    useState(false);
-  const [showSearchDeportistasHombres, setShowSearchDeportistasHombres] =
     useState(false);
   const [selectedDeportistasHombres, setSelectedDeportistasHombres] = useState<
     SelectedDeportista[]
@@ -62,8 +68,6 @@ export default function Paso01Deportistas({
   );
   const [loadingDeportistasMujeres, setLoadingDeportistasMujeres] =
     useState(false);
-  const [showSearchDeportistasMujeres, setShowSearchDeportistasMujeres] =
-    useState(false);
   const [selectedDeportistasMujeres, setSelectedDeportistasMujeres] = useState<
     SelectedDeportista[]
   >([]);
@@ -74,8 +78,6 @@ export default function Paso01Deportistas({
   const [entrenadoresHombres, setEntrenadoresHombres] = useState<User[]>([]);
   const [loadingEntrenadoresHombres, setLoadingEntrenadoresHombres] =
     useState(false);
-  const [showSearchEntrenadoresHombres, setShowSearchEntrenadoresHombres] =
-    useState(false);
   const [selectedEntrenadoresHombres, setSelectedEntrenadoresHombres] =
     useState<SelectedEntrenador[]>([]);
 
@@ -85,12 +87,48 @@ export default function Paso01Deportistas({
   const [entrenadoresMujeres, setEntrenadoresMujeres] = useState<User[]>([]);
   const [loadingEntrenadoresMujeres, setLoadingEntrenadoresMujeres] =
     useState(false);
-  const [showSearchEntrenadoresMujeres, setShowSearchEntrenadoresMujeres] =
-    useState(false);
   const [selectedEntrenadoresMujeres, setSelectedEntrenadoresMujeres] =
     useState<SelectedEntrenador[]>([]);
 
   const [error, setError] = useState<string | null>(null);
+
+  const buildSelectedData = useCallback(() => {
+    const allDeportistas = [
+      ...selectedDeportistasHombres,
+      ...selectedDeportistasMujeres,
+    ];
+    const allEntrenadores = [
+      ...selectedEntrenadoresHombres,
+      ...selectedEntrenadoresMujeres,
+    ];
+
+    const deportistasData = allDeportistas.map((d) => ({
+      id: d.id,
+      nombre: `${d.nombres} ${d.apellidos}`,
+      cedula: d.cedula,
+      fechaNacimiento: d.fechaNacimiento,
+      observacion: d.afiliacion ? "AFILIADO/A 2024" : "SIN AFILIACION",
+    }));
+
+    const entrenadoresData = allEntrenadores.map((e) => ({
+      id: e.id,
+      nombre: `${e.nombre} ${e.apellido}`,
+    }));
+
+    return {
+      deportistas: deportistasData,
+      entrenadores: entrenadoresData,
+    };
+  }, [
+    selectedDeportistasHombres,
+    selectedDeportistasMujeres,
+    selectedEntrenadoresHombres,
+    selectedEntrenadoresMujeres,
+  ]);
+
+  useEffect(() => {
+    onPreviewChange?.(buildSelectedData());
+  }, [buildSelectedData, onPreviewChange]);
 
   // Fetch deportistas hombres
   const fetchDeportistasHombres = useCallback(async () => {
@@ -146,6 +184,11 @@ export default function Paso01Deportistas({
 
   // Fetch entrenadores hombres
   const fetchEntrenadoresHombres = useCallback(async () => {
+    if (!searchEntrenadoresHombres.trim()) {
+      setEntrenadoresHombres([]);
+      return;
+    }
+
     try {
       setLoadingEntrenadoresHombres(true);
       const options: ListEntrenadoresOptions = {
@@ -156,14 +199,11 @@ export default function Paso01Deportistas({
       const res = await listEntrenadores(options);
       const items = res.data ?? [];
 
-      // Filter by search if there's a search term
-      const filtered = searchEntrenadoresHombres.trim()
-        ? items.filter((e) =>
-            `${e.nombre} ${e.apellido} ${e.cedula}`
-              .toLowerCase()
-              .includes(searchEntrenadoresHombres.toLowerCase())
-          )
-        : items;
+      const filtered = items.filter((e) =>
+        `${e.nombre} ${e.apellido} ${e.cedula}`
+          .toLowerCase()
+          .includes(searchEntrenadoresHombres.toLowerCase())
+      );
 
       setEntrenadoresHombres(filtered);
     } catch (err: any) {
@@ -175,6 +215,11 @@ export default function Paso01Deportistas({
 
   // Fetch entrenadores mujeres
   const fetchEntrenadoresMujeres = useCallback(async () => {
+    if (!searchEntrenadoresMujeres.trim()) {
+      setEntrenadoresMujeres([]);
+      return;
+    }
+
     try {
       setLoadingEntrenadoresMujeres(true);
       const options: ListEntrenadoresOptions = {
@@ -185,14 +230,11 @@ export default function Paso01Deportistas({
       const res = await listEntrenadores(options);
       const items = res.data ?? [];
 
-      // Filter by search if there's a search term
-      const filtered = searchEntrenadoresMujeres.trim()
-        ? items.filter((e) =>
-            `${e.nombre} ${e.apellido} ${e.cedula}`
-              .toLowerCase()
-              .includes(searchEntrenadoresMujeres.toLowerCase())
-          )
-        : items;
+      const filtered = items.filter((e) =>
+        `${e.nombre} ${e.apellido} ${e.cedula}`
+          .toLowerCase()
+          .includes(searchEntrenadoresMujeres.toLowerCase())
+      );
 
       setEntrenadoresMujeres(filtered);
     } catch (err: any) {
@@ -217,20 +259,18 @@ export default function Paso01Deportistas({
   }, [fetchDeportistasMujeres]);
 
   useEffect(() => {
-    if (!showSearchEntrenadoresHombres) return;
     const timer = setTimeout(() => {
       void fetchEntrenadoresHombres();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchEntrenadoresHombres, showSearchEntrenadoresHombres]);
+  }, [fetchEntrenadoresHombres]);
 
   useEffect(() => {
-    if (!showSearchEntrenadoresMujeres) return;
     const timer = setTimeout(() => {
       void fetchEntrenadoresMujeres();
     }, 300);
     return () => clearTimeout(timer);
-  }, [fetchEntrenadoresMujeres, showSearchEntrenadoresMujeres]);
+  }, [fetchEntrenadoresMujeres]);
 
   // Handlers for deportistas hombres
   const handleAddDeportistaHombre = (deportista: Deportista) => {
@@ -242,7 +282,6 @@ export default function Paso01Deportistas({
     setSelectedDeportistasHombres([...selectedDeportistasHombres, deportista]);
     setSearchDeportistasHombres("");
     setDeportistasHombres([]);
-    setShowSearchDeportistasHombres(false);
   };
 
   const handleRemoveDeportistaHombre = (deportistaId: number) => {
@@ -261,7 +300,6 @@ export default function Paso01Deportistas({
     setSelectedDeportistasMujeres([...selectedDeportistasMujeres, deportista]);
     setSearchDeportistasMujeres("");
     setDeportistasMujeres([]);
-    setShowSearchDeportistasMujeres(false);
   };
 
   const handleRemoveDeportistaMujer = (deportistaId: number) => {
@@ -283,7 +321,6 @@ export default function Paso01Deportistas({
     ]);
     setSearchEntrenadoresHombres("");
     setEntrenadoresHombres([]);
-    setShowSearchEntrenadoresHombres(false);
   };
 
   const handleRemoveEntrenadorHombre = (entrenadorId: number) => {
@@ -305,7 +342,6 @@ export default function Paso01Deportistas({
     ]);
     setSearchEntrenadoresMujeres("");
     setEntrenadoresMujeres([]);
-    setShowSearchEntrenadoresMujeres(false);
   };
 
   const handleRemoveEntrenadoraMujer = (entrenadorId: number) => {
@@ -358,29 +394,7 @@ export default function Paso01Deportistas({
       return;
     }
 
-    const allDeportistas = [
-      ...selectedDeportistasHombres,
-      ...selectedDeportistasMujeres,
-    ];
-    const allEntrenadores = [
-      ...selectedEntrenadoresHombres,
-      ...selectedEntrenadoresMujeres,
-    ];
-
-    const deportistasData = allDeportistas.map((d) => ({
-      id: d.id,
-      nombre: `${d.nombres} ${d.apellidos}`,
-    }));
-
-    const entrenadoresData = allEntrenadores.map((e) => ({
-      id: e.id,
-      nombre: `${e.nombre} ${e.apellido}`,
-    }));
-
-    onComplete({
-      deportistas: deportistasData,
-      entrenadores: entrenadoresData,
-    });
+    onComplete(buildSelectedData());
   };
 
   // Helper component for rendering search section
@@ -390,8 +404,6 @@ export default function Paso01Deportistas({
     setSearch: (value: string) => void,
     deportistas: Deportista[],
     loading: boolean,
-    showSearch: boolean,
-    setShowSearch: (value: boolean) => void,
     setDeportistas: (value: Deportista[]) => void,
     selected: SelectedDeportista[],
     required: number,
@@ -404,10 +416,6 @@ export default function Paso01Deportistas({
       genero === "Masculino"
         ? "Buscar deportista hombre..."
         : "Buscar deportista mujer...";
-    const addButtonText =
-      genero === "Masculino"
-        ? "Buscar y agregar deportista hombre"
-        : "Buscar y agregar deportista mujer";
 
     if (required === 0) {
       return (
@@ -445,35 +453,20 @@ export default function Paso01Deportistas({
             : label.toLowerCase()}
         </p>
 
-        {!showSearch ? (
-          <button
-            type="button"
-            onClick={() => setShowSearch(true)}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            className="form-input w-full pl-10 pr-10"
+            placeholder={placeholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             disabled={selected.length >= required}
-            className={`w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium p-4 rounded-lg border-2 border-dashed transition ${
-              selected.length >= required
-                ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
-                : "text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            {selected.length >= required ? "Límite alcanzado" : addButtonText}
-          </button>
-        ) : (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              className="form-input w-full pl-10 pr-10"
-              placeholder={placeholder}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoFocus
-            />
+          />
+          {search.trim() && (
             <button
               type="button"
               onClick={() => {
-                setShowSearch(false);
                 setSearch("");
                 setDeportistas([]);
               }}
@@ -481,82 +474,82 @@ export default function Paso01Deportistas({
             >
               <X className="w-5 h-5" />
             </button>
+          )}
 
-            {(loading || search.trim() !== "") && (
-              <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {loading ? (
-                  <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    Buscando...
-                  </div>
-                ) : deportistas.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-                    No se encontraron deportistas
-                  </div>
-                ) : (
-                  deportistas.map((deportista) => {
-                    const alreadySelected = selected.some(
-                      (d) => d.id === deportista.id
-                    );
-                    const limitReached = selected.length >= required;
-                    const isDisabled = alreadySelected || limitReached;
+          {(loading || search.trim() !== "") && (
+            <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {loading ? (
+                <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  Buscando...
+                </div>
+              ) : deportistas.length === 0 ? (
+                <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  No se encontraron deportistas
+                </div>
+              ) : (
+                deportistas.map((deportista) => {
+                  const alreadySelected = selected.some(
+                    (d) => d.id === deportista.id
+                  );
+                  const limitReached = selected.length >= required;
+                  const isDisabled = alreadySelected || limitReached;
 
-                    return (
-                      <button
-                        key={deportista.id}
-                        type="button"
-                        onClick={() => handleAdd(deportista)}
-                        disabled={isDisabled}
-                        className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                          isDisabled
-                            ? "opacity-50 cursor-not-allowed"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                              {deportista.nombres} {deportista.apellidos}
+                  return (
+                    <button
+                      key={deportista.id}
+                      type="button"
+                      onClick={() => handleAdd(deportista)}
+                      disabled={isDisabled}
+                      className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                        isDisabled
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {deportista.nombres} {deportista.apellidos}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {deportista.cedula}
                             </p>
-                            <div className="flex items-center gap-3 mt-1">
+                            {deportista.disciplina?.nombre && (
                               <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {deportista.cedula}
+                                {deportista.disciplina.nombre}
                               </p>
-                              {deportista.disciplina?.nombre && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {deportista.disciplina.nombre}
-                                </p>
-                              )}
-                            </div>
+                            )}
                           </div>
-                          {alreadySelected && (
-                            <span className="text-xs text-indigo-600 dark:text-indigo-400 ml-2">
-                              Agregado
-                            </span>
-                          )}
                         </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                        {alreadySelected && (
+                          <span className="text-xs text-indigo-600 dark:text-indigo-400 ml-2">
+                            Agregado
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
 
         {selected.length > 0 && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-3 space-y-1.5">
             <div className="space-y-2">
               {selected.map((deportista) => (
                 <div
                   key={deportista.id}
-                  className="flex items-start gap-3 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-3 rounded-lg border border-gray-200 dark:border-gray-600"
+                  className="flex items-start gap-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-2 rounded-md border border-gray-200 dark:border-gray-600"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold">
+                    <p className="font-medium text-sm">
                       {deportista.nombres} {deportista.apellidos}
                     </p>
-                    <div className="flex flex-wrap gap-2 mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-wrap gap-2 mt-0.5 text-[11px] text-gray-500 dark:text-gray-400">
                       <span>{deportista.cedula}</span>
                       {deportista.genero && (
                         <span>{formatGenero(deportista.genero)}</span>
@@ -590,8 +583,6 @@ export default function Paso01Deportistas({
     setSearch: (value: string) => void,
     entrenadores: User[],
     loading: boolean,
-    showSearch: boolean,
-    setShowSearch: (value: boolean) => void,
     setEntrenadores: (value: User[]) => void,
     selected: SelectedEntrenador[],
     required: number,
@@ -602,10 +593,6 @@ export default function Paso01Deportistas({
       genero === "Masculino" ? "Entrenadores hombres" : "Entrenadoras mujeres";
     const placeholder =
       genero === "Masculino" ? "Buscar entrenador..." : "Buscar entrenadora...";
-    const addButtonText =
-      genero === "Masculino"
-        ? "Buscar y agregar entrenador"
-        : "Buscar y agregar entrenadora";
 
     if (required === 0) {
       return (
@@ -643,35 +630,20 @@ export default function Paso01Deportistas({
             : label.toLowerCase()}
         </p>
 
-        {!showSearch ? (
-          <button
-            type="button"
-            onClick={() => setShowSearch(true)}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            className="form-input w-full pl-10 pr-10"
+            placeholder={placeholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
             disabled={selected.length >= required}
-            className={`w-full flex items-center justify-center gap-2 bg-white dark:bg-gray-700 text-sm font-medium p-4 rounded-lg border-2 border-dashed transition ${
-              selected.length >= required
-                ? "opacity-50 cursor-not-allowed border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500"
-                : "text-gray-800 dark:text-gray-100 border-gray-300 dark:border-gray-600 hover:border-indigo-400 dark:hover:border-indigo-500"
-            }`}
-          >
-            <Plus className="w-5 h-5" />
-            {selected.length >= required ? "Límite alcanzado" : addButtonText}
-          </button>
-        ) : (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              className="form-input w-full pl-10 pr-10"
-              placeholder={placeholder}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              autoFocus
-            />
+          />
+          {search.trim() && (
             <button
               type="button"
               onClick={() => {
-                setShowSearch(false);
                 setSearch("");
                 setEntrenadores([]);
               }}
@@ -679,75 +651,75 @@ export default function Paso01Deportistas({
             >
               <X className="w-5 h-5" />
             </button>
+          )}
 
-            {showSearch && (
-              <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {loading ? (
-                  <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                    <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
-                    Cargando entrenadores...
-                  </div>
-                ) : entrenadores.length === 0 ? (
-                  <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-                    No se encontraron entrenadores
-                  </div>
-                ) : (
-                  entrenadores.map((entrenador) => {
-                    const alreadySelected = selected.some(
-                      (e) => e.id === entrenador.id
-                    );
-                    const limitReached = selected.length >= required;
-                    const isDisabled = alreadySelected || limitReached;
+          {(loading || search.trim() !== "") && (
+            <div className="absolute z-10 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              {loading ? (
+                <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                  Cargando entrenadores...
+                </div>
+              ) : entrenadores.length === 0 ? (
+                <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  No se encontraron entrenadores
+                </div>
+              ) : (
+                entrenadores.map((entrenador) => {
+                  const alreadySelected = selected.some(
+                    (e) => e.id === entrenador.id
+                  );
+                  const limitReached = selected.length >= required;
+                  const isDisabled = alreadySelected || limitReached;
 
-                    return (
-                      <button
-                        key={entrenador.id}
-                        type="button"
-                        onClick={() => handleAdd(entrenador)}
-                        disabled={isDisabled}
-                        className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
-                          isDisabled
-                            ? "opacity-50 cursor-not-allowed"
-                            : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                              {entrenador.nombre} {entrenador.apellido}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              {entrenador.cedula}
-                            </p>
-                          </div>
-                          {alreadySelected && (
-                            <span className="text-xs text-indigo-600 dark:text-indigo-400 ml-2">
-                              Agregado
-                            </span>
-                          )}
+                  return (
+                    <button
+                      key={entrenador.id}
+                      type="button"
+                      onClick={() => handleAdd(entrenador)}
+                      disabled={isDisabled}
+                      className={`w-full px-4 py-3 text-left border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors ${
+                        isDisabled
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                            {entrenador.nombre} {entrenador.apellido}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {entrenador.cedula}
+                          </p>
                         </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                        {alreadySelected && (
+                          <span className="text-xs text-indigo-600 dark:text-indigo-400 ml-2">
+                            Agregado
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          )}
+        </div>
 
         {selected.length > 0 && (
-          <div className="mt-4 space-y-2">
+          <div className="mt-3 space-y-1.5">
             <div className="space-y-2">
               {selected.map((entrenador) => (
                 <div
                   key={entrenador.id}
-                  className="flex items-start gap-3 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-3 rounded-lg border border-gray-200 dark:border-gray-600"
+                  className="flex items-start gap-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-800 dark:text-gray-100 p-2 rounded-md border border-gray-200 dark:border-gray-600"
                 >
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold">
+                    <p className="font-medium text-sm">
                       {entrenador.nombre} {entrenador.apellido}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                       {entrenador.cedula}
                     </p>
                   </div>
@@ -779,69 +751,81 @@ export default function Paso01Deportistas({
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Deportistas Hombres Section */}
-        {renderDeportistaSearch(
-          "Masculino",
-          searchDeportistasHombres,
-          setSearchDeportistasHombres,
-          deportistasHombres,
-          loadingDeportistasHombres,
-          showSearchDeportistasHombres,
-          setShowSearchDeportistasHombres,
-          setDeportistasHombres,
-          selectedDeportistasHombres,
-          evento.numAtletasHombres,
-          handleAddDeportistaHombre,
-          handleRemoveDeportistaHombre
-        )}
+        <section className="space-y-4 rounded-xl border border-indigo-200/70 dark:border-indigo-800/70 bg-indigo-50/30 dark:bg-indigo-900/10 p-4">
+          <div className="pb-2 border-b border-indigo-200 dark:border-indigo-800">
+            <h2 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300">
+              Deportistas
+            </h2>
+          </div>
 
-        {/* Deportistas Mujeres Section */}
-        {renderDeportistaSearch(
-          "Femenino",
-          searchDeportistasMujeres,
-          setSearchDeportistasMujeres,
-          deportistasMujeres,
-          loadingDeportistasMujeres,
-          showSearchDeportistasMujeres,
-          setShowSearchDeportistasMujeres,
-          setDeportistasMujeres,
-          selectedDeportistasMujeres,
-          evento.numAtletasMujeres,
-          handleAddDeportistaMujer,
-          handleRemoveDeportistaMujer
-        )}
+          <div className="space-y-4">
+            {renderDeportistaSearch(
+              "Masculino",
+              searchDeportistasHombres,
+              setSearchDeportistasHombres,
+              deportistasHombres,
+              loadingDeportistasHombres,
+              setDeportistasHombres,
+              selectedDeportistasHombres,
+              evento.numAtletasHombres,
+              handleAddDeportistaHombre,
+              handleRemoveDeportistaHombre
+            )}
 
-        {/* Entrenadores Hombres Section */}
-        {renderEntrenadorSearch(
-          "Masculino",
-          searchEntrenadoresHombres,
-          setSearchEntrenadoresHombres,
-          entrenadoresHombres,
-          loadingEntrenadoresHombres,
-          showSearchEntrenadoresHombres,
-          setShowSearchEntrenadoresHombres,
-          setEntrenadoresHombres,
-          selectedEntrenadoresHombres,
-          evento.numEntrenadoresHombres,
-          handleAddEntrenadorHombre,
-          handleRemoveEntrenadorHombre
-        )}
+            <div className="pt-4 border-t border-indigo-100 dark:border-indigo-800/60">
+              {renderDeportistaSearch(
+                "Femenino",
+                searchDeportistasMujeres,
+                setSearchDeportistasMujeres,
+                deportistasMujeres,
+                loadingDeportistasMujeres,
+                setDeportistasMujeres,
+                selectedDeportistasMujeres,
+                evento.numAtletasMujeres,
+                handleAddDeportistaMujer,
+                handleRemoveDeportistaMujer
+              )}
+            </div>
+          </div>
+        </section>
 
-        {/* Entrenadores Mujeres Section */}
-        {renderEntrenadorSearch(
-          "Femenino",
-          searchEntrenadoresMujeres,
-          setSearchEntrenadoresMujeres,
-          entrenadoresMujeres,
-          loadingEntrenadoresMujeres,
-          showSearchEntrenadoresMujeres,
-          setShowSearchEntrenadoresMujeres,
-          setEntrenadoresMujeres,
-          selectedEntrenadoresMujeres,
-          evento.numEntrenadoresMujeres,
-          handleAddEntrenadoraMujer,
-          handleRemoveEntrenadoraMujer
-        )}
+        <section className="space-y-4 rounded-xl border border-emerald-200/70 dark:border-emerald-800/70 bg-emerald-50/30 dark:bg-emerald-900/10 p-4">
+          <div className="pb-2 border-b border-emerald-200 dark:border-emerald-800">
+            <h2 className="text-sm font-semibold text-emerald-900 dark:text-emerald-300">
+              Entrenadores
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {renderEntrenadorSearch(
+              "Masculino",
+              searchEntrenadoresHombres,
+              setSearchEntrenadoresHombres,
+              entrenadoresHombres,
+              loadingEntrenadoresHombres,
+              setEntrenadoresHombres,
+              selectedEntrenadoresHombres,
+              evento.numEntrenadoresHombres,
+              handleAddEntrenadorHombre,
+              handleRemoveEntrenadorHombre
+            )}
+
+            <div className="pt-4 border-t border-emerald-100 dark:border-emerald-800/60">
+              {renderEntrenadorSearch(
+                "Femenino",
+                searchEntrenadoresMujeres,
+                setSearchEntrenadoresMujeres,
+                entrenadoresMujeres,
+                loadingEntrenadoresMujeres,
+                setEntrenadoresMujeres,
+                selectedEntrenadoresMujeres,
+                evento.numEntrenadoresMujeres,
+                handleAddEntrenadoraMujer,
+                handleRemoveEntrenadoraMujer
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* Error message */}
         {error && (

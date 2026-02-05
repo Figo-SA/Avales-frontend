@@ -1,14 +1,14 @@
 import type { Aval } from "@/types/aval";
-import { Calendar, MapPin, Users, Clock, DollarSign, Target } from "lucide-react";
-import {
-  formatDateRange,
-  formatLocationWithProvince,
-  formatDateTime,
-  formatCurrency,
-} from "@/lib/utils/formatters";
+import { formatLocationWithProvince } from "@/lib/utils/formatters";
 
 type FormData = {
-  deportistas: Array<{ id: number; nombre: string }>;
+  deportistas: Array<{
+    id: number;
+    nombre: string;
+    cedula?: string;
+    fechaNacimiento?: string;
+    observacion?: string;
+  }>;
   entrenadores: Array<{ id: number; nombre: string }>;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
@@ -22,176 +22,505 @@ type FormData = {
 type OnboardingImageProps = {
   aval: Aval;
   formData: FormData;
-  currentStep: number;
 };
 
-function getTotalParticipants(formData: FormData) {
-  return formData.deportistas.length + formData.entrenadores.length;
+const TRANSPORTE_LABELS: Record<string, string> = {
+  AEREO: "TRANSPORTE AEREO",
+  TERRESTRE: "TRANSPORTE TERRESTRE",
+  VEHICULO_PROPIO: "VEHICULO PROPIO",
+  MARITIMO: "TRANSPORTE MARITIMO",
+  OTRO: "OTRO",
+};
+
+function formatFechaNacimiento(fecha?: string) {
+  if (!fecha) return "-";
+  const parsed = new Date(fecha);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return parsed.toLocaleDateString("es-EC");
 }
 
-function getTotalPresupuesto(aval: Aval) {
-  const presupuestoItems = aval.evento?.presupuesto || [];
-  return presupuestoItems.reduce((sum, item) => {
-    const valor = parseFloat(item.presupuesto) || 0;
-    return sum + valor;
-  }, 0);
+function formatFechaEventoDocumento(inicio?: string, fin?: string) {
+  if (!inicio) return "-";
+
+  const start = new Date(inicio);
+  if (Number.isNaN(start.getTime())) return "-";
+
+  const startFormatted = start.toLocaleDateString("es-EC", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  if (!fin) return startFormatted.toUpperCase();
+
+  const end = new Date(fin);
+  if (Number.isNaN(end.getTime())) return startFormatted.toUpperCase();
+
+  const endFormatted = end.toLocaleDateString("es-EC", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  return `${startFormatted} AL ${endFormatted}`.toUpperCase();
 }
 
-export default function OnboardingImage({ aval, formData, currentStep }: OnboardingImageProps) {
+function formatLogisticaFecha(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}-${month}-${year}`;
+}
+
+function formatLogisticaHora(value?: string) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}H${mm}`;
+}
+
+function formatTransporte(value?: string) {
+  if (!value) return "-";
+  return TRANSPORTE_LABELS[value] ?? value.replaceAll("_", " ");
+}
+
+function formatMoneda(value?: string) {
+  const parsed = Number.parseFloat(value ?? "");
+  if (Number.isNaN(parsed)) return "-";
+  return new Intl.NumberFormat("es-EC", {
+    style: "currency",
+    currency: "USD",
+  }).format(parsed);
+}
+
+export default function OnboardingImage({ aval, formData }: OnboardingImageProps) {
   const evento = aval.evento;
+  const presupuestoItems = evento?.presupuesto ?? [];
+  const entrenadorResponsable = formData.entrenadores[0]?.nombre ?? "POR DEFINIR";
+  const asistente = formData.entrenadores[1]?.nombre ?? "-";
+  const disciplina = evento?.disciplina?.nombre?.toUpperCase() ?? "SIN DISCIPLINA";
+  const categoria = evento?.categoria?.nombre?.toUpperCase() ?? "SIN CATEGORIA";
+  const genero = (evento?.genero ?? "MASCULINO_FEMENINO").replaceAll("_", " - ");
+  const showDetallePage =
+    Boolean(formData.fechaHoraSalida) ||
+    Boolean(formData.fechaHoraRetorno) ||
+    Boolean(formData.transporteSalida) ||
+    Boolean(formData.transporteRetorno) ||
+    formData.objetivos.length > 0 ||
+    formData.criterios.length > 0 ||
+    Boolean(formData.observaciones?.trim());
 
   return (
-    <div className="w-full max-w-lg">
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-3">
-            Vista Previa del Aval
-          </h2>
-          <p className="text-white/80 text-lg">
-            Completa cada paso para ver el resumen del aval técnico.
-          </p>
+    <div className="w-full space-y-6 text-slate-900">
+      <div className="bg-white p-5 xl:p-6 border border-slate-300">
+        <p className="text-[13px] leading-5">
+          Por medio de la presente me permito dirigirme a usted, para extender
+          mi cordial saludo y desear lo mejor al frente de las actividades
+          encomendadas para el desarrollo del deporte de nuestra ciudad y
+          provincia de Loja.
+        </p>
+
+        <p className="mt-3 text-[13px] leading-5">
+          A lo solicitado por usted mediante el{" "}
+          <span className="font-semibold uppercase underline">
+            aval tecnico de participacion competitiva del deporte del &quot;
+            {disciplina}&quot;
+          </span>
+          , presentado en esta dependencia, me permito informar lo siguiente:
+        </p>
+
+        <div className="mt-4 border border-slate-400">
+          <table className="w-full border-collapse text-[11px]">
+            <tbody>
+              <tr>
+                <td className="w-1/3 border border-slate-400 px-2 py-1 font-semibold">
+                  DEPORTE
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{disciplina}</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  DOCUMENTO
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  AVAL TECNICO DE PARTICIPACION COMPETITIVA
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  EVENTO
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  {evento?.nombre?.toUpperCase() ?? "SIN EVENTO"}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  GENERO
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{genero}</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  LUGAR Y FECHA
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  {(formatLocationWithProvince(evento) || "-").toUpperCase()} /{" "}
+                  {formatFechaEventoDocumento(evento?.fechaInicio, evento?.fechaFin)}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  ENTRENADOR RESPONSABLE
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  {entrenadorResponsable.toUpperCase()}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  CATEGORIA
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{categoria}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
 
-        {/* Event info card */}
-        {evento && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-            <p className="text-sm text-white/70 mb-2">Evento:</p>
-            <h3 className="text-xl font-semibold text-white mb-4 line-clamp-2">
-              {evento.nombre}
-            </h3>
+        <p className="mt-4 text-[13px] leading-5">
+          Certifico que una vez revisado los archivos que se mantienen en la
+          Secretaria de las escuelas de iniciacion deportiva relacionado a la
+          afiliacion del 2024 de los deportistas de FDPL. Me permito informar
+          lo siguiente:
+        </p>
 
-            <div className="space-y-3">
-              <div className="flex items-center gap-3 text-white/90">
-                <Calendar className="w-5 h-5 text-white/60" />
-                <span className="text-sm">
-                  {formatDateRange(evento.fechaInicio, evento.fechaFin)}
-                </span>
-              </div>
-              <div className="flex items-center gap-3 text-white/90">
-                <MapPin className="w-5 h-5 text-white/60" />
-                <span className="text-sm">
-                  {formatLocationWithProvince(evento)}
-                </span>
-              </div>
-            </div>
-
-            {/* Disciplina no disponible en EventoSimple */}
-          </div>
-        )}
-
-        {/* Participantes Preview */}
-        {(formData.deportistas.length > 0 || formData.entrenadores.length > 0) && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-white/60" />
-              <p className="text-sm font-medium text-white/90">Participantes</p>
-            </div>
-            <div className="space-y-3">
-              {formData.deportistas.length > 0 && (
-                <div>
-                  <p className="text-sm text-white/70 mb-1">Deportistas:</p>
-                  <p className="text-lg text-white font-semibold">
-                    {formData.deportistas.length} seleccionados
-                  </p>
-                </div>
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-full border-collapse text-[11px]">
+            <thead>
+              <tr className="bg-cyan-200">
+                {[
+                  "No.",
+                  "APELLIDOS Y NOMBRES",
+                  "PROFESOR",
+                  "CEDULA",
+                  "FECHA DE NAC.",
+                  "OBSERVACIONES",
+                ].map((col) => (
+                  <th
+                    key={col}
+                    className="border border-slate-500 px-2 py-1.5 text-left font-semibold"
+                  >
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {formData.deportistas.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="border border-slate-400 px-2 py-3 text-center text-slate-500"
+                  >
+                    Selecciona deportistas para ver la nomina aqui.
+                  </td>
+                </tr>
+              ) : (
+                formData.deportistas.map((deportista, index) => (
+                  <tr key={deportista.id}>
+                    <td className="border border-slate-400 px-2 py-1 text-center align-top">
+                      {index + 1}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 align-top">
+                      {deportista.nombre}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 align-top">
+                      {entrenadorResponsable.toUpperCase()}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 align-top">
+                      {deportista.cedula ?? "-"}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 align-top">
+                      {formatFechaNacimiento(deportista.fechaNacimiento)}
+                    </td>
+                    <td className="border border-slate-400 px-2 py-1 align-top font-semibold">
+                      {deportista.observacion ?? "AFILIADO/A 2024"}
+                    </td>
+                  </tr>
+                ))
               )}
-              {formData.entrenadores.length > 0 && (
-                <div>
-                  <p className="text-sm text-white/70 mb-1">Entrenadores:</p>
-                  <p className="text-lg text-white font-semibold">
-                    {formData.entrenadores.length} seleccionados
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Logística Preview */}
-        {(formData.fechaHoraSalida || formData.fechaHoraRetorno) && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-            <div className="flex items-center gap-2 mb-4">
-              <Clock className="w-5 h-5 text-white/60" />
-              <p className="text-sm font-medium text-white/90">Logística</p>
-            </div>
-            <div className="space-y-3">
-              {formData.fechaHoraSalida && (
-                <div>
-                  <p className="text-sm text-white/70 mb-1">Salida:</p>
-                  <p className="text-white font-medium">
-                    {formatDateTime(formData.fechaHoraSalida)}
-                  </p>
-                  {formData.transporteSalida && (
-                    <p className="text-white/80 text-sm mt-1">
-                      {formData.transporteSalida}
-                    </p>
-                  )}
-                </div>
-              )}
-              {formData.fechaHoraRetorno && (
-                <div>
-                  <p className="text-sm text-white/70 mb-1">Retorno:</p>
-                  <p className="text-white font-medium">
-                    {formatDateTime(formData.fechaHoraRetorno)}
-                  </p>
-                  {formData.transporteRetorno && (
-                    <p className="text-white/80 text-sm mt-1">
-                      {formData.transporteRetorno}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Objetivos y Criterios Preview */}
-        {(formData.objetivos.length > 0 || formData.criterios.length > 0) && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-            <div className="flex items-center gap-2 mb-4">
-              <Target className="w-5 h-5 text-white/60" />
-              <p className="text-sm font-medium text-white/90">Objetivos y Criterios</p>
-            </div>
-            <div className="space-y-3">
-              {formData.objetivos.length > 0 && (
-                <div>
-                  <p className="text-sm text-white/70 mb-1">Objetivos:</p>
-                  <p className="text-lg text-white font-semibold">
-                    {formData.objetivos.length} definidos
-                  </p>
-                </div>
-              )}
-              {formData.criterios.length > 0 && (
-                <div>
-                  <p className="text-sm text-white/70 mb-1">Criterios:</p>
-                  <p className="text-lg text-white font-semibold">
-                    {formData.criterios.length} definidos
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Presupuesto Preview */}
-        {currentStep >= 4 && (aval.evento?.presupuesto?.length ?? 0) > 0 && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-5 border border-white/20">
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-5 h-5 text-white/60" />
-              <p className="text-sm font-medium text-white/90">Presupuesto del Evento</p>
-            </div>
-            <div>
-              <p className="text-sm text-white/70 mb-2">Total:</p>
-              <p className="text-3xl text-white font-bold">
-                {formatCurrency(getTotalPresupuesto(aval))}
-              </p>
-              <p className="text-sm text-white/80 mt-2">
-                {aval.evento.presupuesto!.length} {aval.evento.presupuesto!.length === 1 ? "item" : "items"}
-              </p>
-            </div>
-          </div>
-        )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {showDetallePage && (
+        <div className="bg-white p-5 xl:p-6 border border-slate-300 space-y-4">
+          <h2 className="text-center text-[18px] font-semibold uppercase">
+            Aval tecnico de participacion competitiva
+          </h2>
+          <h3 className="text-center text-[15px] font-semibold uppercase">
+            Datos informativos
+          </h3>
+
+          <table className="w-full border-collapse text-[11px]">
+            <tbody>
+              <tr>
+                <td className="w-1/4 border border-slate-400 px-2 py-1 font-semibold">
+                  DEPORTE
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{disciplina}</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  CATEGORIAS
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{categoria}</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  GENERO
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{genero}</td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  EVENTO
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  {evento?.nombre?.toUpperCase() ?? "SIN EVENTO"}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  LUGAR Y FECHA
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  {(formatLocationWithProvince(evento) || "-").toUpperCase()} /{" "}
+                  {formatFechaEventoDocumento(evento?.fechaInicio, evento?.fechaFin)}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  ENTRENADOR RESPONSABLE
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  {entrenadorResponsable.toUpperCase()}
+                </td>
+              </tr>
+              <tr>
+                <td className="border border-slate-400 px-2 py-1 font-semibold">
+                  ASISTENTE
+                </td>
+                <td className="border border-slate-400 px-2 py-1">{asistente.toUpperCase()}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <table className="w-full border-collapse text-[11px]">
+            <thead>
+              <tr>
+                <th className="w-10 border border-slate-400 px-2 py-1 text-left">
+                  N.º
+                </th>
+                <th className="border border-slate-400 px-2 py-1 text-left uppercase">
+                  Objetivos de participacion
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {formData.objetivos.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={2}
+                    className="border border-slate-400 px-2 py-2 text-slate-500"
+                  >
+                    -
+                  </td>
+                </tr>
+              ) : (
+                formData.objetivos.map((objetivo, index) => (
+                  <tr key={`obj-${index}`}>
+                    <td className="border border-slate-400 px-2 py-1">{index + 1}</td>
+                    <td className="border border-slate-400 px-2 py-1">{objetivo}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <table className="w-full border-collapse text-[11px]">
+            <thead>
+              <tr>
+                <th className="w-10 border border-slate-400 px-2 py-1 text-left">
+                  N.º
+                </th>
+                <th className="border border-slate-400 px-2 py-1 text-left uppercase">
+                  Criterios de seleccion
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {formData.criterios.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={2}
+                    className="border border-slate-400 px-2 py-2 text-slate-500"
+                  >
+                    -
+                  </td>
+                </tr>
+              ) : (
+                formData.criterios.map((criterio, index) => (
+                  <tr key={`crt-${index}`}>
+                    <td className="border border-slate-400 px-2 py-1">{index + 1}</td>
+                    <td className="border border-slate-400 px-2 py-1">{criterio}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <div>
+            <p className="text-[12px] font-semibold uppercase">
+              Conformacion de la delegacion
+            </p>
+            <table className="mt-1 w-full border-collapse text-[11px]">
+              <thead>
+                <tr>
+                  <th className="border border-slate-400 px-2 py-1 text-center" colSpan={2}>
+                    OFICIALES
+                  </th>
+                  <th className="border border-slate-400 px-2 py-1 text-center" colSpan={2}>
+                    ATLETAS
+                  </th>
+                  <th className="border border-slate-400 px-2 py-1 text-center" rowSpan={2}>
+                    TOTAL
+                  </th>
+                </tr>
+                <tr>
+                  <th className="border border-slate-400 px-2 py-1 text-center">D</th>
+                  <th className="border border-slate-400 px-2 py-1 text-center">V</th>
+                  <th className="border border-slate-400 px-2 py-1 text-center">D</th>
+                  <th className="border border-slate-400 px-2 py-1 text-center">V</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-slate-400 px-2 py-1 text-center">
+                    {evento.numEntrenadoresHombres || 0}
+                  </td>
+                  <td className="border border-slate-400 px-2 py-1 text-center">
+                    {evento.numEntrenadoresMujeres || 0}
+                  </td>
+                  <td className="border border-slate-400 px-2 py-1 text-center">
+                    {evento.numAtletasHombres || 0}
+                  </td>
+                  <td className="border border-slate-400 px-2 py-1 text-center">
+                    {evento.numAtletasMujeres || 0}
+                  </td>
+                  <td className="border border-slate-400 px-2 py-1 text-center">
+                    {(evento.numEntrenadoresHombres || 0) +
+                      (evento.numEntrenadoresMujeres || 0) +
+                      (evento.numAtletasHombres || 0) +
+                      (evento.numAtletasMujeres || 0)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <p className="text-[12px] font-semibold uppercase">Requerimientos</p>
+            <table className="mt-1 w-full border-collapse text-[11px]">
+              <thead>
+                <tr>
+                  <th className="w-10 border border-slate-400 px-2 py-1 text-left">
+                    N.º
+                  </th>
+                  <th className="border border-slate-400 px-2 py-1 text-left">RUBRO</th>
+                  <th className="w-28 border border-slate-400 px-2 py-1 text-right">
+                    VALOR
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {presupuestoItems.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={3}
+                      className="border border-slate-400 px-2 py-2 text-slate-500"
+                    >
+                      Sin items presupuestarios en este evento.
+                    </td>
+                  </tr>
+                ) : (
+                  presupuestoItems.map((item, index) => (
+                    <tr key={item.id}>
+                      <td className="border border-slate-400 px-2 py-1">
+                        {index + 1}
+                      </td>
+                      <td className="border border-slate-400 px-2 py-1">
+                        {item.item.nombre}
+                      </td>
+                      <td className="border border-slate-400 px-2 py-1 text-right">
+                        {formatMoneda(item.presupuesto)}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <table className="w-full border-collapse text-[11px]">
+            <tbody>
+              <tr>
+                <td className="w-20 border border-slate-400 px-2 py-1 font-semibold uppercase">
+                  Salida
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="font-semibold">Dia/fecha:</span>
+                    <span className="font-semibold">Hora:</span>
+                    <span className="font-semibold">Transporte</span>
+                    <span>{formatLogisticaFecha(formData.fechaHoraSalida)}</span>
+                    <span>{formatLogisticaHora(formData.fechaHoraSalida)}</span>
+                    <span>{formatTransporte(formData.transporteSalida)}</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td className="w-20 border border-slate-400 px-2 py-1 font-semibold uppercase">
+                  Retorno
+                </td>
+                <td className="border border-slate-400 px-2 py-1">
+                  <div className="grid grid-cols-3 gap-2">
+                    <span className="font-semibold">Dia/fecha:</span>
+                    <span className="font-semibold">Hora:</span>
+                    <span className="font-semibold">Transporte</span>
+                    <span>{formatLogisticaFecha(formData.fechaHoraRetorno)}</span>
+                    <span>{formatLogisticaHora(formData.fechaHoraRetorno)}</span>
+                    <span>{formatTransporte(formData.transporteRetorno)}</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="text-[12px]">
+            <p className="font-semibold uppercase">Observacion:</p>
+            <p className="mt-1 min-h-6">
+              {formData.observaciones?.trim() || "-"}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FileText, DollarSign, Info } from "lucide-react";
 import { formatCurrency } from "@/lib/utils/formatters";
 import { useRouter } from "next/navigation";
@@ -22,6 +22,7 @@ type FormData = {
 type Paso04PresupuestoProps = {
   formData: FormData;
   onComplete: (data: Partial<FormData>) => void;
+  onPreviewChange?: (data: Partial<FormData>) => void;
   onBack: () => void;
   avalId: number;
   aval: Aval;
@@ -30,6 +31,7 @@ type Paso04PresupuestoProps = {
 export default function Paso04Presupuesto({
   formData,
   onBack,
+  onPreviewChange,
   avalId,
   aval,
 }: Paso04PresupuestoProps) {
@@ -39,6 +41,10 @@ export default function Paso04Presupuesto({
   );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    onPreviewChange?.({ observaciones });
+  }, [observaciones, onPreviewChange]);
 
   // Obtener los items de presupuesto del evento asociado
   const presupuestoItems = aval.evento?.presupuesto || [];

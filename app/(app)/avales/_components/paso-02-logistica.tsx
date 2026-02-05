@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plane, Bus, Car, Ship, Calendar, Clock } from "lucide-react";
 
 type FormData = {
@@ -18,6 +18,7 @@ type FormData = {
 type Paso02LogisticaProps = {
   formData: FormData;
   onComplete: (data: Partial<FormData>) => void;
+  onPreviewChange?: (data: Partial<FormData>) => void;
   onBack: () => void;
 };
 
@@ -32,6 +33,7 @@ const TRANSPORT_OPTIONS = [
 export default function Paso02Logistica({
   formData,
   onComplete,
+  onPreviewChange,
   onBack,
 }: Paso02LogisticaProps) {
   const [fechaHoraSalida, setFechaHoraSalida] = useState(
@@ -47,6 +49,21 @@ export default function Paso02Logistica({
     formData.transporteRetorno || ""
   );
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    onPreviewChange?.({
+      fechaHoraSalida,
+      fechaHoraRetorno,
+      transporteSalida,
+      transporteRetorno,
+    });
+  }, [
+    fechaHoraSalida,
+    fechaHoraRetorno,
+    transporteSalida,
+    transporteRetorno,
+    onPreviewChange,
+  ]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

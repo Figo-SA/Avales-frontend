@@ -82,7 +82,9 @@ export default function AvalesPage() {
     user?.roles?.some((role) => role === "CONTROL_PREVIO") ?? false;
   const isSecretaria =
     user?.roles?.some((role) => role === "SECRETARIA") ?? false;
-  const isReviewer = isDTM || isMetodologo || isPda;
+  const isComprasPublicas =
+    user?.roles?.some((role) => role === "COMPRAS_PUBLICAS") ?? false;
+  const isReviewer = isDTM || isMetodologo || isPda || isComprasPublicas;
 
   useEffect(() => {
     if (page === currentPage) return;
@@ -99,10 +101,12 @@ export default function AvalesPage() {
       const defaultEtapa: EtapaFlujo | undefined = isMetodologo
         ? "SOLICITUD"
         : isDTM
-        ? "REVISION_METODOLOGO"
-        : isPda
-        ? "REVISION_DTM"
-        : undefined;
+          ? "REVISION_METODOLOGO"
+          : isPda
+            ? "REVISION_DTM"
+            : isComprasPublicas
+              ? "CONTROL_PREVIO"
+              : undefined;
       const efectivoEstado = estado || defaultEstado;
       const efectivoEtapa = etapa || defaultEtapa;
 
@@ -113,6 +117,16 @@ export default function AvalesPage() {
         etapa: efectivoEtapa ? (efectivoEtapa as EtapaFlujo) : undefined,
         search: search.trim() || undefined,
       };
+
+      console.log("Fetching avales with options:", options, {
+        isReviewer,
+        isMetodologo,
+        isDTM,
+        isPda,
+        isComprasPublicas,
+        efectivoEstado,
+        efectivoEtapa,
+      });
 
       const res = await listAvales(options);
       const items = res.data ?? [];
@@ -147,6 +161,7 @@ export default function AvalesPage() {
     isMetodologo,
     isDTM,
     isPda,
+    isComprasPublicas,
   ]);
 
   useEffect(() => {
@@ -265,6 +280,7 @@ export default function AvalesPage() {
               !isControlPrevio &&
               !isMetodologo &&
               !isDTM &&
+              !isComprasPublicas &&
               !isSecretaria &&
               (hasDisciplina ? (
                 <Link
@@ -293,36 +309,37 @@ export default function AvalesPage() {
           !isControlPrevio &&
           !isMetodologo &&
           !isDTM &&
+          !isComprasPublicas &&
           !isSecretaria && (
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-amber-600 dark:text-amber-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                  Disciplina requerida
-                </h3>
-                <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                  No tienes una disciplina asignada. Para poder crear avales,
-                  debes tener una disciplina asociada a tu cuenta. Por favor,
-                  contacta con el administrador para que te asigne una
-                  disciplina.
-                </p>
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="w-5 h-5 text-amber-600 dark:text-amber-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    Disciplina requerida
+                  </h3>
+                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                    No tienes una disciplina asignada. Para poder crear avales,
+                    debes tener una disciplina asociada a tu cuenta. Por favor,
+                    contacta con el administrador para que te asigne una
+                    disciplina.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
         <AvalListCard
           avales={avales}
