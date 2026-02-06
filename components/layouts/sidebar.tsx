@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useAppProvider } from "@/app/providers/app-provider";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { useWindowWidth } from "@/components/utils/use-window-width";
@@ -28,15 +28,16 @@ export default function Sidebar({
   const expandOnly =
     !sidebarExpanded && breakpoint && breakpoint >= 1024 && breakpoint < 1536;
   const { user, loading } = useAuth();
-  if (loading || !user) return null;
-
-  if (!canSeeSidebar(user, ROLES_WITHOUT_SIDEBAR)) return null;
-
-  const items = filterSidebarItems(SIDEBAR_ITEMS, user);
-  if (items.length === 0) return null;
+  const items = user ? filterSidebarItems(SIDEBAR_ITEMS, user) : [];
+  const shouldRender =
+    !loading &&
+    Boolean(user) &&
+    canSeeSidebar(user, ROLES_WITHOUT_SIDEBAR) &&
+    items.length > 0;
 
   // close on click outside
   useEffect(() => {
+    if (!shouldRender) return;
     const clickHandler = ({ target }: { target: EventTarget | null }): void => {
       if (!sidebar.current) return;
       if (!sidebarOpen || sidebar.current.contains(target as Node)) return;
@@ -44,17 +45,20 @@ export default function Sidebar({
     };
     document.addEventListener("click", clickHandler);
     return () => document.removeEventListener("click", clickHandler);
-  });
+  }, [shouldRender, sidebarOpen, setSidebarOpen]);
 
   // close if the esc key is pressed
   useEffect(() => {
+    if (!shouldRender) return;
     const keyHandler = ({ keyCode }: { keyCode: number }): void => {
       if (!sidebarOpen || keyCode !== 27) return;
       setSidebarOpen(false);
     };
     document.addEventListener("keydown", keyHandler);
     return () => document.removeEventListener("keydown", keyHandler);
-  });
+  }, [shouldRender, sidebarOpen, setSidebarOpen]);
+
+  if (!shouldRender) return null;
 
   return (
     <div className={`min-w-fit ${sidebarExpanded ? "sidebar-expanded" : ""}`}>
@@ -136,9 +140,11 @@ export default function Sidebar({
                             }`}
                             onClick={(e) => {
                               e.preventDefault();
-                              expandOnly
-                                ? setSidebarExpanded(true)
-                                : handleClick();
+                              if (expandOnly) {
+                                setSidebarExpanded(true);
+                                return;
+                              }
+                              handleClick();
                             }}
                           >
                             <div className="flex items-center justify-between">

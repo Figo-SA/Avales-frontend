@@ -12,7 +12,10 @@ export function formatDate(value?: string | null): string {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return date.toLocaleDateString();
+  const month = date.toLocaleDateString("es-EC", { month: "long" });
+  const day = date.getDate();
+  const year = date.getFullYear();
+  return `${month} ${day} del ${year}`;
 }
 
 /**

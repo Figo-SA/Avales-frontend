@@ -352,6 +352,7 @@ export default function AvalesPage() {
           isAdmin={isAdmin}
           isSecretaria={isSecretaria}
           isPda={isPda}
+          isMetodologo={isMetodologo}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">

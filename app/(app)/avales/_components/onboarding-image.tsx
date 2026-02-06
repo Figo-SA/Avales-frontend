@@ -22,6 +22,7 @@ type FormData = {
 type OnboardingImageProps = {
   aval: Aval;
   formData: FormData;
+  mode?: "all" | "nomina" | "solicitud";
 };
 
 const TRANSPORTE_LABELS: Record<string, string> = {
@@ -98,7 +99,13 @@ function formatMoneda(value?: string) {
   }).format(parsed);
 }
 
-export default function OnboardingImage({ aval, formData }: OnboardingImageProps) {
+export type AvalPreviewFormData = FormData;
+
+export default function OnboardingImage({
+  aval,
+  formData,
+  mode = "all",
+}: OnboardingImageProps) {
   const evento = aval.evento;
   const presupuestoItems = evento?.presupuesto ?? [];
   const entrenadorResponsable = formData.entrenadores[0]?.nombre ?? "POR DEFINIR";
@@ -114,10 +121,13 @@ export default function OnboardingImage({ aval, formData }: OnboardingImageProps
     formData.objetivos.length > 0 ||
     formData.criterios.length > 0 ||
     Boolean(formData.observaciones?.trim());
+  const showNomina = mode !== "solicitud";
+  const showSolicitud = mode !== "nomina" && (showDetallePage || mode === "solicitud");
 
   return (
     <div className="w-full space-y-6 text-slate-900">
-      <div className="bg-white p-5 xl:p-6 border border-slate-300">
+      {showNomina && (
+        <div className="bg-white p-5 xl:p-6 border border-slate-300">
         <p className="text-[13px] leading-5">
           Por medio de la presente me permito dirigirme a usted, para extender
           mi cordial saludo y desear lo mejor al frente de las actividades
@@ -258,8 +268,9 @@ export default function OnboardingImage({ aval, formData }: OnboardingImageProps
           </table>
         </div>
       </div>
+      )}
 
-      {showDetallePage && (
+      {showSolicitud && (
         <div className="bg-white p-5 xl:p-6 border border-slate-300 space-y-4">
           <h2 className="text-center text-[18px] font-semibold uppercase">
             Aval tecnico de participacion competitiva
@@ -523,4 +534,24 @@ export default function OnboardingImage({ aval, formData }: OnboardingImageProps
       )}
     </div>
   );
+}
+
+export function ListaDeportistasPreview({
+  aval,
+  formData,
+}: {
+  aval: Aval;
+  formData: FormData;
+}) {
+  return <OnboardingImage aval={aval} formData={formData} mode="nomina" />;
+}
+
+export function SolicitudAvalPreview({
+  aval,
+  formData,
+}: {
+  aval: Aval;
+  formData: FormData;
+}) {
+  return <OnboardingImage aval={aval} formData={formData} mode="solicitud" />;
 }

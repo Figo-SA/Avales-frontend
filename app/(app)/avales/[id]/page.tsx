@@ -260,14 +260,12 @@ export default function AvalDetailPage() {
   const showMetodologoPanel =
     userRoles.includes("METODOLOGO") && isMetodologoStage;
   const showDtmPanel = userRoles.includes("DTM") && isDtmStage;
-  const showPdaPanel = userRoles.includes("PDA") && isPdaStage;
   const showControlPrevioPanel =
     userRoles.includes("CONTROL_PREVIO") && isControlPrevioStage;
   const showApprovalPanel =
     aval?.estado === "SOLICITADO" &&
     (showMetodologoPanel ||
       showDtmPanel ||
-      showPdaPanel ||
       showControlPrevioPanel ||
       showFinancieroPanel);
 

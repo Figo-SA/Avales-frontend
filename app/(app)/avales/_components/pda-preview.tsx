@@ -2,6 +2,7 @@ import type { Aval, EntrenadorAval } from "@/types/aval";
 import { formatDate, formatLocationWithProvince } from "@/lib/utils/formatters";
 
 export type PdaDraft = {
+  descripcion: string;
   numeroPda: string;
   numeroAval: string;
   codigoActividad: string;
@@ -84,6 +85,8 @@ export default function PdaPreview({ aval, draft }: Props) {
     return acc + (Number.isNaN(value) ? 0 : value);
   }, 0);
 
+  const participantesLabel = `ENTRENADOR ${participantesEntrenadores} - DEPORTISTAS ${participantesDeportistas}`;
+
   return (
     <div className="bg-white border border-slate-300 p-6 text-slate-900">
       <div className="text-right text-sm leading-5">
@@ -94,6 +97,16 @@ export default function PdaPreview({ aval, draft }: Props) {
       <h2 className="text-center text-xl font-bold mt-4 mb-6">
         CERTIFICACION EVENTOS PDA 2026
       </h2>
+
+      <div className="mb-4 text-[13px] leading-5">
+        {draft.descripcion?.trim() ? (
+          <p>{draft.descripcion}</p>
+        ) : (
+          <p className="text-slate-500">
+            Agrega la descripcion del certificado.
+          </p>
+        )}
+      </div>
 
       <table className="w-full border-collapse text-[13px]">
         <tbody>
@@ -111,9 +124,7 @@ export default function PdaPreview({ aval, draft }: Props) {
           </tr>
           <tr>
             <td className="border border-slate-400 px-2 py-1 font-semibold">NRO. PARTICIPANTES</td>
-            <td className="border border-slate-400 px-2 py-1">
-              ENTRENADOR {participantesEntrenadores} - DEPORTISTAS {participantesDeportistas}
-            </td>
+            <td className="border border-slate-400 px-2 py-1">{participantesLabel}</td>
           </tr>
           <tr>
             <td className="border border-slate-400 px-2 py-1 font-semibold">CATEGORIA</td>
@@ -178,10 +189,10 @@ export default function PdaPreview({ aval, draft }: Props) {
               </td>
             </tr>
           ) : (
-            presupuestoItems.map((item, index) => (
+            presupuestoItems.map((item) => (
               <tr key={item.id}>
                 <td className="border border-slate-400 px-2 py-1 text-center">
-                  {index === 0 ? draft.codigoActividad || "-" : ""}
+                  {draft.codigoActividad || "-"}
                 </td>
                 <td className="border border-slate-400 px-2 py-1">EVENTOS DE PREPARACION Y COMPETENCIA</td>
                 <td className="border border-slate-400 px-2 py-1">{item.item?.numero ?? "-"}</td>

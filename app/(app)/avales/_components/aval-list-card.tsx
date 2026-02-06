@@ -32,6 +32,7 @@ type Props = {
   isAdmin?: boolean;
   isSecretaria?: boolean;
   isPda?: boolean;
+  isMetodologo?: boolean;
 };
 
 const STATUS_ICONS: Record<string, typeof Clock> = {
@@ -54,6 +55,7 @@ export default function AvalListCard({
   isAdmin = false,
   isSecretaria = false,
   isPda = false,
+  isMetodologo = false,
 }: Props) {
   if (loading) {
     return (
@@ -222,11 +224,20 @@ export default function AvalListCard({
                     </Link>
                     {isPda && (
                       <Link
-                        href={`/avales/${aval.id}/certificar`}
+                        href={`/avales/${aval.id}/certificar-pda`}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-cyan-600 text-white hover:bg-cyan-700 transition-colors"
                       >
                         <Stamp className="w-4 h-4" />
                         Certificar
+                      </Link>
+                    )}
+                    {isMetodologo && (
+                      <Link
+                        href={`/avales/${aval.id}`}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Revisar
                       </Link>
                     )}
                   </>
