@@ -14,6 +14,11 @@ export function proxy(req: NextRequest) {
   //   return NextResponse.next();
   // }
 
+  // Ignorar rutas de API (dejarlas pasar al backend/proxy)
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
   // ====== Auth (cookie HttpOnly "token") ======
   const token = req.cookies.get("token")?.value;
 
