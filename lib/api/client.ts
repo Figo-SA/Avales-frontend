@@ -19,8 +19,14 @@ export class ApiError extends Error {
 }
 
 function getApiUrl() {
+  // En el cliente (browser), forzamos el uso del proxy local para manejar cookies HttpOnly correctamente
+  if (typeof window !== "undefined") {
+    return "/api/v1";
+  }
+
+  // En el servidor (SSR), usamos la URL completa
   const url = process.env.NEXT_PUBLIC_API_URL;
-  if (!url) throw new Error("Falta NEXT_PUBLIC_API_URL");
+  if (!url) return "http://localhost:3000/api/v1"; // Fallback seguro para build
   return url;
 }
 
