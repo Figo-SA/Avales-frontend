@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getAval } from "@/lib/api/avales";
 import type { Aval } from "@/types/aval";
-import OnboardingImage from "@/app/(app)/avales/_components/onboarding-image";
+import AvalDocumentPreview from "@/app/(app)/avales/_components/aval-document-preview";
 import Paso01Deportistas from "@/app/(app)/avales/_components/paso-01-deportistas";
 import Paso02Logistica from "@/app/(app)/avales/_components/paso-02-logistica";
 import Paso03Objetivos from "@/app/(app)/avales/_components/paso-03-objetivos";
@@ -21,12 +21,15 @@ type FormData = {
     cedula?: string;
     fechaNacimiento?: string;
     observacion?: string;
+    rol?: string;
   }>;
   entrenadores: Array<{ id: number; nombre: string }>;
 
   // Paso 2: Logística
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida: string;
+  lugarRetorno: string;
   transporteSalida: string;
   transporteRetorno: string;
 
@@ -43,6 +46,8 @@ const INITIAL_FORM_DATA: FormData = {
   entrenadores: [],
   fechaHoraSalida: "",
   fechaHoraRetorno: "",
+  lugarSalida: "",
+  lugarRetorno: "",
   transporteSalida: "",
   transporteRetorno: "",
   objetivos: [],
@@ -238,7 +243,7 @@ export default function CrearSolicitudPage() {
       {/* Right Panel - Documento */}
       <div className="hidden lg:block lg:w-1/2 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
         <div className="p-6 xl:p-8">
-          <OnboardingImage
+          <AvalDocumentPreview
             aval={aval}
             formData={formData}
           />

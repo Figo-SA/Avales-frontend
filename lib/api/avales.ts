@@ -106,6 +106,28 @@ export async function downloadPdaPdf(id: number) {
   });
 }
 
+export type CreatePdaItemPayload = {
+  itemId: number;
+  presupuesto: number;
+};
+
+export type CreatePdaPayload = {
+  descripcion: string;
+  numeroPda?: string;
+  numeroAval?: string;
+  codigoActividad?: string;
+  nombreFirmante?: string;
+  cargoFirmante?: string;
+  items?: CreatePdaItemPayload[];
+};
+
+export async function createPda(id: number, payload: CreatePdaPayload) {
+  return apiFetch<Aval>(`/avales/${id}/pda`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function aprobarAval(
   id: number,
   usuarioId: number,

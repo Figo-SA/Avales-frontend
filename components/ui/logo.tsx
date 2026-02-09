@@ -10,7 +10,7 @@ export default function Logo() {
         width={32}
         height={30}
         priority // For above-the-fold logos
-        className="w-8 h-8" // Optional: Tailwind classes for responsive sizing
+        className="w-8 h-8 object-cover" // Optional: Tailwind classes for responsive sizing
       />
     </Link>
   );

@@ -113,6 +113,8 @@ export type AvalTecnico = {
   archivo?: string | null;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida?: string | null;
+  lugarRetorno?: string | null;
   transporteSalida: string;
   transporteRetorno: string;
   entrenadores: number;
@@ -193,6 +195,8 @@ export type CreateAvalPayload = {
   coleccionAvalId: number;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida: string;
+  lugarRetorno: string;
   transporteSalida: string;
   transporteRetorno: string;
   objetivos: ObjetivoDto[];

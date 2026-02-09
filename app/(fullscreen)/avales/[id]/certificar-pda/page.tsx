@@ -5,14 +5,14 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/app/providers/auth-provider";
-import { aprobarAval, getAval, rechazarAval } from "@/lib/api/avales";
+import { aprobarAval, createPda, getAval, rechazarAval } from "@/lib/api/avales";
 import type { Aval, EtapaFlujo } from "@/types/aval";
 import { formatDate } from "@/lib/utils/formatters";
 import {
   ListaDeportistasPreview,
   SolicitudAvalPreview,
   type AvalPreviewFormData,
-} from "@/app/(app)/avales/_components/onboarding-image";
+} from "@/app/(app)/avales/_components/aval-document-preview";
 import PdaPreview, { type PdaDraft } from "@/app/(app)/avales/_components/pda-preview";
 import ApprovalFlowCard from "@/app/(app)/avales/_components/approval-flow-card";
 import AlertBanner from "@/components/ui/alert-banner";
@@ -33,6 +33,8 @@ const EMPTY_DOCS_DATA: AvalPreviewFormData = {
   entrenadores: [],
   fechaHoraSalida: "",
   fechaHoraRetorno: "",
+  lugarSalida: "",
+  lugarRetorno: "",
   transporteSalida: "",
   transporteRetorno: "",
   objetivos: [],
@@ -55,6 +57,7 @@ function buildTrainerDocsData(aval: Aval): AvalPreviewFormData {
       cedula: item.deportista?.cedula ?? undefined,
       fechaNacimiento: withExtras.deportista?.fechaNacimiento ?? undefined,
       observacion: withExtras.observacion ?? undefined,
+      rol: item.rol ?? undefined,
     };
   });
 
@@ -89,6 +92,8 @@ function buildTrainerDocsData(aval: Aval): AvalPreviewFormData {
     entrenadores,
     fechaHoraSalida: tecnico?.fechaHoraSalida ?? "",
     fechaHoraRetorno: tecnico?.fechaHoraRetorno ?? "",
+    lugarSalida: tecnico?.lugarSalida ?? "",
+    lugarRetorno: tecnico?.lugarRetorno ?? "",
     transporteSalida: tecnico?.transporteSalida ?? "",
     transporteRetorno: tecnico?.transporteRetorno ?? "",
     objetivos: [...(tecnico?.objetivos ?? [])]
@@ -152,18 +157,6 @@ function validatePdaDraft(draft: PdaDraft): string | null {
   if (draft.descripcion.includes("[NOMBRE PRESIDENTE]")) {
     return "La descripción aún contiene [NOMBRE PRESIDENTE]. Debes reemplazarlo.";
   }
-  if (!draft.numeroPda.trim()) {
-    return "El número PDA es obligatorio.";
-  }
-  if (!draft.numeroAval.trim()) {
-    return "El número de aval es obligatorio.";
-  }
-  if (!draft.nombreFirmante.trim()) {
-    return "El nombre del firmante es obligatorio.";
-  }
-  if (!draft.cargoFirmante.trim()) {
-    return "El cargo del firmante es obligatorio.";
-  }
   return null;
 }
 
@@ -186,6 +179,12 @@ export default function CertificarAvalPage() {
   const [draft, setDraft] = useState<PdaDraft>(INITIAL_PDA_DRAFT);
 
   const isPda = user?.roles?.includes("PDA") ?? false;
+
+  useEffect(() => {
+    setDraft(INITIAL_PDA_DRAFT);
+    setRechazoMotivo("");
+    setActionError(null);
+  }, [avalId]);
 
   const loadAval = useCallback(async () => {
     if (!avalId || Number.isNaN(avalId)) {
@@ -231,7 +230,8 @@ export default function CertificarAvalPage() {
   const currentEtapa = (etapaActualResponse ??
     etapaActualHistorial ??
     "SOLICITUD") as EtapaFlujo;
-  const isEditable = aval?.estado === "SOLICITADO" && currentEtapa === "PDA";
+  const isEditable =
+    aval?.estado === "SOLICITADO" && currentEtapa === "SOLICITUD";
   const nextEtapa = getNextApprovalStage(currentEtapa);
   const approvalEtapa = nextEtapa ?? currentEtapa;
   const currentStageLabel = getApprovalStageLabel(currentEtapa);
@@ -260,12 +260,35 @@ export default function CertificarAvalPage() {
     setActionError(null);
     setActionLoading(true);
     try {
+      const items =
+        aval.evento?.presupuesto
+          ?.map((item) => ({
+            itemId: item.item?.id ?? 0,
+            presupuesto: Number.parseFloat(item.presupuesto ?? "0"),
+          }))
+          .filter(
+            (item) => Number.isFinite(item.presupuesto) && item.itemId > 0,
+          ) ?? [];
+
+      const pdaPayload = {
+        descripcion: draft.descripcion.trim(),
+        numeroPda: draft.numeroPda?.trim() || undefined,
+        numeroAval: draft.numeroAval?.trim() || undefined,
+        codigoActividad: draft.codigoActividad?.trim() || "005",
+        nombreFirmante: draft.nombreFirmante?.trim() || undefined,
+        cargoFirmante: draft.cargoFirmante?.trim() || undefined,
+        items,
+      };
+
+      await createPda(aval.id, pdaPayload);
       await aprobarAval(aval.id, user.id, approvalEtapa);
       setToast({ variant: "success", message: "PDA aprobado correctamente." });
       await loadAval();
     } catch (err: unknown) {
       setActionError(
-        err instanceof Error ? err.message : "No se pudo aprobar el PDA.",
+        err instanceof Error
+          ? err.message
+          : "No se pudo crear o aprobar el PDA.",
       );
     } finally {
       setActionLoading(false);

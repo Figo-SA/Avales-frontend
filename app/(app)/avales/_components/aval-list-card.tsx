@@ -233,7 +233,7 @@ export default function AvalListCard({
                     )}
                     {isMetodologo && (
                       <Link
-                        href={`/avales/${aval.id}`}
+                        href={`/avales/${aval.id}/revision-metodologo`}
                         className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 transition-colors"
                       >
                         <Eye className="w-4 h-4" />

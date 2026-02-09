@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Plus, X, Target, CheckCircle } from "lucide-react";
 
 type FormData = {
-  deportistas: Array<{ id: number; nombre: string }>;
+  deportistas: Array<{ id: number; nombre: string; rol?: string }>;
   entrenadores: Array<{ id: number; nombre: string }>;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida: string;
+  lugarRetorno: string;
   transporteSalida: string;
   transporteRetorno: string;
   objetivos: string[];
@@ -28,14 +30,40 @@ export default function Paso03Objetivos({
   onPreviewChange,
   onBack,
 }: Paso03ObjetivosProps) {
+  const CRITERIOS_OPTIONS = useMemo(
+    () => [
+      "Asistencia a selectivos",
+      "Asistencia a chequeos técnicos",
+      "Asistencia a entrenamientos mínimo 90%",
+      "Ubicación en el ranking nacional",
+      "Participación en competencias nacionales",
+      "Convocatoria de la federación",
+      "Cumplimiento de marcas mínimas",
+    ],
+    []
+  );
+  const criteriosOptionsSet = useMemo(
+    () => new Set(CRITERIOS_OPTIONS),
+    [CRITERIOS_OPTIONS]
+  );
+
   const [objetivos, setObjetivos] = useState<string[]>(
     formData.objetivos || []
   );
   const [criterios, setCriterios] = useState<string[]>(
     formData.criterios || []
   );
+  const [otroCriterioEnabled, setOtroCriterioEnabled] = useState(() =>
+    (formData.criterios || []).some((c) => !criteriosOptionsSet.has(c))
+  );
+  const [otroCriterio, setOtroCriterio] = useState("");
+  const [otrosCriterios, setOtrosCriterios] = useState<string[]>(() => {
+    const custom = (formData.criterios || []).filter(
+      (c) => !criteriosOptionsSet.has(c)
+    );
+    return custom;
+  });
   const [newObjetivo, setNewObjetivo] = useState("");
-  const [newCriterio, setNewCriterio] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -63,22 +91,11 @@ export default function Paso03Objetivos({
     setObjetivos(objetivos.filter((_, i) => i !== index));
   };
 
-  const handleAddCriterio = () => {
-    const trimmed = newCriterio.trim();
-    if (!trimmed) return;
-
-    if (criterios.includes(trimmed)) {
-      setError("Este criterio ya fue agregado");
-      return;
-    }
-
-    setCriterios([...criterios, trimmed]);
-    setNewCriterio("");
-    setError(null);
-  };
-
-  const handleRemoveCriterio = (index: number) => {
-    setCriterios(criterios.filter((_, i) => i !== index));
+  const buildOrderedCriterios = (items: string[]) => {
+    const ordered = CRITERIOS_OPTIONS.filter((item) => items.includes(item));
+    const customItems = items.filter((item) => !criteriosOptionsSet.has(item));
+    ordered.push(...customItems);
+    return ordered;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -90,7 +107,7 @@ export default function Paso03Objetivos({
     }
 
     if (criterios.length === 0) {
-      setError("Debes agregar al menos un criterio de evaluación");
+      setError("Debes agregar al menos un criterio de selección");
       return;
     }
 
@@ -107,11 +124,52 @@ export default function Paso03Objetivos({
     }
   };
 
-  const handleKeyDownCriterio = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddCriterio();
+  const handleToggleCriterio = (criterio: string) => {
+    setCriterios((prev) => {
+      const next = prev.includes(criterio)
+        ? prev.filter((item) => item !== criterio)
+        : [...prev, criterio];
+      return buildOrderedCriterios(next);
+    });
+    setError(null);
+  };
+
+  const handleToggleOtro = (checked: boolean) => {
+    setOtroCriterioEnabled(checked);
+    if (!checked) {
+      setOtroCriterio("");
+      setOtrosCriterios([]);
+      setCriterios((prev) =>
+        buildOrderedCriterios(
+          prev.filter((item) => criteriosOptionsSet.has(item))
+        )
+      );
     }
+  };
+
+  const syncCustomCriterios = (customItems: string[]) => {
+    const base = criterios.filter((item) => criteriosOptionsSet.has(item));
+    setCriterios(buildOrderedCriterios([...base, ...customItems]));
+    setError(null);
+  };
+
+  const handleOtroCriterioAdd = () => {
+    const trimmed = otroCriterio.trim();
+    if (!trimmed) return;
+    if (criterios.includes(trimmed)) {
+      setError("Este criterio ya fue agregado");
+      return;
+    }
+    const next = [...otrosCriterios, trimmed];
+    setOtrosCriterios(next);
+    syncCustomCriterios(next);
+    setOtroCriterio("");
+  };
+
+  const handleOtroCriterioRemove = (value: string) => {
+    const next = otrosCriterios.filter((item) => item !== value);
+    setOtrosCriterios(next);
+    syncCustomCriterios(next);
   };
 
   return (
@@ -120,7 +178,7 @@ export default function Paso03Objetivos({
         Objetivos y Criterios
       </h1>
       <p className="text-gray-600 dark:text-gray-400 mb-6">
-        Define los objetivos del evento y los criterios de evaluación del desempeño.
+        Define los objetivos del evento y los criterios de selección del desempeño.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -196,28 +254,85 @@ export default function Paso03Objetivos({
           <div className="flex items-center gap-2 mb-4">
             <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              Criterios de evaluación
+              Criterios de selección
             </h3>
           </div>
 
           <div className="space-y-3">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newCriterio}
-                onChange={(e) => setNewCriterio(e.target.value)}
-                onKeyDown={handleKeyDownCriterio}
-                placeholder="Ej: Obtener medalla de oro o plata..."
-                className="form-input flex-1"
-              />
-              <button
-                type="button"
-                onClick={handleAddCriterio}
-                disabled={!newCriterio.trim()}
-                className="btn bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-5 h-5" />
-              </button>
+            <div className="space-y-2">
+              {CRITERIOS_OPTIONS.map((criterio) => {
+                const checked = criterios.includes(criterio);
+                return (
+                  <label
+                    key={criterio}
+                    className="flex items-start gap-2 rounded-lg border border-green-200 dark:border-green-800 bg-white dark:bg-green-900/20 px-3 py-2 text-sm text-gray-800 dark:text-gray-100"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1"
+                      checked={checked}
+                      onChange={() => handleToggleCriterio(criterio)}
+                    />
+                    <span>{criterio}</span>
+                  </label>
+                );
+              })}
+
+              <div className="rounded-lg border border-dashed border-green-200 dark:border-green-800 bg-white/70 dark:bg-green-900/10 px-3 py-2">
+                <label className="flex items-start gap-2 text-sm text-gray-800 dark:text-gray-100">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={otroCriterioEnabled}
+                    onChange={(e) => handleToggleOtro(e.target.checked)}
+                  />
+                  <span>Otro</span>
+                </label>
+                {otroCriterioEnabled && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={otroCriterio}
+                        onChange={(e) => setOtroCriterio(e.target.value)}
+                        placeholder="Escribe otro criterio de selección..."
+                        className="form-input flex-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleOtroCriterioAdd}
+                        disabled={!otroCriterio.trim()}
+                        className="btn bg-green-500 hover:bg-green-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    </div>
+                    {otrosCriterios.length > 0 && (
+                      <div className="space-y-2">
+                        {otrosCriterios.map((item) => (
+                          <div
+                            key={item}
+                            className="flex items-start gap-3 bg-white dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-700"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-800 dark:text-gray-200">
+                                {item}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleOtroCriterioRemove(item)}
+                              className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 p-1"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {criterios.length > 0 && (
@@ -239,7 +354,13 @@ export default function Paso03Objetivos({
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleRemoveCriterio(index)}
+                        onClick={() => {
+                          if (criteriosOptionsSet.has(criterio)) {
+                            handleToggleCriterio(criterio);
+                            return;
+                          }
+                          handleOtroCriterioRemove(criterio);
+                        }}
                         className="text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 p-1"
                       >
                         <X className="w-5 h-5" />

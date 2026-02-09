@@ -23,7 +23,7 @@ export default function UploadModal({
   onUpload,
   title = "Subir documentos obligatorios",
   description = "Sube la convocatoria y el certificado médico para crear el borrador del aval.",
-  acceptedTypes = ".pdf,.doc,.docx",
+  acceptedTypes = ".pdf",
 }: UploadModalProps) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +50,19 @@ export default function UploadModal({
   ) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      const isPdf =
+        file.type === "application/pdf" ||
+        file.name.toLowerCase().endsWith(".pdf");
+      if (!isPdf) {
+        setError("Solo se permiten archivos PDF.");
+        if (type === "convocatoria") {
+          setConvocatoriaFile(null);
+        } else {
+          setCertificadoMedicoFile(null);
+        }
+        e.currentTarget.value = "";
+        return;
+      }
       if (type === "convocatoria") {
         setConvocatoriaFile(file);
       } else {
@@ -159,7 +172,7 @@ export default function UploadModal({
                       Subir convocatoria
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PDF, DOC o DOCX
+                      PDF
                     </p>
                   </>
                 )}
@@ -201,7 +214,7 @@ export default function UploadModal({
                       Subir certificado medico
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      PDF, DOC o DOCX
+                      PDF
                     </p>
                   </>
                 )}
@@ -210,7 +223,7 @@ export default function UploadModal({
 
             {/* Supported types */}
             <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-              Archivos soportados: PDF, DOC, DOCX
+              Archivos soportados: PDF
             </p>
 
             {/* Error */}

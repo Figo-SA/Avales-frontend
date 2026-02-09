@@ -19,10 +19,13 @@ type FormData = {
     cedula?: string;
     fechaNacimiento?: string;
     observacion?: string;
+    rol?: string;
   }>;
   entrenadores: Array<{ id: number; nombre: string }>;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida: string;
+  lugarRetorno: string;
   transporteSalida: string;
   transporteRetorno: string;
   objetivos: string[];
@@ -38,8 +41,12 @@ type Paso01DeportistasProps = {
   onBack: () => void;
 };
 
-type SelectedDeportista = Deportista;
+type SelectedDeportista = Deportista & { rol?: string };
 type SelectedEntrenador = User;
+
+const DEPORTISTA_ROLE_OPTIONS = [
+  { value: "ATLETA", label: "Atleta" },
+];
 
 export default function Paso01Deportistas({
   formData,
@@ -90,17 +97,30 @@ export default function Paso01Deportistas({
   const [selectedEntrenadoresMujeres, setSelectedEntrenadoresMujeres] =
     useState<SelectedEntrenador[]>([]);
 
+  const [principalEntrenadorId, setPrincipalEntrenadorId] = useState<
+    number | null
+  >(null);
+
   const [error, setError] = useState<string | null>(null);
+
+  const getAllEntrenadores = useCallback(
+    () => [...selectedEntrenadoresHombres, ...selectedEntrenadoresMujeres],
+    [selectedEntrenadoresHombres, selectedEntrenadoresMujeres]
+  );
 
   const buildSelectedData = useCallback(() => {
     const allDeportistas = [
       ...selectedDeportistasHombres,
       ...selectedDeportistasMujeres,
     ];
-    const allEntrenadores = [
-      ...selectedEntrenadoresHombres,
-      ...selectedEntrenadoresMujeres,
-    ];
+    const allEntrenadores = getAllEntrenadores();
+    const principal =
+      principalEntrenadorId != null
+        ? allEntrenadores.find((e) => e.id === principalEntrenadorId)
+        : undefined;
+    const orderedEntrenadores = principal
+      ? [principal, ...allEntrenadores.filter((e) => e.id !== principal.id)]
+      : allEntrenadores;
 
     const deportistasData = allDeportistas.map((d) => ({
       id: d.id,
@@ -108,22 +128,21 @@ export default function Paso01Deportistas({
       cedula: d.cedula,
       fechaNacimiento: d.fechaNacimiento,
       observacion: d.afiliacion ? "AFILIADO/A 2024" : "SIN AFILIACION",
-    }));
-
-    const entrenadoresData = allEntrenadores.map((e) => ({
-      id: e.id,
-      nombre: `${e.nombre} ${e.apellido}`,
+      rol: d.rol ?? "ATLETA",
     }));
 
     return {
       deportistas: deportistasData,
-      entrenadores: entrenadoresData,
+      entrenadores: orderedEntrenadores.map((e) => ({
+        id: e.id,
+        nombre: `${e.nombre} ${e.apellido}`,
+      })),
     };
   }, [
     selectedDeportistasHombres,
     selectedDeportistasMujeres,
-    selectedEntrenadoresHombres,
-    selectedEntrenadoresMujeres,
+    getAllEntrenadores,
+    principalEntrenadorId,
   ]);
 
   useEffect(() => {
@@ -279,7 +298,10 @@ export default function Paso01Deportistas({
     );
     if (alreadySelected) return;
 
-    setSelectedDeportistasHombres([...selectedDeportistasHombres, deportista]);
+    setSelectedDeportistasHombres([
+      ...selectedDeportistasHombres,
+      { ...deportista, rol: "ATLETA" },
+    ]);
     setSearchDeportistasHombres("");
     setDeportistasHombres([]);
   };
@@ -297,7 +319,10 @@ export default function Paso01Deportistas({
     );
     if (alreadySelected) return;
 
-    setSelectedDeportistasMujeres([...selectedDeportistasMujeres, deportista]);
+    setSelectedDeportistasMujeres([
+      ...selectedDeportistasMujeres,
+      { ...deportista, rol: "ATLETA" },
+    ]);
     setSearchDeportistasMujeres("");
     setDeportistasMujeres([]);
   };
@@ -305,6 +330,23 @@ export default function Paso01Deportistas({
   const handleRemoveDeportistaMujer = (deportistaId: number) => {
     setSelectedDeportistasMujeres(
       selectedDeportistasMujeres.filter((d) => d.id !== deportistaId)
+    );
+  };
+
+  const handleDeportistaRoleChange = (
+    deportistaId: number,
+    rol: string,
+    genero: "Masculino" | "Femenino"
+  ) => {
+    if (genero === "Masculino") {
+      setSelectedDeportistasHombres((prev) =>
+        prev.map((d) => (d.id === deportistaId ? { ...d, rol } : d))
+      );
+      return;
+    }
+
+    setSelectedDeportistasMujeres((prev) =>
+      prev.map((d) => (d.id === deportistaId ? { ...d, rol } : d))
     );
   };
 
@@ -319,6 +361,9 @@ export default function Paso01Deportistas({
       ...selectedEntrenadoresHombres,
       entrenador,
     ]);
+    if (principalEntrenadorId == null) {
+      setPrincipalEntrenadorId(entrenador.id);
+    }
     setSearchEntrenadoresHombres("");
     setEntrenadoresHombres([]);
   };
@@ -327,6 +372,10 @@ export default function Paso01Deportistas({
     setSelectedEntrenadoresHombres(
       selectedEntrenadoresHombres.filter((e) => e.id !== entrenadorId)
     );
+    if (principalEntrenadorId === entrenadorId) {
+      const remaining = getAllEntrenadores().filter((e) => e.id !== entrenadorId);
+      setPrincipalEntrenadorId(remaining[0]?.id ?? null);
+    }
   };
 
   // Handlers for entrenadores mujeres
@@ -340,6 +389,9 @@ export default function Paso01Deportistas({
       ...selectedEntrenadoresMujeres,
       entrenador,
     ]);
+    if (principalEntrenadorId == null) {
+      setPrincipalEntrenadorId(entrenador.id);
+    }
     setSearchEntrenadoresMujeres("");
     setEntrenadoresMujeres([]);
   };
@@ -348,6 +400,10 @@ export default function Paso01Deportistas({
     setSelectedEntrenadoresMujeres(
       selectedEntrenadoresMujeres.filter((e) => e.id !== entrenadorId)
     );
+    if (principalEntrenadorId === entrenadorId) {
+      const remaining = getAllEntrenadores().filter((e) => e.id !== entrenadorId);
+      setPrincipalEntrenadorId(remaining[0]?.id ?? null);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -394,6 +450,11 @@ export default function Paso01Deportistas({
       return;
     }
 
+    if (getAllEntrenadores().length > 0 && principalEntrenadorId == null) {
+      setError("Debes seleccionar un entrenador principal.");
+      return;
+    }
+
     onComplete(buildSelectedData());
   };
 
@@ -408,7 +469,8 @@ export default function Paso01Deportistas({
     selected: SelectedDeportista[],
     required: number,
     handleAdd: (d: Deportista) => void,
-    handleRemove: (id: number) => void
+    handleRemove: (id: number) => void,
+    handleRoleChange: (id: number, role: string) => void
   ) => {
     const label =
       genero === "Masculino" ? "Deportistas hombres" : "Deportistas mujeres";
@@ -587,7 +649,9 @@ export default function Paso01Deportistas({
     selected: SelectedEntrenador[],
     required: number,
     handleAdd: (e: User) => void,
-    handleRemove: (id: number) => void
+    handleRemove: (id: number) => void,
+    principalId: number | null,
+    onSetPrincipal: (id: number) => void
   ) => {
     const label =
       genero === "Masculino" ? "Entrenadores hombres" : "Entrenadoras mujeres";
@@ -722,6 +786,21 @@ export default function Paso01Deportistas({
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
                       {entrenador.cedula}
                     </p>
+                    <div className="mt-1">
+                      <button
+                        type="button"
+                        onClick={() => onSetPrincipal(entrenador.id)}
+                        className={`text-[11px] font-semibold ${
+                          principalId === entrenador.id
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                        }`}
+                      >
+                        {principalId === entrenador.id
+                          ? "Principal"
+                          : "Marcar como principal"}
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -769,7 +848,8 @@ export default function Paso01Deportistas({
               selectedDeportistasHombres,
               evento.numAtletasHombres,
               handleAddDeportistaHombre,
-              handleRemoveDeportistaHombre
+              handleRemoveDeportistaHombre,
+              (id, role) => handleDeportistaRoleChange(id, role, "Masculino")
             )}
 
             <div className="pt-4 border-t border-indigo-100 dark:border-indigo-800/60">
@@ -783,7 +863,8 @@ export default function Paso01Deportistas({
                 selectedDeportistasMujeres,
                 evento.numAtletasMujeres,
                 handleAddDeportistaMujer,
-                handleRemoveDeportistaMujer
+                handleRemoveDeportistaMujer,
+                (id, role) => handleDeportistaRoleChange(id, role, "Femenino")
               )}
             </div>
           </div>
@@ -807,7 +888,9 @@ export default function Paso01Deportistas({
               selectedEntrenadoresHombres,
               evento.numEntrenadoresHombres,
               handleAddEntrenadorHombre,
-              handleRemoveEntrenadorHombre
+              handleRemoveEntrenadorHombre,
+              principalEntrenadorId,
+              setPrincipalEntrenadorId
             )}
 
             <div className="pt-4 border-t border-emerald-100 dark:border-emerald-800/60">
@@ -821,7 +904,9 @@ export default function Paso01Deportistas({
                 selectedEntrenadoresMujeres,
                 evento.numEntrenadoresMujeres,
                 handleAddEntrenadoraMujer,
-                handleRemoveEntrenadoraMujer
+                handleRemoveEntrenadoraMujer,
+                principalEntrenadorId,
+                setPrincipalEntrenadorId
               )}
             </div>
           </div>

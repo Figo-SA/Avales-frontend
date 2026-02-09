@@ -8,10 +8,12 @@ import { createAval } from "@/lib/api/avales";
 import type { Aval } from "@/types/aval";
 
 type FormData = {
-  deportistas: Array<{ id: number; nombre: string }>;
+  deportistas: Array<{ id: number; nombre: string; rol?: string }>;
   entrenadores: Array<{ id: number; nombre: string }>;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida: string;
+  lugarRetorno: string;
   transporteSalida: string;
   transporteRetorno: string;
   objetivos: string[];
@@ -68,6 +70,8 @@ export default function Paso04Presupuesto({
         coleccionAvalId: avalId,
         fechaHoraSalida: formData.fechaHoraSalida,
         fechaHoraRetorno: formData.fechaHoraRetorno,
+        lugarSalida: formData.lugarSalida,
+        lugarRetorno: formData.lugarRetorno,
         transporteSalida: formData.transporteSalida,
         transporteRetorno: formData.transporteRetorno,
         objetivos: formData.objetivos.map((obj, index) => ({
@@ -80,12 +84,12 @@ export default function Paso04Presupuesto({
         })),
         deportistas: formData.deportistas.map((d) => ({
           deportistaId: d.id,
-          rol: "DEPORTISTA",
+          rol: d.rol ?? "ATLETA",
         })),
-        entrenadores: formData.entrenadores.map((e) => ({
+        entrenadores: formData.entrenadores.map((e, index) => ({
           entrenadorId: e.id,
-          rol: "ENTRENADOR",
-          esPrincipal: false,
+          rol: index === 0 ? "ENTRENADOR PRINCIPAL" : "ENTRENADOR",
+          esPrincipal: index === 0,
         })),
         observaciones: observaciones.trim() || undefined,
       };

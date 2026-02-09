@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { Plane, Bus, Car, Ship, Calendar, Clock } from "lucide-react";
 
 type FormData = {
-  deportistas: Array<{ id: number; nombre: string }>;
+  deportistas: Array<{ id: number; nombre: string; rol?: string }>;
   entrenadores: Array<{ id: number; nombre: string }>;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
+  lugarSalida: string;
+  lugarRetorno: string;
   transporteSalida: string;
   transporteRetorno: string;
   objetivos: string[];
@@ -42,26 +44,42 @@ export default function Paso02Logistica({
   const [fechaHoraRetorno, setFechaHoraRetorno] = useState(
     formData.fechaHoraRetorno || ""
   );
+  const [lugarSalida, setLugarSalida] = useState(formData.lugarSalida || "");
+  const [lugarRetorno, setLugarRetorno] = useState(formData.lugarRetorno || "");
   const [transporteSalida, setTransporteSalida] = useState(
     formData.transporteSalida || ""
   );
   const [transporteRetorno, setTransporteRetorno] = useState(
     formData.transporteRetorno || ""
   );
+  const [transporteSalidaOtro, setTransporteSalidaOtro] = useState("");
+  const [transporteRetornoOtro, setTransporteRetornoOtro] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     onPreviewChange?.({
       fechaHoraSalida,
       fechaHoraRetorno,
-      transporteSalida,
-      transporteRetorno,
+      lugarSalida,
+      lugarRetorno,
+      transporteSalida:
+        transporteSalida === "OTRO"
+          ? transporteSalidaOtro.trim() || "OTRO"
+          : transporteSalida,
+      transporteRetorno:
+        transporteRetorno === "OTRO"
+          ? transporteRetornoOtro.trim() || "OTRO"
+          : transporteRetorno,
     });
   }, [
     fechaHoraSalida,
     fechaHoraRetorno,
+    lugarSalida,
+    lugarRetorno,
     transporteSalida,
     transporteRetorno,
+    transporteSalidaOtro,
+    transporteRetornoOtro,
     onPreviewChange,
   ]);
 
@@ -73,8 +91,18 @@ export default function Paso02Logistica({
       return;
     }
 
+    if (!lugarSalida.trim()) {
+      setError("Debes ingresar el lugar de salida");
+      return;
+    }
+
     if (!fechaHoraRetorno) {
       setError("Debes ingresar la fecha y hora de retorno");
+      return;
+    }
+
+    if (!lugarRetorno.trim()) {
+      setError("Debes ingresar el lugar de retorno");
       return;
     }
 
@@ -100,8 +128,16 @@ export default function Paso02Logistica({
     onComplete({
       fechaHoraSalida,
       fechaHoraRetorno,
-      transporteSalida,
-      transporteRetorno,
+      lugarSalida: lugarSalida.trim(),
+      lugarRetorno: lugarRetorno.trim(),
+      transporteSalida:
+        transporteSalida === "OTRO"
+          ? transporteSalidaOtro.trim() || "OTRO"
+          : transporteSalida,
+      transporteRetorno:
+        transporteRetorno === "OTRO"
+          ? transporteRetornoOtro.trim() || "OTRO"
+          : transporteRetorno,
     });
   };
 
@@ -127,6 +163,19 @@ export default function Paso02Logistica({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Lugar de salida
+              </label>
+              <input
+                type="text"
+                value={lugarSalida}
+                onChange={(e) => setLugarSalida(e.target.value)}
+                className="form-input w-full"
+                placeholder="Ej: Complejo deportivo, Loja"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Fecha y hora de salida
               </label>
               <input
@@ -141,7 +190,7 @@ export default function Paso02Logistica({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Medio de transporte
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {TRANSPORT_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   const isSelected = transporteSalida === option.value;
@@ -151,26 +200,33 @@ export default function Paso02Logistica({
                       key={option.value}
                       type="button"
                       onClick={() => setTransporteSalida(option.value)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition ${
+                      className={`flex items-center justify-center gap-2 p-2 rounded-md border transition text-xs ${
                         isSelected
                           ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
                           : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500"
                       }`}
                     >
                       <Icon
-                        className={`w-6 h-6 ${
+                        className={`w-4 h-4 ${
                           isSelected
                             ? "text-indigo-600 dark:text-indigo-400"
                             : "text-gray-500 dark:text-gray-400"
                         }`}
                       />
-                      <span className="text-sm font-medium">
-                        {option.label}
-                      </span>
+                      <span className="font-medium">{option.label}</span>
                     </button>
                   );
                 })}
               </div>
+              {transporteSalida === "OTRO" && (
+                <input
+                  type="text"
+                  value={transporteSalidaOtro}
+                  onChange={(e) => setTransporteSalidaOtro(e.target.value)}
+                  placeholder="Especifica el transporte (opcional)"
+                  className="form-input w-full mt-2"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -187,6 +243,19 @@ export default function Paso02Logistica({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Lugar de retorno
+              </label>
+              <input
+                type="text"
+                value={lugarRetorno}
+                onChange={(e) => setLugarRetorno(e.target.value)}
+                className="form-input w-full"
+                placeholder="Ej: Federación, Loja"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Fecha y hora de retorno
               </label>
               <input
@@ -201,7 +270,7 @@ export default function Paso02Logistica({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Medio de transporte
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {TRANSPORT_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   const isSelected = transporteRetorno === option.value;
@@ -211,26 +280,33 @@ export default function Paso02Logistica({
                       key={option.value}
                       type="button"
                       onClick={() => setTransporteRetorno(option.value)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition ${
+                      className={`flex items-center justify-center gap-2 p-2 rounded-md border transition text-xs ${
                         isSelected
                           ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300"
                           : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500"
                       }`}
                     >
                       <Icon
-                        className={`w-6 h-6 ${
+                        className={`w-4 h-4 ${
                           isSelected
                             ? "text-indigo-600 dark:text-indigo-400"
                             : "text-gray-500 dark:text-gray-400"
                         }`}
                       />
-                      <span className="text-sm font-medium">
-                        {option.label}
-                      </span>
+                      <span className="font-medium">{option.label}</span>
                     </button>
                   );
                 })}
               </div>
+              {transporteRetorno === "OTRO" && (
+                <input
+                  type="text"
+                  value={transporteRetornoOtro}
+                  onChange={(e) => setTransporteRetornoOtro(e.target.value)}
+                  placeholder="Especifica el transporte (opcional)"
+                  className="form-input w-full mt-2"
+                />
+              )}
             </div>
           </div>
         </div>
