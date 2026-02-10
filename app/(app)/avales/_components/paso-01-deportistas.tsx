@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, X, Loader2 } from "lucide-react";
 import {
   listDeportistas,
@@ -11,6 +11,7 @@ import type { Deportista } from "@/types/deportista";
 import type { User } from "@/types/user";
 import type { Aval } from "@/types/aval";
 import { formatGenero } from "@/lib/utils/formatters";
+import { useAuth } from "@/app/providers/auth-provider";
 
 type FormData = {
   deportistas: Array<{
@@ -56,6 +57,7 @@ export default function Paso01Deportistas({
   onBack,
 }: Paso01DeportistasProps) {
   const evento = aval.evento;
+  const { user } = useAuth();
 
   // State for deportistas hombres
   const [searchDeportistasHombres, setSearchDeportistasHombres] = useState("");
@@ -102,6 +104,7 @@ export default function Paso01Deportistas({
   >(null);
 
   const [error, setError] = useState<string | null>(null);
+  const autoSelectEntrenadorRef = useRef(false);
 
   const getAllEntrenadores = useCallback(
     () => [...selectedEntrenadoresHombres, ...selectedEntrenadoresMujeres],
@@ -148,6 +151,55 @@ export default function Paso01Deportistas({
   useEffect(() => {
     onPreviewChange?.(buildSelectedData());
   }, [buildSelectedData, onPreviewChange]);
+
+  useEffect(() => {
+    if (autoSelectEntrenadorRef.current) return;
+    if (!user?.id) return;
+    const isEntrenador =
+      user.roles?.includes("ENTRENADOR") &&
+      !user.roles?.includes("SUPER_ADMIN") &&
+      !user.roles?.includes("ADMIN");
+    if (!isEntrenador) return;
+
+    const alreadySelected =
+      selectedEntrenadoresHombres.some((e) => e.id === user.id) ||
+      selectedEntrenadoresMujeres.some((e) => e.id === user.id);
+    if (alreadySelected) {
+      autoSelectEntrenadorRef.current = true;
+      return;
+    }
+
+    const hasSelection =
+      selectedEntrenadoresHombres.length > 0 ||
+      selectedEntrenadoresMujeres.length > 0;
+    if (hasSelection) {
+      autoSelectEntrenadorRef.current = true;
+      return;
+    }
+
+    const allowMale = evento.numEntrenadoresHombres > 0;
+    const allowFemale = evento.numEntrenadoresMujeres > 0;
+
+    if ((user.genero === "MASCULINO" || user.genero === "MASCULINO_FEMENINO") && allowMale) {
+      setSelectedEntrenadoresHombres([user]);
+      setPrincipalEntrenadorId(user.id);
+      autoSelectEntrenadorRef.current = true;
+      return;
+    }
+
+    if ((user.genero === "FEMENINO" || user.genero === "MASCULINO_FEMENINO") && allowFemale) {
+      setSelectedEntrenadoresMujeres([user]);
+      setPrincipalEntrenadorId(user.id);
+      autoSelectEntrenadorRef.current = true;
+    }
+    autoSelectEntrenadorRef.current = true;
+  }, [
+    evento.numEntrenadoresHombres,
+    evento.numEntrenadoresMujeres,
+    selectedEntrenadoresHombres,
+    selectedEntrenadoresMujeres,
+    user,
+  ]);
 
   // Fetch deportistas hombres
   const fetchDeportistasHombres = useCallback(async () => {

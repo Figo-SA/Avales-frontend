@@ -23,7 +23,7 @@ import ComprasPublicasPreview, {
 } from "@/app/(app)/avales/_components/compras-publicas-preview";
 import AlertBanner from "@/components/ui/alert-banner";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
-import { getNextApprovalStage } from "@/lib/constants";
+import { formatRoles } from "@/lib/utils/formatters";
 
 const INITIAL_DRAFT: ComprasPublicasDraft = {
   numeroCertificado: "",
@@ -148,6 +148,14 @@ export default function CertificarComprasPublicasPage() {
   const [draft, setDraft] = useState<ComprasPublicasDraft>(INITIAL_DRAFT);
 
   const isComprasPublicas = user?.roles?.includes("COMPRAS_PUBLICAS") ?? false;
+  const defaultSignerName = useMemo(() => {
+    if (!user) return "";
+    return [user.nombre, user.apellido].filter(Boolean).join(" ").trim();
+  }, [user]);
+  const defaultSignerCargo = useMemo(
+    () => (user?.roles?.length ? formatRoles(user.roles) : ""),
+    [user],
+  );
 
   useEffect(() => {
     setDraft(INITIAL_DRAFT);
@@ -198,6 +206,20 @@ export default function CertificarComprasPublicasPage() {
     }));
   }, [aval]);
 
+  useEffect(() => {
+    if (!user) return;
+    setDraft((prev) => {
+      const next = { ...prev };
+      if (!prev.nombreFirmante?.trim() && defaultSignerName) {
+        next.nombreFirmante = defaultSignerName;
+      }
+      if (!prev.cargoFirmante?.trim() && defaultSignerCargo) {
+        next.cargoFirmante = defaultSignerCargo;
+      }
+      return next;
+    });
+  }, [user, defaultSignerName, defaultSignerCargo]);
+
   const trainerDocsData = useMemo(
     () => (aval ? buildTrainerDocsData(aval) : EMPTY_DOCS_DATA),
     [aval],
@@ -224,8 +246,7 @@ export default function CertificarComprasPublicasPage() {
     aval?.estado === "SOLICITADO" &&
     currentEtapa === "PDA" &&
     !aval?.comprasPublicas;
-  const nextEtapa = getNextApprovalStage(currentEtapa);
-  const approvalEtapa = nextEtapa ?? currentEtapa;
+  const approvalEtapa = currentEtapa;
   const summaryText =
     "Al aprobarlo quedará certificado por Compras Públicas y continuará el flujo.";
 

@@ -7,17 +7,13 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAuth } from "@/app/providers/auth-provider";
 import { aprobarAval, createPda, getAval, rechazarAval } from "@/lib/api/avales";
 import type { Aval, EtapaFlujo } from "@/types/aval";
-import { formatDate } from "@/lib/utils/formatters";
+import { formatDate, formatRoles } from "@/lib/utils/formatters";
 import {
   ListaDeportistasPreview,
   SolicitudAvalPreview,
   type AvalPreviewFormData,
 } from "@/app/(app)/avales/_components/aval-document-preview";
 import PdaPreview, { type PdaDraft } from "@/app/(app)/avales/_components/pda-preview";
-import ComprasPublicasPreview, {
-  type ComprasPublicasDraft,
-} from "@/app/(app)/avales/_components/compras-publicas-preview";
-import ApprovalFlowCard from "@/app/(app)/avales/_components/approval-flow-card";
 import AlertBanner from "@/components/ui/alert-banner";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
 import { getApprovalStageLabel, getNextApprovalStage } from "@/lib/constants";
@@ -45,15 +41,6 @@ const EMPTY_DOCS_DATA: AvalPreviewFormData = {
   observaciones: "",
 };
 
-const EMPTY_COMPRAS_DRAFT: ComprasPublicasDraft = {
-  numeroCertificado: "",
-  realizoProceso: null,
-  codigoNecesidad: "",
-  objetoContratacion: "",
-  nombreFirmante: "",
-  cargoFirmante: "",
-  fechaEmision: "",
-};
 
 function buildTrainerDocsData(aval: Aval): AvalPreviewFormData {
   const tecnico = aval.avalTecnico;
@@ -197,6 +184,14 @@ export default function CertificarAvalPage() {
   const [draft, setDraft] = useState<PdaDraft>(INITIAL_PDA_DRAFT);
 
   const isPda = user?.roles?.includes("PDA") ?? false;
+  const defaultSignerName = useMemo(() => {
+    if (!user) return "";
+    return [user.nombre, user.apellido].filter(Boolean).join(" ").trim();
+  }, [user]);
+  const defaultSignerCargo = useMemo(
+    () => (user?.roles?.length ? formatRoles(user.roles) : ""),
+    [user],
+  );
 
   useEffect(() => {
     setDraft(INITIAL_PDA_DRAFT);
@@ -240,26 +235,24 @@ export default function CertificarAvalPage() {
     }));
   }, [aval, draft.descripcion]);
 
+  useEffect(() => {
+    if (!user) return;
+    setDraft((prev) => {
+      const next = { ...prev };
+      if (!prev.nombreFirmante?.trim() && defaultSignerName) {
+        next.nombreFirmante = defaultSignerName;
+      }
+      if (!prev.cargoFirmante?.trim() && defaultSignerCargo) {
+        next.cargoFirmante = defaultSignerCargo;
+      }
+      return next;
+    });
+  }, [user, defaultSignerName, defaultSignerCargo]);
+
   const trainerDocsData = useMemo(
     () => (aval ? buildTrainerDocsData(aval) : EMPTY_DOCS_DATA),
     [aval],
   );
-  const comprasDraft = useMemo(() => {
-    if (!aval?.comprasPublicas) return EMPTY_COMPRAS_DRAFT;
-    const compras = aval.comprasPublicas;
-    return {
-      numeroCertificado: compras.numeroCertificado ?? "",
-      realizoProceso:
-        typeof compras.realizoProceso === "boolean"
-          ? compras.realizoProceso
-          : null,
-      codigoNecesidad: compras.codigoNecesidad ?? "",
-      objetoContratacion: compras.objetoContratacion ?? "",
-      nombreFirmante: compras.nombreFirmante ?? "",
-      cargoFirmante: compras.cargoFirmante ?? "",
-      fechaEmision: compras.fechaEmision ?? "",
-    };
-  }, [aval]);
 
   const etapaActualResponse = aval?.etapaActual;
   const etapaActualHistorial = getCurrentEtapa(aval?.historial);
@@ -272,10 +265,7 @@ export default function CertificarAvalPage() {
   const approvalEtapa = nextEtapa ?? currentEtapa;
   const currentStageLabel = getApprovalStageLabel(currentEtapa);
   const nextStageLabel = getApprovalStageLabel(approvalEtapa);
-  const summaryLines = [
-    `El aval pasará de "${currentStageLabel}" a "${nextStageLabel}".`,
-    `Al aprobarlo quedará en "${nextStageLabel}".`,
-  ];
+  const summaryText = `El aval pasará de "${currentStageLabel}" a "${nextStageLabel}" y quedará en "${nextStageLabel}".`;
 
   const handleApprove = useCallback(async () => {
     if (!aval) return;
@@ -490,18 +480,54 @@ export default function CertificarAvalPage() {
               </div>
 
               {isEditable && (
-                <ApprovalFlowCard
-                  title="Certificación PDA"
-                  summaryLines={summaryLines}
-                  currentStageLabel={currentStageLabel}
-                  nextStageLabel={nextStageLabel}
-                  reasonValue={rechazoMotivo}
-                  onReasonChange={setRechazoMotivo}
-                  actionError={actionError}
-                  actionLoading={actionLoading}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                />
+                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4 space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Certificación PDA
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {summaryText}
+                    </p>
+                  </div>
+
+                  <label className="block">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      Motivo de rechazo (si aplica)
+                    </span>
+                    <textarea
+                      className="form-textarea w-full mt-1 text-sm"
+                      rows={3}
+                      value={rechazoMotivo}
+                      onChange={(e) => setRechazoMotivo(e.target.value)}
+                      placeholder="Escribe el motivo si vas a rechazar..."
+                    />
+                  </label>
+
+                  {actionError && (
+                    <div className="text-xs text-rose-600 dark:text-rose-400">
+                      {actionError}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleReject}
+                      disabled={actionLoading}
+                      className="btn bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-50"
+                    >
+                      Rechazar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApprove}
+                      disabled={actionLoading}
+                      className="btn bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                    >
+                      Aprobar
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -514,7 +540,6 @@ export default function CertificarAvalPage() {
             <ListaDeportistasPreview aval={aval} formData={trainerDocsData} />
             <SolicitudAvalPreview aval={aval} formData={trainerDocsData} />
             <PdaPreview aval={aval} draft={draft} />
-            <ComprasPublicasPreview aval={aval} draft={comprasDraft} />
           </div>
         </div>
       </div>
