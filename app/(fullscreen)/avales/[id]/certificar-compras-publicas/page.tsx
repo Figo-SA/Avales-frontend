@@ -220,7 +220,10 @@ export default function CertificarComprasPublicasPage() {
   const currentEtapa = (etapaActualResponse ??
     etapaActualHistorial ??
     "SOLICITUD") as EtapaFlujo;
-  const isEditable = aval?.estado === "SOLICITADO" && currentEtapa === "PDA";
+  const isEditable =
+    aval?.estado === "SOLICITADO" &&
+    currentEtapa === "PDA" &&
+    !aval?.comprasPublicas;
   const nextEtapa = getNextApprovalStage(currentEtapa);
   const approvalEtapa = nextEtapa ?? currentEtapa;
   const summaryText =

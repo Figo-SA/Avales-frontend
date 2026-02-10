@@ -9,10 +9,10 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // (Opcional) Ignorar rutas públicas estáticas comunes
-  // if (pathname.startsWith("/images") || pathname.startsWith("/public")) {
-  //   return NextResponse.next();
-  // }
+  // Ignorar rutas públicas estáticas comunes
+  if (pathname.startsWith("/images") || pathname.startsWith("/public")) {
+    return NextResponse.next();
+  }
 
   // Ignorar rutas de API (dejarlas pasar al backend/proxy)
   if (pathname.startsWith("/api")) {
