@@ -111,6 +111,7 @@ export type AvalTecnico = {
   id: number;
   descripcion?: string | null;
   archivo?: string | null;
+  numeroAval?: string | null;
   fechaHoraSalida: string;
   fechaHoraRetorno: string;
   lugarSalida?: string | null;
@@ -153,6 +154,26 @@ export type Aval = {
   pdaUrl?: string | null;
   solicitudUrl?: string | null;
   aval?: string | null;
+  numeroColeccion?: string | null;
+  pda?: {
+    numeroPda?: string | null;
+    numeroAval?: string | null;
+  } | null;
+  comprasPublicas?: {
+    numeroCertificado?: string | null;
+    realizoProceso?: boolean | null;
+    codigoNecesidad?: string | null;
+    objetoContratacion?: string | null;
+    nombreFirmante?: string | null;
+    cargoFirmante?: string | null;
+    fechaEmision?: string | null;
+  } | null;
+  revisionMetodologo?: {
+    numeroRevision?: string | null;
+  } | null;
+  dtm?: Array<{
+    numeroDtm?: string | null;
+  }>;
   evento: EventoSimple;
   avalTecnico?: AvalTecnico;
   entrenadores: EntrenadorAval[];

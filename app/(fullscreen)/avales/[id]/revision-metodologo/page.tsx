@@ -14,6 +14,9 @@ import {
 } from "@/app/(app)/avales/_components/aval-document-preview";
 import PdaPreview, { type PdaDraft } from "@/app/(app)/avales/_components/pda-preview";
 import RevisionMetodologoPreview from "@/app/(app)/avales/_components/revision-metodologo-preview";
+import ComprasPublicasPreview, {
+  type ComprasPublicasDraft,
+} from "@/app/(app)/avales/_components/compras-publicas-preview";
 
 const INITIAL_PDA_DRAFT: PdaDraft = {
   descripcion: "",
@@ -36,6 +39,16 @@ const EMPTY_DOCS_DATA: AvalPreviewFormData = {
   objetivos: [],
   criterios: [],
   observaciones: "",
+};
+
+const EMPTY_COMPRAS_DRAFT: ComprasPublicasDraft = {
+  numeroCertificado: "",
+  realizoProceso: null,
+  codigoNecesidad: "",
+  objetoContratacion: "",
+  nombreFirmante: "",
+  cargoFirmante: "",
+  fechaEmision: "",
 };
 
 function buildTrainerDocsData(aval: Aval): AvalPreviewFormData {
@@ -383,6 +396,22 @@ export default function RevisionMetodologoPage() {
     () => (aval ? buildTrainerDocsData(aval) : EMPTY_DOCS_DATA),
     [aval],
   );
+  const comprasDraft = useMemo(() => {
+    if (!aval?.comprasPublicas) return EMPTY_COMPRAS_DRAFT;
+    const compras = aval.comprasPublicas;
+    return {
+      numeroCertificado: compras.numeroCertificado ?? "",
+      realizoProceso:
+        typeof compras.realizoProceso === "boolean"
+          ? compras.realizoProceso
+          : null,
+      codigoNecesidad: compras.codigoNecesidad ?? "",
+      objetoContratacion: compras.objetoContratacion ?? "",
+      nombreFirmante: compras.nombreFirmante ?? "",
+      cargoFirmante: compras.cargoFirmante ?? "",
+      fechaEmision: compras.fechaEmision ?? "",
+    };
+  }, [aval]);
   const previewDraft = useMemo(
     () => ({
       ...draft,
@@ -685,6 +714,7 @@ export default function RevisionMetodologoPage() {
             <SolicitudAvalPreview aval={aval} formData={trainerDocsData} />
             <ListaDeportistasPreview aval={aval} formData={trainerDocsData} />
             <PdaPreview aval={aval} draft={previewDraft} />
+            <ComprasPublicasPreview aval={aval} draft={comprasDraft} />
           </div>
           </div>
         </div>

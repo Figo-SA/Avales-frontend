@@ -116,6 +116,11 @@ export default function AvalDocumentPreview({
   const disciplina = evento?.disciplina?.nombre?.toUpperCase() ?? "SIN DISCIPLINA";
   const categoria = evento?.categoria?.nombre?.toUpperCase() ?? "SIN CATEGORIA";
   const genero = (evento?.genero ?? "MASCULINO_FEMENINO").replaceAll("_", " - ");
+  const avalNumero =
+    aval.avalTecnico?.numeroAval ??
+    aval.aval ??
+    aval.numeroColeccion ??
+    String(aval.id ?? "S/N");
   const showDetallePage =
     Boolean(formData.fechaHoraSalida) ||
     Boolean(formData.fechaHoraRetorno) ||
@@ -278,7 +283,7 @@ export default function AvalDocumentPreview({
       {showSolicitud && (
         <div className="bg-white p-5 xl:p-6 border border-slate-300 space-y-4">
           <h2 className="text-center text-[18px] font-semibold uppercase">
-            Aval tecnico de participacion competitiva
+            Aval tecnico de participacion competitiva - {avalNumero}
           </h2>
           <h3 className="text-center text-[15px] font-semibold uppercase">
             Datos informativos

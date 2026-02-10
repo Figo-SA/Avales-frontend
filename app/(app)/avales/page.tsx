@@ -108,7 +108,7 @@ export default function AvalesPage() {
           : isControlPrevio
             ? "REVISION_DTM"
             : isComprasPublicas
-              ? "CONTROL_PREVIO"
+              ? "PDA"
               : undefined;
       const efectivoEstado = estado || defaultEstado;
       const efectivoEtapa = etapa || defaultEtapa;
@@ -353,6 +353,7 @@ export default function AvalesPage() {
           isSecretaria={isSecretaria}
           isPda={isPda}
           isMetodologo={isMetodologo}
+          isComprasPublicas={isComprasPublicas}
         />
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-6">

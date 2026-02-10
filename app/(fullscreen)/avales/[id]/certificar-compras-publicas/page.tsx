@@ -5,9 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 import { useAuth } from "@/app/providers/auth-provider";
-import { aprobarAval, createPda, getAval, rechazarAval } from "@/lib/api/avales";
+import {
+  aprobarAval,
+  createComprasPublicas,
+  getAval,
+  rechazarAval,
+} from "@/lib/api/avales";
 import type { Aval, EtapaFlujo } from "@/types/aval";
-import { formatDate } from "@/lib/utils/formatters";
 import {
   ListaDeportistasPreview,
   SolicitudAvalPreview,
@@ -17,18 +21,18 @@ import PdaPreview, { type PdaDraft } from "@/app/(app)/avales/_components/pda-pr
 import ComprasPublicasPreview, {
   type ComprasPublicasDraft,
 } from "@/app/(app)/avales/_components/compras-publicas-preview";
-import ApprovalFlowCard from "@/app/(app)/avales/_components/approval-flow-card";
 import AlertBanner from "@/components/ui/alert-banner";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
-import { getApprovalStageLabel, getNextApprovalStage } from "@/lib/constants";
+import { getNextApprovalStage } from "@/lib/constants";
 
-const INITIAL_PDA_DRAFT: PdaDraft = {
-  descripcion: "",
-  numeroPda: "",
-  numeroAval: "",
-  codigoActividad: "005",
+const INITIAL_DRAFT: ComprasPublicasDraft = {
+  numeroCertificado: "",
+  realizoProceso: null,
+  codigoNecesidad: "",
+  objetoContratacion: "",
   nombreFirmante: "",
   cargoFirmante: "",
+  fechaEmision: new Date().toISOString().slice(0, 10),
 };
 
 const EMPTY_DOCS_DATA: AvalPreviewFormData = {
@@ -45,14 +49,13 @@ const EMPTY_DOCS_DATA: AvalPreviewFormData = {
   observaciones: "",
 };
 
-const EMPTY_COMPRAS_DRAFT: ComprasPublicasDraft = {
-  numeroCertificado: "",
-  realizoProceso: null,
-  codigoNecesidad: "",
-  objetoContratacion: "",
+const EMPTY_PDA_DRAFT: PdaDraft = {
+  descripcion: "",
+  numeroPda: "",
+  numeroAval: "",
+  codigoActividad: "005",
   nombreFirmante: "",
   cargoFirmante: "",
-  fechaEmision: "",
 };
 
 function buildTrainerDocsData(aval: Aval): AvalPreviewFormData {
@@ -119,66 +122,14 @@ function buildTrainerDocsData(aval: Aval): AvalPreviewFormData {
   };
 }
 
-function getEntrenadorResponsableNombre(aval: Aval) {
-  const sorted = [...(aval.entrenadores ?? [])].sort(
-    (a, b) => Number(Boolean(b.esPrincipal)) - Number(Boolean(a.esPrincipal)),
-  );
-  const first = sorted[0] as
-    | (typeof sorted)[number] & {
-        usuario?: { nombre?: string; apellido?: string };
-        entrenador?: { nombre?: string; apellido?: string };
-        nombre?: string;
-        apellido?: string;
-      }
-    | undefined;
-
-  if (!first) return "[NOMBRE ENTRENADOR RESPONSABLE]";
-
-  return (
-    [
-      first.entrenador?.nombre ?? first.usuario?.nombre ?? first.nombre,
-      first.entrenador?.apellido ?? first.usuario?.apellido ?? first.apellido,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .trim() || "[NOMBRE ENTRENADOR RESPONSABLE]"
-  );
+function toInputDate(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
 }
 
-function buildDefaultDescripcion(aval: Aval) {
-  const evento = aval.evento;
-  const disciplina = evento?.disciplina?.nombre ?? "[DISCIPLINA]";
-  const fecha = evento?.fechaInicio
-    ? formatDate(evento.fechaInicio)
-    : "[FECHA EVENTO]";
-  const eventoNombre = evento?.nombre ?? "[NOMBRE EVENTO]";
-  const categoria = evento?.categoria?.nombre;
-  const entrenadorResponsable = getEntrenadorResponsableNombre(aval);
-  const numeroAval =
-    aval.avalTecnico?.numeroAval ??
-    aval.aval ??
-    aval.numeroColeccion ??
-    String(aval.id);
-
-  return `De acuerdo al aval Técnico de Participación Competitiva ${numeroAval}, de la disciplina de ${disciplina} con fecha ${fecha}, suscrito por el ${entrenadorResponsable} Entrenador de la disciplina y la [NOMBRE PRESIDENTE] Presidente del Comité de Funcionamiento me permito certificar que el evento ${eventoNombre.toUpperCase()}${
-    categoria ? ` (${categoria.toUpperCase()})` : ""
-  } consta en el PDA 2026 aprobado por el Ministerio del Deporte.`;
-}
-
-function validatePdaDraft(draft: PdaDraft): string | null {
-  if (!draft.descripcion.trim()) {
-    return "La descripción del certificado es obligatoria.";
-  }
-  if (draft.descripcion.includes("[NUMERO AVAL]")) {
-    return "La descripción aún contiene [NUMERO AVAL]. Debes reemplazarlo.";
-  }
-  if (draft.descripcion.includes("[NOMBRE PRESIDENTE]")) {
-    return "La descripción aún contiene [NOMBRE PRESIDENTE]. Debes reemplazarlo.";
-  }
-  return null;
-}
-
-export default function CertificarAvalPage() {
+export default function CertificarComprasPublicasPage() {
   const params = useParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -194,12 +145,12 @@ export default function CertificarAvalPage() {
     variant: "success" | "error";
     message: string;
   } | null>(null);
-  const [draft, setDraft] = useState<PdaDraft>(INITIAL_PDA_DRAFT);
+  const [draft, setDraft] = useState<ComprasPublicasDraft>(INITIAL_DRAFT);
 
-  const isPda = user?.roles?.includes("PDA") ?? false;
+  const isComprasPublicas = user?.roles?.includes("COMPRAS_PUBLICAS") ?? false;
 
   useEffect(() => {
-    setDraft(INITIAL_PDA_DRAFT);
+    setDraft(INITIAL_DRAFT);
     setRechazoMotivo("");
     setActionError(null);
   }, [avalId]);
@@ -231,33 +182,36 @@ export default function CertificarAvalPage() {
 
   useEffect(() => {
     if (!aval) return;
-    if (draft.descripcion.trim()) return;
+    const compras = aval.comprasPublicas;
     setDraft((prev) => ({
       ...prev,
-      descripcion: buildDefaultDescripcion(aval),
-      numeroPda: prev.numeroPda || aval.pda?.numeroPda || "",
-      numeroAval: prev.numeroAval || aval.pda?.numeroAval || "",
+      numeroCertificado: compras?.numeroCertificado ?? prev.numeroCertificado,
+      realizoProceso:
+        typeof compras?.realizoProceso === "boolean"
+          ? compras.realizoProceso
+          : prev.realizoProceso,
+      codigoNecesidad: compras?.codigoNecesidad ?? prev.codigoNecesidad,
+      objetoContratacion: compras?.objetoContratacion ?? prev.objetoContratacion,
+      nombreFirmante: compras?.nombreFirmante ?? prev.nombreFirmante,
+      cargoFirmante: compras?.cargoFirmante ?? prev.cargoFirmante,
+      fechaEmision: toInputDate(compras?.fechaEmision) || prev.fechaEmision,
     }));
-  }, [aval, draft.descripcion]);
+  }, [aval]);
 
   const trainerDocsData = useMemo(
     () => (aval ? buildTrainerDocsData(aval) : EMPTY_DOCS_DATA),
     [aval],
   );
-  const comprasDraft = useMemo(() => {
-    if (!aval?.comprasPublicas) return EMPTY_COMPRAS_DRAFT;
-    const compras = aval.comprasPublicas;
+  const pdaDraft = useMemo(() => {
+    if (!aval?.pda) return EMPTY_PDA_DRAFT;
+    const pda = aval.pda;
     return {
-      numeroCertificado: compras.numeroCertificado ?? "",
-      realizoProceso:
-        typeof compras.realizoProceso === "boolean"
-          ? compras.realizoProceso
-          : null,
-      codigoNecesidad: compras.codigoNecesidad ?? "",
-      objetoContratacion: compras.objetoContratacion ?? "",
-      nombreFirmante: compras.nombreFirmante ?? "",
-      cargoFirmante: compras.cargoFirmante ?? "",
-      fechaEmision: compras.fechaEmision ?? "",
+      descripcion: pda?.descripcion ?? "",
+      numeroPda: pda?.numeroPda ?? "",
+      numeroAval: pda?.numeroAval ?? "",
+      codigoActividad: pda?.codigoActividad ?? "005",
+      nombreFirmante: pda?.nombreFirmante ?? "",
+      cargoFirmante: pda?.cargoFirmante ?? "",
     };
   }, [aval]);
 
@@ -266,16 +220,11 @@ export default function CertificarAvalPage() {
   const currentEtapa = (etapaActualResponse ??
     etapaActualHistorial ??
     "SOLICITUD") as EtapaFlujo;
-  const isEditable =
-    aval?.estado === "SOLICITADO" && currentEtapa === "SOLICITUD";
+  const isEditable = aval?.estado === "SOLICITADO" && currentEtapa === "PDA";
   const nextEtapa = getNextApprovalStage(currentEtapa);
   const approvalEtapa = nextEtapa ?? currentEtapa;
-  const currentStageLabel = getApprovalStageLabel(currentEtapa);
-  const nextStageLabel = getApprovalStageLabel(approvalEtapa);
-  const summaryLines = [
-    `El aval pasará de "${currentStageLabel}" a "${nextStageLabel}".`,
-    `Al aprobarlo quedará en "${nextStageLabel}".`,
-  ];
+  const summaryText =
+    "Al aprobarlo quedará certificado por Compras Públicas y continuará el flujo.";
 
   const handleApprove = useCallback(async () => {
     if (!aval) return;
@@ -284,47 +233,38 @@ export default function CertificarAvalPage() {
       return;
     }
     if (!isEditable) {
-      setActionError("No puedes aprobar este aval en la etapa actual.");
-      return;
-    }
-    const validationError = validatePdaDraft(draft);
-    if (validationError) {
-      setActionError(validationError);
+      setActionError("No puedes certificar este aval en la etapa actual.");
       return;
     }
 
     setActionError(null);
     setActionLoading(true);
     try {
-      const items =
-        aval.evento?.presupuesto
-          ?.map((item) => ({
-            itemId: item.item?.id ?? 0,
-            presupuesto: Number.parseFloat(item.presupuesto ?? "0"),
-          }))
-          .filter(
-            (item) => Number.isFinite(item.presupuesto) && item.itemId > 0,
-          ) ?? [];
-
-      const pdaPayload = {
-        descripcion: draft.descripcion.trim(),
-        numeroPda: draft.numeroPda?.trim() || undefined,
-        numeroAval: draft.numeroAval?.trim() || undefined,
-        codigoActividad: draft.codigoActividad?.trim() || "005",
+      const payload = {
+        numeroCertificado: draft.numeroCertificado?.trim() || undefined,
+        realizoProceso:
+          typeof draft.realizoProceso === "boolean"
+            ? draft.realizoProceso
+            : undefined,
+        codigoNecesidad: draft.codigoNecesidad?.trim() || undefined,
+        objetoContratacion: draft.objetoContratacion?.trim() || undefined,
         nombreFirmante: draft.nombreFirmante?.trim() || undefined,
         cargoFirmante: draft.cargoFirmante?.trim() || undefined,
-        items,
+        fechaEmision: draft.fechaEmision?.trim() || undefined,
       };
 
-      await createPda(aval.id, pdaPayload);
+      await createComprasPublicas(aval.id, payload);
       await aprobarAval(aval.id, user.id, approvalEtapa);
-      setToast({ variant: "success", message: "PDA aprobado correctamente." });
+      setToast({
+        variant: "success",
+        message: "Certificación de Compras Públicas registrada correctamente.",
+      });
       await loadAval();
     } catch (err: unknown) {
       setActionError(
         err instanceof Error
           ? err.message
-          : "No se pudo crear o aprobar el PDA.",
+          : "No se pudo certificar Compras Públicas.",
       );
     } finally {
       setActionLoading(false);
@@ -350,12 +290,15 @@ export default function CertificarAvalPage() {
     setActionLoading(true);
     try {
       await rechazarAval(aval.id, user.id, currentEtapa, rechazoMotivo.trim());
-      setToast({ variant: "success", message: "PDA rechazado correctamente." });
+      setToast({
+        variant: "success",
+        message: "Aval rechazado correctamente.",
+      });
       setRechazoMotivo("");
       await loadAval();
     } catch (err: unknown) {
       setActionError(
-        err instanceof Error ? err.message : "No se pudo rechazar el PDA.",
+        err instanceof Error ? err.message : "No se pudo rechazar el aval.",
       );
     } finally {
       setActionLoading(false);
@@ -375,7 +318,7 @@ export default function CertificarAvalPage() {
     );
   }
 
-  if (!isPda) {
+  if (!isComprasPublicas) {
     return (
       <div className="px-6 py-8">
         <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 rounded-xl p-6 text-center">
@@ -433,30 +376,110 @@ export default function CertificarAvalPage() {
             <div className="space-y-5">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
-                  Certificacion PDA
+                  Certificado de Compras Públicas
                 </h1>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Completa los datos del modelo PDA. El parrafo principal se agregara despues.
+                  Completa los datos para emitir el certificado.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block md:col-span-2">
+                <label className="block">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Descripcion del certificado
+                    Fecha de emisión
                   </span>
-                  <textarea
-                    className="form-textarea w-full mt-1"
-                    rows={4}
-                    value={draft.descripcion}
+                  <input
+                    type="date"
+                    className="form-input w-full mt-1"
+                    value={draft.fechaEmision}
                     readOnly={!isEditable}
                     disabled={!isEditable}
                     onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, descripcion: e.target.value }))
+                      setDraft((prev) => ({
+                        ...prev,
+                        fechaEmision: e.target.value,
+                      }))
                     }
-                    placeholder="Escribe la descripcion que va en la parte superior del certificado..."
                   />
                 </label>
+
+                <div className="md:col-span-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    ¿Se realizó proceso de contratación pública?
+                  </span>
+                  <div className="mt-2 flex items-center gap-4">
+                    <label className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        className="form-radio"
+                        checked={draft.realizoProceso === true}
+                        disabled={!isEditable}
+                        onChange={() =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            realizoProceso: true,
+                          }))
+                        }
+                      />
+                      Sí
+                    </label>
+                    <label className="inline-flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        className="form-radio"
+                        checked={draft.realizoProceso === false}
+                        disabled={!isEditable}
+                        onChange={() =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            realizoProceso: false,
+                          }))
+                        }
+                      />
+                      No
+                    </label>
+                  </div>
+                </div>
+
+                <label className="block md:col-span-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Código de necesidad
+                  </span>
+                  <input
+                    className="form-input w-full mt-1"
+                    value={draft.codigoNecesidad}
+                    readOnly={!isEditable}
+                    disabled={!isEditable}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        codigoNecesidad: e.target.value,
+                      }))
+                    }
+                    placeholder="Ej: CN-2026-001"
+                  />
+                </label>
+
+                <label className="block md:col-span-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Objeto de contratación
+                  </span>
+                  <textarea
+                    className="form-textarea w-full mt-1"
+                    rows={3}
+                    value={draft.objetoContratacion}
+                    readOnly={!isEditable}
+                    disabled={!isEditable}
+                    onChange={(e) =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        objetoContratacion: e.target.value,
+                      }))
+                    }
+                    placeholder="Describe el objeto de contratación..."
+                  />
+                </label>
+
                 <label className="block md:col-span-2">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Nombre firmante
@@ -467,11 +490,15 @@ export default function CertificarAvalPage() {
                     readOnly={!isEditable}
                     disabled={!isEditable}
                     onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, nombreFirmante: e.target.value }))
+                      setDraft((prev) => ({
+                        ...prev,
+                        nombreFirmante: e.target.value,
+                      }))
                     }
-                    placeholder="Ej: Lic. Juan Perez"
+                    placeholder="Ej: Ing. Flor María Hualpa Palacios"
                   />
                 </label>
+
                 <label className="block md:col-span-2">
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Cargo firmante
@@ -482,26 +509,65 @@ export default function CertificarAvalPage() {
                     readOnly={!isEditable}
                     disabled={!isEditable}
                     onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, cargoFirmante: e.target.value }))
+                      setDraft((prev) => ({
+                        ...prev,
+                        cargoFirmante: e.target.value,
+                      }))
                     }
-                    placeholder="Ej: Metodologo Provincial"
+                    placeholder="Ej: Encargada de Compras Públicas de FDPL"
                   />
                 </label>
               </div>
 
               {isEditable && (
-                <ApprovalFlowCard
-                  title="Certificación PDA"
-                  summaryLines={summaryLines}
-                  currentStageLabel={currentStageLabel}
-                  nextStageLabel={nextStageLabel}
-                  reasonValue={rechazoMotivo}
-                  onReasonChange={setRechazoMotivo}
-                  actionError={actionError}
-                  actionLoading={actionLoading}
-                  onApprove={handleApprove}
-                  onReject={handleReject}
-                />
+                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4 space-y-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                      Certificación Compras Públicas
+                    </h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {summaryText}
+                    </p>
+                  </div>
+
+                  <label className="block">
+                    <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                      Motivo de rechazo (si aplica)
+                    </span>
+                    <textarea
+                      className="form-textarea w-full mt-1 text-sm"
+                      rows={3}
+                      value={rechazoMotivo}
+                      onChange={(e) => setRechazoMotivo(e.target.value)}
+                      placeholder="Escribe el motivo si vas a rechazar..."
+                    />
+                  </label>
+
+                  {actionError && (
+                    <div className="text-xs text-rose-600 dark:text-rose-400">
+                      {actionError}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleReject}
+                      disabled={actionLoading}
+                      className="btn bg-rose-500 hover:bg-rose-600 text-white disabled:opacity-50"
+                    >
+                      Rechazar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleApprove}
+                      disabled={actionLoading}
+                      className="btn bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50"
+                    >
+                      Aprobar
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>
@@ -513,8 +579,8 @@ export default function CertificarAvalPage() {
           <div className="space-y-6">
             <ListaDeportistasPreview aval={aval} formData={trainerDocsData} />
             <SolicitudAvalPreview aval={aval} formData={trainerDocsData} />
-            <PdaPreview aval={aval} draft={draft} />
-            <ComprasPublicasPreview aval={aval} draft={comprasDraft} />
+            <PdaPreview aval={aval} draft={pdaDraft} />
+            <ComprasPublicasPreview aval={aval} draft={draft} />
           </div>
         </div>
       </div>

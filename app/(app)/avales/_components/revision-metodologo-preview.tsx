@@ -144,7 +144,13 @@ export default function RevisionMetodologoPreview({
   footer,
 }: Props) {
   const defaults = buildDefaultObservations(aval);
-  const documentoNumero = header.numeroRevision || aval.aval || String(aval.id);
+  const documentoNumero =
+    header.numeroRevision ||
+    aval.revisionMetodologo?.numeroRevision ||
+    aval.avalTecnico?.numeroAval ||
+    aval.aval ||
+    aval.numeroColeccion ||
+    String(aval.id);
   const descripcion = buildDefaultDescripcion(aval, header);
   const dirigidoA = header.dirigidoA || "[NOMBRE DESTINATARIO]";
   const cargoDirigidoA = header.cargoDirigidoA || "[CARGO]";
@@ -156,10 +162,7 @@ export default function RevisionMetodologoPreview({
     <div className="bg-white p-5 xl:p-6 border border-slate-300 text-slate-900 space-y-4">
       <div className="text-center space-y-1">
         <p className="text-[11px] uppercase font-semibold tracking-wide">
-          Informe de revision del aval tecnico LG-METODOLOGA DTM-FDPL-2024
-        </p>
-        <p className="text-[11px] uppercase font-semibold">
-          AT-Nº {documentoNumero}
+          Informe de revision del aval tecnico LG-METODOLOGA DTM-FDPL-2024 - {documentoNumero}
         </p>
       </div>
 

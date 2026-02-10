@@ -95,7 +95,7 @@ export default function PdaPreview({ aval, draft }: Props) {
       </div>
 
       <h2 className="text-center text-xl font-bold mt-4 mb-6">
-        CERTIFICACION EVENTOS PDA 2026
+        CERTIFICACION EVENTOS PDA 2026 - {aval.pda?.numeroPda || draft.numeroPda || "POR DEFINIR"}
       </h2>
 
       <div className="mb-4 text-[13px] leading-5">

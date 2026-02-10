@@ -128,6 +128,26 @@ export async function createPda(id: number, payload: CreatePdaPayload) {
   });
 }
 
+export type CreateComprasPublicasPayload = {
+  numeroCertificado?: string;
+  realizoProceso?: boolean;
+  codigoNecesidad?: string;
+  objetoContratacion?: string;
+  nombreFirmante?: string;
+  cargoFirmante?: string;
+  fechaEmision?: string;
+};
+
+export async function createComprasPublicas(
+  id: number,
+  payload: CreateComprasPublicasPayload
+) {
+  return apiFetch<Aval>(`/avales/${id}/compras-publicas`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function aprobarAval(
   id: number,
   usuarioId: number,
