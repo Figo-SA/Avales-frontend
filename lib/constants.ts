@@ -154,6 +154,7 @@ export const AVAL_APPROVAL_REVIEWER_ROLES = [
 export const APPROVAL_STAGE_FLOW: EtapaFlujo[] = [
   "SOLICITUD",
   "PDA",
+  "COMPRAS_PUBLICAS",
   "REVISION_METODOLOGO",
   "REVISION_DTM",
   "CONTROL_PREVIO",
@@ -166,6 +167,7 @@ export const APPROVAL_STAGE_LABELS: Record<EtapaFlujo, string> = {
   REVISION_METODOLOGO: "Revisado por el metodólogo",
   REVISION_DTM: "Revisado por el DTM",
   PDA: "Revisado por el PDA",
+  COMPRAS_PUBLICAS: "Certificación Compras Públicas",
   CONTROL_PREVIO: "Revisado por Control Previo",
   SECRETARIA: "Revisado por Secretaría",
   FINANCIERO: "Ya está aprobado",

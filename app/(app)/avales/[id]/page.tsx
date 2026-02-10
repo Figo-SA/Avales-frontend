@@ -254,7 +254,7 @@ export default function AvalDetailPage() {
       ? `Al aprobarlo quedará en "${nextStageLabel}" hasta que confirme la siguiente etapa.`
       : `Al aprobarlo permanecerá en "${nextStageLabel}".`,
   ];
-  const isMetodologoStage = currentEtapa === "PDA";
+  const isMetodologoStage = currentEtapa === "COMPRAS_PUBLICAS";
   const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
   const isPdaStage = currentEtapa === "SOLICITUD";
   const showMetodologoPanel =

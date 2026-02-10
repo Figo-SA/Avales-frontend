@@ -27,6 +27,7 @@ const ETAPA_OPTIONS = [
   { label: "Todas las etapas", value: "" },
   { label: "Solicitud", value: "SOLICITUD" },
   { label: "PDA", value: "PDA" },
+  { label: "Certificación Compras Públicas", value: "COMPRAS_PUBLICAS" },
   {
     label: "Aval aprobado metodólogo (Director técnico metodológico)",
     value: "REVISION_METODOLOGO",
@@ -102,7 +103,7 @@ export default function AvalesPage() {
       const defaultEtapa: EtapaFlujo | undefined = isPda
         ? "SOLICITUD"
         : isMetodologo
-          ? "PDA"
+          ? "COMPRAS_PUBLICAS"
           : isDTM
           ? "REVISION_METODOLOGO"
           : isControlPrevio

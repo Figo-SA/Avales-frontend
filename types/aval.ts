@@ -7,6 +7,7 @@ export type EtapaFlujo =
   | "REVISION_METODOLOGO"
   | "REVISION_DTM"
   | "PDA"
+  | "COMPRAS_PUBLICAS"
   | "CONTROL_PREVIO"
   | "SECRETARIA"
   | "FINANCIERO";
