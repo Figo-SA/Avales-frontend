@@ -14,6 +14,20 @@ export type ListUsersOptions = {
   genero?: string;
 };
 
+export type DirigidoRole =
+  | "PDA"
+  | "COMPRAS_PUBLICAS"
+  | "METODOLOGO"
+  | "DTM"
+  | "ADMIN"
+  | "SUPER_ADMIN";
+
+export type DirigidoResponse = {
+  nombre: string;
+  apellido: string;
+  cargo: string;
+};
+
 export type ListEntrenadoresOptions = {
   page?: number;
   limit?: number;
@@ -33,6 +47,14 @@ export async function listUsers(options: ListUsersOptions = {}) {
   const url = qs ? `/users?${qs}` : "/users";
 
   return apiFetch<UserListResponse>(url, { method: "GET" });
+}
+
+export async function getDirigido(role: DirigidoRole) {
+  const params = new URLSearchParams();
+  params.set("role", role);
+  return apiFetch<DirigidoResponse>(`/users/dirigidos?${params.toString()}`, {
+    method: "GET",
+  });
 }
 
 export async function listEntrenadores(options: ListEntrenadoresOptions = {}) {

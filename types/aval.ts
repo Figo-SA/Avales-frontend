@@ -157,8 +157,12 @@ export type Aval = {
   aval?: string | null;
   numeroColeccion?: string | null;
   pda?: {
+    descripcion?: string | null;
     numeroPda?: string | null;
     numeroAval?: string | null;
+    codigoActividad?: string | null;
+    nombreFirmante?: string | null;
+    cargoFirmante?: string | null;
   } | null;
   comprasPublicas?: {
     numeroCertificado?: string | null;

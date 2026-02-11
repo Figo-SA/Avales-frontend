@@ -5,8 +5,10 @@ import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
 import { getAval } from "@/lib/api/avales";
+import { getDirigido } from "@/lib/api/user";
 import type { Aval } from "@/types/aval";
-import { formatDate } from "@/lib/utils/formatters";
+import { useAuth } from "@/app/providers/auth-provider";
+import { formatDate, formatRoles } from "@/lib/utils/formatters";
 import {
   ListaDeportistasPreview,
   SolicitudAvalPreview,
@@ -143,17 +145,12 @@ function getEntrenadorResponsableNombre(aval: Aval) {
 
 function buildDefaultDescripcion(aval: Aval) {
   const evento = aval.evento;
-  const disciplina = evento?.disciplina?.nombre ?? "[DISCIPLINA]";
-  const fecha = evento?.fechaInicio
-    ? formatDate(evento.fechaInicio)
-    : "[FECHA EVENTO]";
-  const eventoNombre = evento?.nombre ?? "[NOMBRE EVENTO]";
-  const categoria = evento?.categoria?.nombre;
+  const disciplina = evento?.disciplina?.nombre ?? "la disciplina";
+  const fecha = evento?.fechaInicio ? formatDate(evento.fechaInicio) : "-";
+  const eventoNombre = evento?.nombre ?? "el evento";
   const entrenadorResponsable = getEntrenadorResponsableNombre(aval);
 
-  return `De acuerdo al aval Técnico de Participación Competitiva [NUMERO AVAL], de la disciplina de ${disciplina} con fecha ${fecha}, suscrito por el ${entrenadorResponsable} Entrenador de la disciplina y la [NOMBRE PRESIDENTE] Presidente del Comité de Funcionamiento me permito certificar que el evento ${eventoNombre.toUpperCase()}${
-    categoria ? ` (${categoria.toUpperCase()})` : ""
-  } consta en el PDA 2026 aprobado por el Ministerio del Deporte.`;
+  return `En base a la presentacion del Aval Tecnico de Participacion Competitiva de ${disciplina}, ${eventoNombre}, con fecha ${fecha}, suscrito por el ${entrenadorResponsable}, se detalla la tabla de cumplimiento y no cumplimiento de los items revisados.`;
 }
 
 type ReviewItem = {
@@ -183,11 +180,19 @@ const REVIEW_ITEMS: ReviewItem[] = [
     defaultCumple: true,
   },
   {
+    key: "certificado_compras_publicas",
+    label: "Certificado de Compras Publicas",
+    section: "CHECKLIST",
+    type: "boolean",
+    order: 3,
+    defaultCumple: true,
+  },
+  {
     key: "fecha_ingreso_secretaria_dtm",
     label: "Fecha de ingreso en secretaria del DTM",
     section: "CHECKLIST",
     type: "fecha",
-    order: 3,
+    order: 4,
     defaultCumple: true,
   },
   {
@@ -195,7 +200,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Fecha de recibido por el metodologo",
     section: "CHECKLIST",
     type: "fecha",
-    order: 4,
+    order: 5,
     defaultCumple: true,
   },
   {
@@ -203,7 +208,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Numero del aval tecnico",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 5,
+    order: 6,
     defaultCumple: true,
   },
   {
@@ -211,7 +216,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Deporte",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 6,
+    order: 7,
     defaultCumple: true,
   },
   {
@@ -219,7 +224,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Categoria",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 7,
+    order: 8,
     defaultCumple: true,
   },
   {
@@ -227,7 +232,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Genero",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 8,
+    order: 9,
     defaultCumple: true,
   },
   {
@@ -235,7 +240,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Entrenador responsable",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 9,
+    order: 10,
     defaultCumple: true,
   },
   {
@@ -243,7 +248,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Evento",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 10,
+    order: 11,
     defaultCumple: true,
   },
   {
@@ -251,7 +256,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Lugar",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 11,
+    order: 12,
     defaultCumple: true,
   },
   {
@@ -259,7 +264,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Fechas",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 12,
+    order: 13,
     defaultCumple: true,
   },
   {
@@ -267,7 +272,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Objetivos de participacion",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 13,
+    order: 14,
     defaultCumple: true,
   },
   {
@@ -275,7 +280,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Criterios de seleccion",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 14,
+    order: 15,
     defaultCumple: true,
   },
   {
@@ -283,7 +288,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Conformacion de la delegacion",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 15,
+    order: 16,
     defaultCumple: true,
   },
   {
@@ -291,7 +296,7 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Requerimientos",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 16,
+    order: 17,
     defaultCumple: true,
   },
   {
@@ -299,13 +304,13 @@ const REVIEW_ITEMS: ReviewItem[] = [
     label: "Firmas de responsabilidad del aval tecnico",
     section: "DATOS_INFORMATIVOS",
     type: "boolean",
-    order: 17,
+    order: 18,
     defaultCumple: true,
   },
 ];
 
 const SECTION_LABELS: Record<ReviewItem["section"], string> = {
-  CHECKLIST: "Checklist",
+  CHECKLIST: "Parametros",
   DATOS_INFORMATIVOS: "Datos informativos",
 };
 
@@ -321,6 +326,7 @@ function buildInitialReviewState() {
 export default function RevisionMetodologoPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const avalId = Number(params.id);
 
   const [aval, setAval] = useState<Aval | null>(null);
@@ -328,12 +334,14 @@ export default function RevisionMetodologoPage() {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<PdaDraft>(INITIAL_PDA_DRAFT);
   const [reviewState, setReviewState] = useState(buildInitialReviewState);
+  const [dtmName, setDtmName] = useState("");
+  const [dtmCargo, setDtmCargo] = useState("");
   const [revisionHeader, setRevisionHeader] = useState({
     numeroRevision: "",
     dirigidoA: "",
     cargoDirigidoA: "",
     descripcionEncabezado: "",
-    fechaRevision: "",
+    fechaRevision: new Date().toISOString().slice(0, 10),
   });
   const [revisionFooter, setRevisionFooter] = useState({
     observacionesFinales: "",
@@ -344,12 +352,14 @@ export default function RevisionMetodologoPage() {
   useEffect(() => {
     setDraft(INITIAL_PDA_DRAFT);
     setReviewState(buildInitialReviewState());
+    setDtmName("");
+    setDtmCargo("");
     setRevisionHeader({
       numeroRevision: "",
       dirigidoA: "",
       cargoDirigidoA: "",
       descripcionEncabezado: "",
-      fechaRevision: "",
+      fechaRevision: new Date().toISOString().slice(0, 10),
     });
     setRevisionFooter({
       observacionesFinales: "",
@@ -391,6 +401,81 @@ export default function RevisionMetodologoPage() {
       descripcion: buildDefaultDescripcion(aval),
     }));
   }, [aval, draft.descripcion]);
+
+  useEffect(() => {
+    if (!aval) return;
+    setRevisionHeader((prev) => ({
+      ...prev,
+      descripcionEncabezado:
+        prev.descripcionEncabezado || buildDefaultDescripcion(aval),
+    }));
+  }, [aval]);
+
+  useEffect(() => {
+    if (!aval) return;
+    setRevisionHeader((prev) => ({
+      ...prev,
+      numeroRevision: aval.revisionMetodologo?.numeroRevision ?? "",
+    }));
+  }, [aval]);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadDtmUser() {
+      try {
+        const res = await getDirigido("DTM");
+        const first = res.data;
+        if (!active) return;
+        const nombre = first
+          ? [first.nombre, first.apellido].filter(Boolean).join(" ").trim()
+          : "";
+        const cargo = first?.cargo?.trim() || "DTM";
+        setDtmName(nombre);
+        setDtmCargo(cargo);
+      } catch {
+        if (!active) return;
+        setDtmName("");
+        setDtmCargo("");
+      }
+    }
+
+    void loadDtmUser();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!dtmName) return;
+    setRevisionHeader((prev) => ({
+      ...prev,
+      dirigidoA: prev.dirigidoA || dtmName,
+      cargoDirigidoA: prev.cargoDirigidoA || dtmCargo || "DTM",
+    }));
+  }, [dtmName, dtmCargo]);
+
+  useEffect(() => {
+    if (!user) return;
+    const nombre = [user.nombre, user.apellido].filter(Boolean).join(" ").trim();
+    const cargo = user.roles?.length ? formatRoles(user.roles) : "";
+    setRevisionFooter((prev) => ({
+      ...prev,
+      firmanteNombre: prev.firmanteNombre || nombre,
+      firmanteCargo: prev.firmanteCargo || cargo,
+    }));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const nombre = [user.nombre, user.apellido].filter(Boolean).join(" ").trim();
+    const cargo = user.roles?.length ? formatRoles(user.roles) : "";
+    setRevisionFooter((prev) => ({
+      ...prev,
+      firmanteNombre: prev.firmanteNombre || nombre,
+      firmanteCargo: prev.firmanteCargo || cargo,
+    }));
+  }, [user]);
 
   const trainerDocsData = useMemo(
     () => (aval ? buildTrainerDocsData(aval) : EMPTY_DOCS_DATA),
@@ -474,22 +559,6 @@ export default function RevisionMetodologoPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <label className="block">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Número de revisión
-                    </span>
-                    <input
-                      className="form-input w-full mt-1"
-                      value={revisionHeader.numeroRevision}
-                      onChange={(e) =>
-                        setRevisionHeader((prev) => ({
-                          ...prev,
-                          numeroRevision: e.target.value,
-                        }))
-                      }
-                      placeholder="Ej: REV-001"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       Fecha de revisión
                     </span>
                     <input
@@ -553,6 +622,38 @@ export default function RevisionMetodologoPage() {
                       placeholder="Escribe el encabezado de la revisión..."
                     />
                   </label>
+                  <label className="block md:col-span-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Nombre del firmante
+                    </span>
+                    <input
+                      className="form-input w-full mt-1"
+                      value={revisionFooter.firmanteNombre}
+                      onChange={(e) =>
+                        setRevisionFooter((prev) => ({
+                          ...prev,
+                          firmanteNombre: e.target.value,
+                        }))
+                      }
+                      placeholder="Nombre completo"
+                    />
+                  </label>
+                  <label className="block md:col-span-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Cargo del firmante
+                    </span>
+                    <input
+                      className="form-input w-full mt-1"
+                      value={revisionFooter.firmanteCargo}
+                      onChange={(e) =>
+                        setRevisionFooter((prev) => ({
+                          ...prev,
+                          firmanteCargo: e.target.value,
+                        }))
+                      }
+                      placeholder="Ej: Metodólogo Provincial"
+                    />
+                  </label>
                 </div>
               </div>
               {(["CHECKLIST", "DATOS_INFORMATIVOS"] as const).map((section) => {
@@ -572,7 +673,7 @@ export default function RevisionMetodologoPage() {
                           className="grid grid-cols-1 sm:grid-cols-[1fr_90px_170px] gap-2 items-center rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 px-3 py-2"
                         >
                           <div className="text-sm text-gray-800 dark:text-gray-100">
-                            {item.label}
+                            {item.order}. {item.label}
                           </div>
                           <div className="flex items-center gap-2 text-xs justify-start sm:justify-center">
                             <label className="inline-flex items-center gap-1 text-emerald-600">
@@ -661,38 +762,6 @@ export default function RevisionMetodologoPage() {
                       placeholder="Escribe las observaciones finales..."
                     />
                   </label>
-                  <label className="block">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Nombre del firmante
-                    </span>
-                    <input
-                      className="form-input w-full mt-1"
-                      value={revisionFooter.firmanteNombre}
-                      onChange={(e) =>
-                        setRevisionFooter((prev) => ({
-                          ...prev,
-                          firmanteNombre: e.target.value,
-                        }))
-                      }
-                      placeholder="Nombre completo"
-                    />
-                  </label>
-                  <label className="block">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                      Cargo del firmante
-                    </span>
-                    <input
-                      className="form-input w-full mt-1"
-                      value={revisionFooter.firmanteCargo}
-                      onChange={(e) =>
-                        setRevisionFooter((prev) => ({
-                          ...prev,
-                          firmanteCargo: e.target.value,
-                        }))
-                      }
-                      placeholder="Ej: Metodólogo Provincial"
-                    />
-                  </label>
                 </div>
               </div>
             </div>
@@ -704,6 +773,10 @@ export default function RevisionMetodologoPage() {
       <div className="hidden lg:block lg:w-1/2 bg-slate-100 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 overflow-y-auto">
         <div className="p-6 xl:p-8">
           <div className="space-y-6">
+            <SolicitudAvalPreview aval={aval} formData={trainerDocsData} />
+            <ListaDeportistasPreview aval={aval} formData={trainerDocsData} />
+            <PdaPreview aval={aval} draft={previewDraft} />
+            <ComprasPublicasPreview aval={aval} draft={comprasDraft} />
             <RevisionMetodologoPreview
               aval={aval}
               header={revisionHeader}
@@ -711,10 +784,6 @@ export default function RevisionMetodologoPage() {
               reviewItems={REVIEW_ITEMS}
               reviewState={reviewState}
             />
-            <SolicitudAvalPreview aval={aval} formData={trainerDocsData} />
-            <ListaDeportistasPreview aval={aval} formData={trainerDocsData} />
-            <PdaPreview aval={aval} draft={previewDraft} />
-            <ComprasPublicasPreview aval={aval} draft={comprasDraft} />
           </div>
           </div>
         </div>
