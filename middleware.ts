@@ -1,23 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  // Ignorar assets internos de Next
-  if (pathname.startsWith("/_next") || pathname === "/favicon.ico") {
-    return NextResponse.next();
-  }
-
-  // Ignorar rutas públicas estáticas comunes
-  if (pathname.startsWith("/images") || pathname.startsWith("/public")) {
-    return NextResponse.next();
-  }
-
-  // Ignorar rutas de API (dejarlas pasar al backend/proxy)
-  if (pathname.startsWith("/api")) {
-    return NextResponse.next();
-  }
 
   // ====== Auth (cookie HttpOnly "token") ======
   const token = req.cookies.get("token")?.value;
@@ -34,8 +19,8 @@ export function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Autenticado -> evitar volver a /signin
-  if (token && pathname.startsWith("/signin")) {
+  // Autenticado en "/" o "/signin" -> redirigir a /dashboard
+  if (token && (pathname === "/" || pathname.startsWith("/signin"))) {
     const url = req.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
@@ -45,6 +30,6 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Atrapa todo excepto recursos internos
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // Excluir: assets internos, API proxy, imágenes y archivos públicos
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/|images/|public/).*)"],
 };
