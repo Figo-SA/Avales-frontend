@@ -353,6 +353,7 @@ export default function AvalesPage() {
           isAdmin={isAdmin}
           isSecretaria={isSecretaria}
           isPda={isPda}
+          isDtm={isDTM}
           isMetodologo={isMetodologo}
           isComprasPublicas={isComprasPublicas}
         />

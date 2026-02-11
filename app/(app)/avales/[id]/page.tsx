@@ -249,7 +249,7 @@ export default function AvalDetailPage() {
     getNextApprovalStage(resolvedNextEtapa ?? currentEtapa),
   );
   const isMetodologoStage = currentEtapa === "REVISION_METODOLOGO";
-  const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
+  const isDtmStage = currentEtapa === "REVISION_DTM";
   const isPdaStage = currentEtapa === "SOLICITUD";
   const showMetodologoPanel =
     userRoles.includes("METODOLOGO") && isMetodologoStage;

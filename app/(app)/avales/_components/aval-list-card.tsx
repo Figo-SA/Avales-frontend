@@ -32,6 +32,7 @@ type Props = {
   isAdmin?: boolean;
   isSecretaria?: boolean;
   isPda?: boolean;
+  isDtm?: boolean;
   isMetodologo?: boolean;
   isComprasPublicas?: boolean;
 };
@@ -56,6 +57,7 @@ export default function AvalListCard({
   isAdmin = false,
   isSecretaria = false,
   isPda = false,
+  isDtm = false,
   isMetodologo = false,
   isComprasPublicas = false,
 }: Props) {
@@ -240,6 +242,15 @@ export default function AvalListCard({
                       >
                         <Stamp className="w-4 h-4" />
                         Certificar
+                      </Link>
+                    )}
+                    {isDtm && (
+                      <Link
+                        href={`/avales/${aval.id}/revision-dtm`}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        Revisar
                       </Link>
                     )}
                     {isMetodologo && (
