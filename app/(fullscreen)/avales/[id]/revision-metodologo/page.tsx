@@ -4,7 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
-import { aprobarAval, getAval, rechazarAval } from "@/lib/api/avales";
+import {
+  aprobarAval,
+  getAval,
+  getRevisionMetodologoItems,
+  rechazarAval,
+  type RevisionMetodologoItem,
+} from "@/lib/api/avales";
 import { getDirigido } from "@/lib/api/user";
 import type { Aval } from "@/types/aval";
 import { useAuth } from "@/app/providers/auth-provider";
@@ -15,13 +21,22 @@ import {
   type AvalPreviewFormData,
 } from "@/app/(app)/avales/_components/aval-document-preview";
 import PdaPreview, { type PdaDraft } from "@/app/(app)/avales/_components/pda-preview";
-import RevisionMetodologoPreview from "@/app/(app)/avales/_components/revision-metodologo-preview";
+import RevisionMetodologoPreview, {
+  type ReviewItem,
+} from "@/app/(app)/avales/_components/revision-metodologo-preview";
 import ComprasPublicasPreview, {
   type ComprasPublicasDraft,
 } from "@/app/(app)/avales/_components/compras-publicas-preview";
 import ApprovalFlowCard from "@/app/(app)/avales/_components/approval-flow-card";
 import { getApprovalStageLabel, getNextApprovalStage } from "@/lib/constants";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
+import AlertBanner from "@/components/ui/alert-banner";
+import {
+  DEFAULT_REVIEW_ITEMS,
+  buildInitialReviewState,
+  normalizeReviewItems,
+  mergeReviewStateFromApi,
+} from "@/app/(app)/avales/_components/revision-metodologo-config";
 
 const INITIAL_PDA_DRAFT: PdaDraft = {
   descripcion: "",
@@ -156,175 +171,13 @@ function buildDefaultDescripcion(aval: Aval) {
   return `En base a la presentacion del Aval Tecnico de Participacion Competitiva de ${disciplina}, ${eventoNombre}, con fecha ${fecha}, suscrito por el ${entrenadorResponsable}, se detalla la tabla de cumplimiento y no cumplimiento de los items revisados.`;
 }
 
-type ReviewItem = {
-  key: string;
-  label: string;
-  section: "CHECKLIST" | "DATOS_INFORMATIVOS";
-  type: "boolean" | "fecha";
-  order: number;
-  defaultCumple: boolean;
-};
+type ReviewSection = ReviewItem["section"];
 
-const REVIEW_ITEMS: ReviewItem[] = [
-  {
-    key: "certificado_escuelas",
-    label: "Certificado de las escuelas de iniciacion recibido",
-    section: "CHECKLIST",
-    type: "boolean",
-    order: 1,
-    defaultCumple: true,
-  },
-  {
-    key: "certificado_metodologo_pda",
-    label: "Certificado del metodologo del PDA",
-    section: "CHECKLIST",
-    type: "boolean",
-    order: 2,
-    defaultCumple: true,
-  },
-  {
-    key: "certificado_compras_publicas",
-    label: "Certificado de Compras Publicas",
-    section: "CHECKLIST",
-    type: "boolean",
-    order: 3,
-    defaultCumple: true,
-  },
-  {
-    key: "fecha_ingreso_secretaria_dtm",
-    label: "Fecha de ingreso en secretaria del DTM",
-    section: "CHECKLIST",
-    type: "fecha",
-    order: 4,
-    defaultCumple: true,
-  },
-  {
-    key: "fecha_recibido_metodologo",
-    label: "Fecha de recibido por el metodologo",
-    section: "CHECKLIST",
-    type: "fecha",
-    order: 5,
-    defaultCumple: true,
-  },
-  {
-    key: "numero_aval_tecnico",
-    label: "Numero del aval tecnico",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 6,
-    defaultCumple: true,
-  },
-  {
-    key: "deporte",
-    label: "Deporte",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 7,
-    defaultCumple: true,
-  },
-  {
-    key: "categoria",
-    label: "Categoria",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 8,
-    defaultCumple: true,
-  },
-  {
-    key: "genero",
-    label: "Genero",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 9,
-    defaultCumple: true,
-  },
-  {
-    key: "entrenador_responsable",
-    label: "Entrenador responsable",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 10,
-    defaultCumple: true,
-  },
-  {
-    key: "evento",
-    label: "Evento",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 11,
-    defaultCumple: true,
-  },
-  {
-    key: "lugar",
-    label: "Lugar",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 12,
-    defaultCumple: true,
-  },
-  {
-    key: "fechas",
-    label: "Fechas",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 13,
-    defaultCumple: true,
-  },
-  {
-    key: "objetivos_participacion",
-    label: "Objetivos de participacion",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 14,
-    defaultCumple: true,
-  },
-  {
-    key: "criterios_seleccion",
-    label: "Criterios de seleccion",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 15,
-    defaultCumple: true,
-  },
-  {
-    key: "conformacion_delegacion",
-    label: "Conformacion de la delegacion",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 16,
-    defaultCumple: true,
-  },
-  {
-    key: "requerimientos",
-    label: "Requerimientos",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 17,
-    defaultCumple: true,
-  },
-  {
-    key: "firmas_responsabilidad_aval_tecnico",
-    label: "Firmas de responsabilidad del aval tecnico",
-    section: "DATOS_INFORMATIVOS",
-    type: "boolean",
-    order: 18,
-    defaultCumple: true,
-  },
-];
-
-const SECTION_LABELS: Record<ReviewItem["section"], string> = {
+const SECTION_LABELS: Record<ReviewSection, string> = {
   CHECKLIST: "Parametros",
   DATOS_INFORMATIVOS: "Datos informativos",
+  HOJAS_EXCEL: "Hojas de excel",
 };
-
-function buildInitialReviewState() {
-  return Object.fromEntries(
-    REVIEW_ITEMS.map((item) => [
-      item.key,
-      { cumple: item.defaultCumple, observacion: "" },
-    ]),
-  );
-}
 
 export default function RevisionMetodologoPage() {
   const params = useParams();
@@ -336,12 +189,21 @@ export default function RevisionMetodologoPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState<PdaDraft>(INITIAL_PDA_DRAFT);
-  const [reviewState, setReviewState] = useState(buildInitialReviewState);
+  const [reviewItems, setReviewItems] = useState<ReviewItem[]>(
+    DEFAULT_REVIEW_ITEMS,
+  );
+  const [reviewState, setReviewState] = useState(() =>
+    buildInitialReviewState(DEFAULT_REVIEW_ITEMS),
+  );
   const [dtmName, setDtmName] = useState("");
   const [dtmCargo, setDtmCargo] = useState("");
   const [rechazoMotivo, setRechazoMotivo] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    variant: "success" | "error";
+    message: string;
+  } | null>(null);
   const [revisionHeader, setRevisionHeader] = useState({
     numeroRevision: "",
     dirigidoA: "",
@@ -357,11 +219,12 @@ export default function RevisionMetodologoPage() {
 
   useEffect(() => {
     setDraft(INITIAL_PDA_DRAFT);
-    setReviewState(buildInitialReviewState());
+    setReviewState(buildInitialReviewState(reviewItems));
     setDtmName("");
     setDtmCargo("");
     setRechazoMotivo("");
     setActionError(null);
+    setToast(null);
     setRevisionHeader({
       numeroRevision: "",
       dirigidoA: "",
@@ -402,6 +265,40 @@ export default function RevisionMetodologoPage() {
   }, [loadAval]);
 
   useEffect(() => {
+    let active = true;
+
+    async function loadReviewItems() {
+      try {
+        const response = await getRevisionMetodologoItems();
+        if (!active) return;
+        const normalized = normalizeReviewItems(
+          Array.isArray(response.data) ? response.data : [],
+        );
+        const nextItems = normalized.length ? normalized : DEFAULT_REVIEW_ITEMS;
+        setReviewItems(nextItems);
+        setReviewState((prev) => {
+          const next = buildInitialReviewState(nextItems);
+          nextItems.forEach((item) => {
+            if (prev[item.key]) {
+              next[item.key] = prev[item.key];
+            }
+          });
+          return next;
+        });
+      } catch {
+        if (!active) return;
+        setReviewItems(DEFAULT_REVIEW_ITEMS);
+        setReviewState((prev) => prev);
+      }
+    }
+
+    void loadReviewItems();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!aval) return;
     if (draft.descripcion.trim()) return;
     setDraft((prev) => ({
@@ -421,9 +318,18 @@ export default function RevisionMetodologoPage() {
 
   useEffect(() => {
     if (!aval) return;
+    if (!aval.revisionMetodologo) return;
     setRevisionHeader((prev) => ({
       ...prev,
-      numeroRevision: aval.revisionMetodologo?.numeroRevision ?? "",
+      numeroRevision: aval.revisionMetodologo?.numeroRevision ?? prev.numeroRevision,
+      dirigidoA: aval.revisionMetodologo?.dirigidoA ?? prev.dirigidoA,
+      cargoDirigidoA:
+        aval.revisionMetodologo?.cargoDirigidoA ?? prev.cargoDirigidoA,
+      descripcionEncabezado:
+        aval.revisionMetodologo?.descripcionEncabezado ??
+        prev.descripcionEncabezado,
+      fechaRevision:
+        aval.revisionMetodologo?.fechaRevision ?? prev.fechaRevision,
     }));
   }, [aval]);
 
@@ -475,6 +381,23 @@ export default function RevisionMetodologoPage() {
   }, [user]);
 
   useEffect(() => {
+    if (!aval) return;
+    const apiItems = aval.revisionMetodologo?.items ?? [];
+    if (!apiItems.length) return;
+    setReviewState(mergeReviewStateFromApi(reviewItems, apiItems));
+    setRevisionFooter((prev) => ({
+      ...prev,
+      observacionesFinales:
+        prev.observacionesFinales ||
+        aval.revisionMetodologo?.observacionesFinales ||
+        "",
+      firmanteNombre:
+        prev.firmanteNombre || aval.revisionMetodologo?.firmanteNombre || "",
+      firmanteCargo:
+        prev.firmanteCargo || aval.revisionMetodologo?.firmanteCargo || "",
+    }));
+  }, [aval, reviewItems]);
+  useEffect(() => {
     if (!user) return;
     const nombre = [user.nombre, user.apellido].filter(Boolean).join(" ").trim();
     const cargo = user.roles?.length ? formatRoles(user.roles) : "";
@@ -513,7 +436,37 @@ export default function RevisionMetodologoPage() {
     setActionError(null);
     setActionLoading(true);
     try {
-      await aprobarAval(aval.id, user.id, approvalEtapa);
+      const items = reviewItems
+        .map((item) => {
+          const state = reviewState[item.key];
+          const cumple = state?.cumple ?? item.defaultCumple;
+          const observacion = state?.observacion?.trim() || "";
+          return {
+            key: item.key,
+            cumple,
+            observacion,
+          };
+        })
+        .filter(
+          (item) =>
+            !item.cumple || (item.observacion && item.observacion.length > 0),
+        );
+
+      await aprobarAval(aval.id, user.id, "REVISION_METODOLOGO", {
+        numeroRevision: revisionHeader.numeroRevision.trim(),
+        dirigidoA: revisionHeader.dirigidoA.trim(),
+        cargoDirigidoA: revisionHeader.cargoDirigidoA.trim(),
+        descripcionEncabezado: revisionHeader.descripcionEncabezado.trim(),
+        firmanteNombre: revisionFooter.firmanteNombre.trim(),
+        firmanteCargo: revisionFooter.firmanteCargo.trim(),
+        fechaRevision: revisionHeader.fechaRevision,
+        observacionesFinales: revisionFooter.observacionesFinales.trim(),
+        items,
+      });
+      setToast({
+        variant: "success",
+        message: "Revisión del metodólogo generada correctamente.",
+      });
       await loadAval();
     } catch (err: unknown) {
       setActionError(
@@ -522,7 +475,15 @@ export default function RevisionMetodologoPage() {
     } finally {
       setActionLoading(false);
     }
-  }, [aval, user?.id, approvalEtapa, loadAval]);
+  }, [
+    aval,
+    user?.id,
+    loadAval,
+    reviewItems,
+    reviewState,
+    revisionHeader,
+    revisionFooter,
+  ]);
 
   const handleReject = useCallback(async () => {
     if (!aval) return;
@@ -601,6 +562,15 @@ export default function RevisionMetodologoPage() {
 
   return (
     <div className="h-screen flex">
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 max-w-sm w-full drop-shadow-lg">
+          <AlertBanner
+            variant={toast.variant}
+            message={toast.message}
+            onClose={() => setToast(null)}
+          />
+        </div>
+      )}
       {/* Left Panel */}
       <div className="w-full lg:w-1/2 bg-white dark:bg-gray-900 flex flex-col">
         <div className="h-full overflow-y-auto">
@@ -724,85 +694,91 @@ export default function RevisionMetodologoPage() {
                   </label>
                 </div>
               </div>
-              {(["CHECKLIST", "DATOS_INFORMATIVOS"] as const).map((section) => {
-                const sectionItems = REVIEW_ITEMS.filter(
+              {(["CHECKLIST", "DATOS_INFORMATIVOS", "HOJAS_EXCEL"] as const).map(
+                (section) => {
+                  const sectionItems = reviewItems.filter(
                   (item) => item.section === section,
-                ).sort((a, b) => a.order - b.order);
+                  ).sort((a, b) => a.order - b.order);
 
-                return (
-                  <div key={section} className="space-y-3">
-                    <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
-                      {SECTION_LABELS[section]}
-                    </h2>
-                    <div className="space-y-2">
-                      {sectionItems.map((item) => (
-                        <div
-                          key={item.key}
-                          className="grid grid-cols-1 sm:grid-cols-[1fr_90px_170px] gap-2 items-center rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 px-3 py-2"
-                        >
-                          <div className="text-sm text-gray-800 dark:text-gray-100">
-                            {item.order}. {item.label}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs justify-start sm:justify-center">
-                            <label className="inline-flex items-center gap-1 text-emerald-600">
-                              <input
-                                type="radio"
-                                name={`cumple-${item.key}`}
-                                className="form-radio"
-                                checked={reviewState[item.key]?.cumple ?? true}
-                                onChange={() =>
+                  if (!sectionItems.length) return null;
+
+                  return (
+                    <div key={section} className="space-y-3">
+                      <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
+                        {SECTION_LABELS[section]}
+                      </h2>
+                      <div className="space-y-2">
+                        {sectionItems.map((item) => (
+                          <div
+                            key={item.key}
+                            className="grid grid-cols-1 sm:grid-cols-[1fr_90px_170px] gap-2 items-center rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 px-3 py-2"
+                          >
+                            <div className="text-sm text-gray-800 dark:text-gray-100">
+                              {item.order}. {item.label}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs justify-start sm:justify-center">
+                              <label className="inline-flex items-center gap-1 text-emerald-600">
+                                <input
+                                  type="radio"
+                                  name={`cumple-${item.key}`}
+                                  className="form-radio"
+                                  checked={reviewState[item.key]?.cumple ?? true}
+                                  onChange={() =>
+                                    setReviewState((prev) => ({
+                                      ...prev,
+                                      [item.key]: {
+                                        ...prev[item.key],
+                                        cumple: true,
+                                      },
+                                    }))
+                                  }
+                                />
+                                Sí
+                              </label>
+                              <label className="inline-flex items-center gap-1 text-rose-600">
+                                <input
+                                  type="radio"
+                                  name={`cumple-${item.key}`}
+                                  className="form-radio"
+                                  checked={
+                                    !(reviewState[item.key]?.cumple ?? true)
+                                  }
+                                  onChange={() =>
+                                    setReviewState((prev) => ({
+                                      ...prev,
+                                      [item.key]: {
+                                        ...prev[item.key],
+                                        cumple: false,
+                                      },
+                                    }))
+                                  }
+                                />
+                                No
+                              </label>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                              <textarea
+                                className="form-textarea w-full text-xs min-h-[60px]"
+                                placeholder="Observación"
+                                value={reviewState[item.key]?.observacion ?? ""}
+                                onChange={(e) =>
                                   setReviewState((prev) => ({
                                     ...prev,
                                     [item.key]: {
                                       ...prev[item.key],
-                                      cumple: true,
+                                      observacion: e.target.value,
                                     },
                                   }))
                                 }
                               />
-                              Sí
-                            </label>
-                            <label className="inline-flex items-center gap-1 text-rose-600">
-                              <input
-                                type="radio"
-                                name={`cumple-${item.key}`}
-                                className="form-radio"
-                                checked={!(reviewState[item.key]?.cumple ?? true)}
-                                onChange={() =>
-                                  setReviewState((prev) => ({
-                                    ...prev,
-                                    [item.key]: {
-                                      ...prev[item.key],
-                                      cumple: false,
-                                    },
-                                  }))
-                                }
-                              />
-                              No
-                            </label>
+                            </div>
                           </div>
-                          <div className="text-xs text-gray-400">
-                            <textarea
-                              className="form-textarea w-full text-xs min-h-[60px]"
-                              placeholder="Observación"
-                              value={reviewState[item.key]?.observacion ?? ""}
-                              onChange={(e) =>
-                                setReviewState((prev) => ({
-                                  ...prev,
-                                  [item.key]: {
-                                    ...prev[item.key],
-                                    observacion: e.target.value,
-                                  },
-                                }))
-                              }
-                            />
-                          </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
               <div className="space-y-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/40 p-4">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -845,6 +821,11 @@ export default function RevisionMetodologoPage() {
                   onReject={handleReject}
                 />
               )}
+              {!showApprovalPanel && aval?.revisionMetodologo?.numeroRevision && (
+                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4 text-sm text-emerald-700 dark:text-emerald-300">
+                  Revisión del metodólogo generada correctamente.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -862,7 +843,7 @@ export default function RevisionMetodologoPage() {
               aval={aval}
               header={revisionHeader}
               footer={revisionFooter}
-              reviewItems={REVIEW_ITEMS}
+              reviewItems={reviewItems}
               reviewState={reviewState}
             />
           </div>

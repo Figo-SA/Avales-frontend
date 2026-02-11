@@ -148,14 +148,49 @@ export async function createComprasPublicas(
   });
 }
 
+export type CreateRevisionDtmPayload = {
+  descripcion: string;
+  observacion?: string;
+  fechaPresentacion: string;
+};
+
+export async function createRevisionDtm(
+  id: number,
+  payload: CreateRevisionDtmPayload,
+) {
+  return apiFetch<Aval>(`/avales/${id}/revision-dtm`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function aprobarAval(
   id: number,
   usuarioId: number,
   etapa: EtapaFlujo,
+  revisionMetodologo?: {
+    numeroRevision: string;
+    dirigidoA: string;
+    cargoDirigidoA: string;
+    descripcionEncabezado: string;
+    firmanteNombre: string;
+    firmanteCargo: string;
+    fechaRevision: string;
+    observacionesFinales: string;
+    items: Array<{
+      key: string;
+      cumple: boolean;
+      observacion?: string;
+    }>;
+  },
 ) {
   return apiFetch<Aval>(`/avales/${id}/aprobar`, {
     method: "PATCH",
-    body: JSON.stringify({ usuarioId, etapa }),
+    body: JSON.stringify(
+      revisionMetodologo
+        ? { usuarioId, etapa, revisionMetodologo }
+        : { usuarioId, etapa },
+    ),
   });
 }
 
@@ -169,4 +204,18 @@ export async function rechazarAval(
     method: "PATCH",
     body: JSON.stringify({ usuarioId, etapa, motivo }),
   });
+}
+
+export type RevisionMetodologoItem = {
+  codigo: string;
+  descripcion: string;
+};
+
+export async function getRevisionMetodologoItems() {
+  return apiFetch<RevisionMetodologoItem[]>(
+    "/avales/revision-metodologo/items",
+    {
+      method: "GET",
+    },
+  );
 }

@@ -6,7 +6,7 @@ import { formatDate, formatDateRange, formatLocationWithProvince } from "@/lib/u
 export type ReviewItem = {
   key: string;
   label: string;
-  section: "CHECKLIST" | "DATOS_INFORMATIVOS";
+  section: "CHECKLIST" | "DATOS_INFORMATIVOS" | "HOJAS_EXCEL";
   type: "boolean" | "fecha";
   order: number;
   defaultCumple: boolean;
@@ -37,11 +37,13 @@ type Props = {
   reviewState: Record<string, ReviewStateItem | undefined>;
   header: RevisionHeader;
   footer: RevisionFooter;
+  useDefaultObservations?: boolean;
 };
 
 const SECTION_LABELS: Record<ReviewItem["section"], string> = {
   CHECKLIST: "PARAMETROS",
   DATOS_INFORMATIVOS: "DATOS INFORMATIVOS",
+  HOJAS_EXCEL: "HOJAS DE EXCEL",
 };
 
 function getEntrenadorResponsableNombre(aval: Aval) {
@@ -105,24 +107,28 @@ function buildDefaultObservations(aval: Aval) {
     : "Sin items presupuestarios.";
 
   return {
-    certificado_escuelas: "",
-    certificado_metodologo_pda: "",
-    certificado_compras_publicas: "",
-    fecha_ingreso_secretaria_dtm: "",
-    fecha_recibido_metodologo: "",
-    numero_aval_tecnico: aval.aval ?? String(aval.id),
-    deporte: disciplina,
-    categoria,
-    genero,
-    entrenador_responsable: entrenadorResponsable,
-    evento: evento?.nombre ?? "SIN EVENTO",
-    lugar,
-    fechas,
-    objetivos_participacion: objetivos || "-",
-    criterios_seleccion: criterios || "-",
-    conformacion_delegacion: conformacion,
-    requerimientos,
-    firmas_responsabilidad_aval_tecnico: "",
+    CERT_ESC_INI: "",
+    CERT_MET_PDA: "",
+    CERT_COMPRAS_PUBLICAS: "",
+    FECHA_INGRESO_DTM: "",
+    FECHA_RECIBIDO_METODOLOGO: "",
+    NUM_AVAL_TECNICO: aval.aval ?? String(aval.id),
+    DEPORTE: disciplina,
+    CATEGORIA: categoria,
+    GENERO: genero,
+    ENTRENADOR_RESPONSABLE: entrenadorResponsable,
+    EVENTO: evento?.nombre ?? "SIN EVENTO",
+    LUGAR: lugar,
+    FECHAS: fechas,
+    OBJETIVOS_PARTICIPACION: objetivos || "-",
+    CRITERIOS_SELECCION: criterios || "-",
+    CONFORMACION_DELEGACION: conformacion,
+    REQUERIMIENTOS: requerimientos,
+    FIRMAS_RESPONSABILIDAD_AVAL: "",
+    DATOS_DEPORTISTAS: "",
+    AFILIACION: "",
+    CERTIFICACION_MEDICA: "",
+    AVAL_TECNICO: "",
   };
 }
 
@@ -143,6 +149,7 @@ export default function RevisionMetodologoPreview({
   reviewState,
   header,
   footer,
+  useDefaultObservations = true,
 }: Props) {
   const defaults = buildDefaultObservations(aval);
   const descripcion = buildDefaultDescripcion(aval, header);
@@ -190,8 +197,9 @@ export default function RevisionMetodologoPreview({
             </tr>
           </thead>
           <tbody>
-            {(["CHECKLIST", "DATOS_INFORMATIVOS"] as const).map((section) => (
-              <Fragment key={section}>
+            {(["CHECKLIST", "DATOS_INFORMATIVOS", "HOJAS_EXCEL"] as const).map(
+              (section) => (
+                <Fragment key={section}>
                 <tr className="bg-slate-50">
                   <td
                     className="border border-slate-400 px-2 py-1 font-semibold uppercase"
@@ -205,9 +213,10 @@ export default function RevisionMetodologoPreview({
                   .map((item) => {
                     const state = reviewState[item.key];
                     const cumple = state?.cumple ?? item.defaultCumple;
-                    const observacion =
-                      state?.observacion?.trim() ||
-                      (defaults[item.key as keyof typeof defaults] ?? "-");
+                    const observacion = useDefaultObservations
+                      ? state?.observacion?.trim() ||
+                        (defaults[item.key as keyof typeof defaults] ?? "")
+                      : state?.observacion?.trim() ?? "";
 
                     return (
                       <tr key={item.key}>
@@ -221,13 +230,14 @@ export default function RevisionMetodologoPreview({
                           {!cumple ? "X" : ""}
                         </td>
                         <td className="border border-slate-400 px-2 py-1">
-                          {observacion || "-"}
+                          {observacion}
                         </td>
                       </tr>
                     );
                   })}
-              </Fragment>
-            ))}
+                </Fragment>
+              ),
+            )}
           </tbody>
         </table>
       </div>

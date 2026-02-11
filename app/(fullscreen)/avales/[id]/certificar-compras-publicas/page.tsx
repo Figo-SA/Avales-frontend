@@ -24,6 +24,7 @@ import ComprasPublicasPreview, {
 import AlertBanner from "@/components/ui/alert-banner";
 import { getCurrentEtapa } from "@/lib/utils/aval-historial";
 import { formatRoles } from "@/lib/utils/formatters";
+import { getNextApprovalStage } from "@/lib/constants";
 
 const INITIAL_DRAFT: ComprasPublicasDraft = {
   numeroCertificado: "",
@@ -246,18 +247,23 @@ export default function CertificarComprasPublicasPage() {
     aval?.estado === "SOLICITADO" &&
     currentEtapa === "PDA" &&
     !aval?.comprasPublicas;
-  const approvalEtapa = currentEtapa;
+  const approvalEtapa = getNextApprovalStage(currentEtapa) ?? currentEtapa;
   const summaryText =
     "Al aprobarlo quedará certificado por Compras Públicas y continuará el flujo.";
+
+  const pushError = useCallback((message: string) => {
+    setActionError(message);
+    setToast({ variant: "error", message });
+  }, []);
 
   const handleApprove = useCallback(async () => {
     if (!aval) return;
     if (!user?.id) {
-      setActionError("No se pudo identificar el usuario.");
+      pushError("No se pudo identificar el usuario.");
       return;
     }
     if (!isEditable) {
-      setActionError("No puedes certificar este aval en la etapa actual.");
+      pushError("No puedes certificar este aval en la etapa actual.");
       return;
     }
 
@@ -278,14 +284,22 @@ export default function CertificarComprasPublicasPage() {
       };
 
       await createComprasPublicas(aval.id, payload);
-      await aprobarAval(aval.id, user.id, approvalEtapa);
+      const refreshed = await getAval(aval.id);
+      setAval(refreshed.data);
+      const refreshedEtapa =
+        refreshed.data.etapaActual ??
+        getCurrentEtapa(refreshed.data.historial) ??
+        currentEtapa;
+      const nextEtapa = getNextApprovalStage(refreshedEtapa);
+      const resolvedApprovalEtapa = nextEtapa ?? refreshedEtapa;
+      await aprobarAval(aval.id, user.id, resolvedApprovalEtapa);
       setToast({
         variant: "success",
         message: "Certificación de Compras Públicas registrada correctamente.",
       });
       await loadAval();
     } catch (err: unknown) {
-      setActionError(
+      pushError(
         err instanceof Error
           ? err.message
           : "No se pudo certificar Compras Públicas.",
@@ -293,20 +307,20 @@ export default function CertificarComprasPublicasPage() {
     } finally {
       setActionLoading(false);
     }
-  }, [aval, user?.id, approvalEtapa, loadAval, draft, isEditable]);
+  }, [aval, user?.id, loadAval, draft, isEditable, pushError]);
 
   const handleReject = useCallback(async () => {
     if (!aval) return;
     if (!user?.id) {
-      setActionError("No se pudo identificar el usuario.");
+      pushError("No se pudo identificar el usuario.");
       return;
     }
     if (!isEditable) {
-      setActionError("No puedes rechazar este aval en la etapa actual.");
+      pushError("No puedes rechazar este aval en la etapa actual.");
       return;
     }
     if (!rechazoMotivo.trim()) {
-      setActionError("Debes indicar un motivo para el rechazo.");
+      pushError("Debes indicar un motivo para el rechazo.");
       return;
     }
 
@@ -321,13 +335,13 @@ export default function CertificarComprasPublicasPage() {
       setRechazoMotivo("");
       await loadAval();
     } catch (err: unknown) {
-      setActionError(
+      pushError(
         err instanceof Error ? err.message : "No se pudo rechazar el aval.",
       );
     } finally {
       setActionLoading(false);
     }
-  }, [aval, user?.id, rechazoMotivo, currentEtapa, loadAval, isEditable]);
+  }, [aval, user?.id, rechazoMotivo, currentEtapa, loadAval, isEditable, pushError]);
 
   if (authLoading) {
     return (
@@ -591,6 +605,11 @@ export default function CertificarComprasPublicasPage() {
                       Aprobar
                     </button>
                   </div>
+                </div>
+              )}
+              {!isEditable && aval?.comprasPublicas && (
+                <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-4 text-sm text-emerald-700 dark:text-emerald-300">
+                  Este aval ya fue certificado por Compras Públicas.
                 </div>
               )}
             </div>

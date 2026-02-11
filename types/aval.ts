@@ -175,6 +175,24 @@ export type Aval = {
   } | null;
   revisionMetodologo?: {
     numeroRevision?: string | null;
+    dirigidoA?: string | null;
+    cargoDirigidoA?: string | null;
+    descripcionEncabezado?: string | null;
+    fechaRevision?: string | null;
+    observacionesFinales?: string | null;
+    firmanteNombre?: string | null;
+    firmanteCargo?: string | null;
+    items?: Array<{
+      key?: string | null;
+      codigo?: string | null;
+      descripcion?: string | null;
+      label?: string | null;
+      section?: "CHECKLIST" | "DATOS_INFORMATIVOS" | "HOJAS_EXCEL" | string | null;
+      type?: "boolean" | "fecha" | string | null;
+      order?: number | null;
+      cumple?: boolean | null;
+      observacion?: string | null;
+    }> | null;
   } | null;
   dtm?: Array<{
     numeroDtm?: string | null;
