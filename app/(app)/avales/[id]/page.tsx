@@ -248,13 +248,7 @@ export default function AvalDetailPage() {
   const hasNextAfterApproval = Boolean(
     getNextApprovalStage(resolvedNextEtapa ?? currentEtapa),
   );
-  const summaryLines = [
-    `El aval pasará de "${currentStageLabel}" a "${nextStageLabel}".`,
-    hasNextAfterApproval
-      ? `Al aprobarlo quedará en "${nextStageLabel}" hasta que confirme la siguiente etapa.`
-      : `Al aprobarlo permanecerá en "${nextStageLabel}".`,
-  ];
-  const isMetodologoStage = currentEtapa === "COMPRAS_PUBLICAS";
+  const isMetodologoStage = currentEtapa === "REVISION_METODOLOGO";
   const isDtmStage = currentEtapa === "REVISION_METODOLOGO";
   const isPdaStage = currentEtapa === "SOLICITUD";
   const showMetodologoPanel =
@@ -264,10 +258,7 @@ export default function AvalDetailPage() {
     userRoles.includes("CONTROL_PREVIO") && isControlPrevioStage;
   const showApprovalPanel =
     aval?.estado === "SOLICITADO" &&
-    (showMetodologoPanel ||
-      showDtmPanel ||
-      showControlPrevioPanel ||
-      showFinancieroPanel);
+    (showDtmPanel || showControlPrevioPanel || showFinancieroPanel);
 
   const fetchAval = useCallback(async () => {
     if (!id || Number.isNaN(id)) {
@@ -972,7 +963,6 @@ export default function AvalDetailPage() {
         {showApprovalPanel && (
           <ApprovalFlowCard
             title="Este aval necesita aprobación"
-            summaryLines={summaryLines}
             currentStageLabel={arrowCurrentLabel}
             nextStageLabel={arrowNextLabel}
             reasonValue={rechazoMotivo}

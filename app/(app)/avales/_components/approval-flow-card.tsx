@@ -4,7 +4,6 @@ import { ArrowRight } from "lucide-react";
 
 type ApprovalFlowCardProps = {
   title: string;
-  summaryLines: string[];
   currentStageLabel: string;
   nextStageLabel: string;
   reasonLabel?: string;
@@ -19,7 +18,6 @@ type ApprovalFlowCardProps = {
 
 export default function ApprovalFlowCard({
   title,
-  summaryLines,
   currentStageLabel,
   nextStageLabel,
   reasonLabel = "Motivo (obligatorio para rechazos)",
@@ -44,9 +42,8 @@ export default function ApprovalFlowCard({
       </div>
 
       <div className="text-sm text-gray-700 dark:text-gray-300 space-y-2">
-        {summaryLines.map((line) => (
-          <p key={line}>{line}</p>
-        ))}
+        <p>{`El aval pasará de "${currentStageLabel}" a "${nextStageLabel}".`}</p>
+        <p>{`Al aprobarlo quedará en "${nextStageLabel}".`}</p>
       </div>
 
       <div className="space-y-2">

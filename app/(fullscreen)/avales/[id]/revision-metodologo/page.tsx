@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 
-import { getAval } from "@/lib/api/avales";
+import { aprobarAval, getAval, rechazarAval } from "@/lib/api/avales";
 import { getDirigido } from "@/lib/api/user";
 import type { Aval } from "@/types/aval";
 import { useAuth } from "@/app/providers/auth-provider";
@@ -19,6 +19,9 @@ import RevisionMetodologoPreview from "@/app/(app)/avales/_components/revision-m
 import ComprasPublicasPreview, {
   type ComprasPublicasDraft,
 } from "@/app/(app)/avales/_components/compras-publicas-preview";
+import ApprovalFlowCard from "@/app/(app)/avales/_components/approval-flow-card";
+import { getApprovalStageLabel, getNextApprovalStage } from "@/lib/constants";
+import { getCurrentEtapa } from "@/lib/utils/aval-historial";
 
 const INITIAL_PDA_DRAFT: PdaDraft = {
   descripcion: "",
@@ -336,6 +339,9 @@ export default function RevisionMetodologoPage() {
   const [reviewState, setReviewState] = useState(buildInitialReviewState);
   const [dtmName, setDtmName] = useState("");
   const [dtmCargo, setDtmCargo] = useState("");
+  const [rechazoMotivo, setRechazoMotivo] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [revisionHeader, setRevisionHeader] = useState({
     numeroRevision: "",
     dirigidoA: "",
@@ -354,6 +360,8 @@ export default function RevisionMetodologoPage() {
     setReviewState(buildInitialReviewState());
     setDtmName("");
     setDtmCargo("");
+    setRechazoMotivo("");
+    setActionError(null);
     setRevisionHeader({
       numeroRevision: "",
       dirigidoA: "",
@@ -481,6 +489,66 @@ export default function RevisionMetodologoPage() {
     () => (aval ? buildTrainerDocsData(aval) : EMPTY_DOCS_DATA),
     [aval],
   );
+  const etapaActualResponse = aval?.etapaActual;
+  const etapaActualHistorial = getCurrentEtapa(aval?.historial);
+  const currentEtapa = (etapaActualResponse ??
+    etapaActualHistorial ??
+    "SOLICITUD") as "SOLICITUD" | "REVISION_METODOLOGO" | "REVISION_DTM" | "PDA" | "COMPRAS_PUBLICAS" | "CONTROL_PREVIO" | "SECRETARIA" | "FINANCIERO";
+  const nextEtapa = getNextApprovalStage(currentEtapa);
+  const approvalEtapa = nextEtapa ?? currentEtapa;
+  const currentStageLabel = getApprovalStageLabel(currentEtapa);
+  const nextStageLabel = getApprovalStageLabel(approvalEtapa);
+  const showApprovalPanel =
+    aval?.estado === "SOLICITADO" &&
+    currentEtapa === "COMPRAS_PUBLICAS" &&
+    (user?.roles ?? []).includes("METODOLOGO");
+
+  const handleApprove = useCallback(async () => {
+    if (!aval) return;
+    if (!user?.id) {
+      setActionError("No se pudo identificar el usuario.");
+      return;
+    }
+
+    setActionError(null);
+    setActionLoading(true);
+    try {
+      await aprobarAval(aval.id, user.id, approvalEtapa);
+      await loadAval();
+    } catch (err: unknown) {
+      setActionError(
+        err instanceof Error ? err.message : "No se pudo aprobar el aval.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }, [aval, user?.id, approvalEtapa, loadAval]);
+
+  const handleReject = useCallback(async () => {
+    if (!aval) return;
+    if (!user?.id) {
+      setActionError("No se pudo identificar el usuario.");
+      return;
+    }
+    if (!rechazoMotivo.trim()) {
+      setActionError("Debes indicar un motivo para el rechazo.");
+      return;
+    }
+
+    setActionError(null);
+    setActionLoading(true);
+    try {
+      await rechazarAval(aval.id, user.id, currentEtapa, rechazoMotivo.trim());
+      setRechazoMotivo("");
+      await loadAval();
+    } catch (err: unknown) {
+      setActionError(
+        err instanceof Error ? err.message : "No se pudo rechazar el aval.",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  }, [aval, user?.id, currentEtapa, rechazoMotivo, loadAval]);
   const comprasDraft = useMemo(() => {
     if (!aval?.comprasPublicas) return EMPTY_COMPRAS_DRAFT;
     const compras = aval.comprasPublicas;
@@ -764,6 +832,19 @@ export default function RevisionMetodologoPage() {
                   </label>
                 </div>
               </div>
+              {showApprovalPanel && (
+                <ApprovalFlowCard
+                  title="Aprobación del aval"
+                  currentStageLabel={currentStageLabel}
+                  nextStageLabel={nextStageLabel}
+                  reasonValue={rechazoMotivo}
+                  onReasonChange={setRechazoMotivo}
+                  actionError={actionError}
+                  actionLoading={actionLoading}
+                  onApprove={handleApprove}
+                  onReject={handleReject}
+                />
+              )}
             </div>
           </div>
         </div>
